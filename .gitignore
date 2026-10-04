@@ -1,0 +1,45 @@
+# --- Datos reales: NUNCA en el repo (repo público; ver ADR-0015) ---
+*.pdf
+*.xls
+*.xlsx
+*.xlsm
+*.numbers
+*.ods
+*.csv
+*.tsv
+*.doc
+*.docx
+*.eml
+*.msg
+*.mbox
+*.heic
+Captura de pantalla *
+Screenshot *
+Screenshot_*
+!tools/oracle/fixtures/**/*.csv
+!e2e/fixtures/**/*.csv
+cuotascasa*respaldo*.json
+cuotascasa*backup*.json
+*.enc.json
+.cuotascasa-private/
+
+# --- Secretos ---
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+
+# --- Herramientas locales ---
+.claude/settings.local.json
+.worktrees/
+.DS_Store
+
+# --- Build / dependencias ---
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+.angular/
