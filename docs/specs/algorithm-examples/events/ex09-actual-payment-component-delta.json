@@ -1,0 +1,190 @@
+{
+  "synthetic": true,
+  "schema": "cuotascasa/algorithm-example@1",
+  "id": "ex09-actual-payment-component-delta",
+  "title": "realDelta por componente de un pago real con desglose",
+  "pendingItems": [
+    9
+  ],
+  "sections": [
+    "ALG.ACTUAL"
+  ],
+  "eventTypes": [
+    "ActualPayment"
+  ],
+  "cases": [
+    {
+      "id": "main",
+      "operation": "buildSchedule",
+      "description": "Desgloses en las cuotas 3 (capital −0.03, seguros +0.03) y 4 (cargos fijos +5.00)",
+      "terms": {
+        "principal": "500000.00",
+        "termMonths": 240,
+        "disbursementDate": "2025-01-31",
+        "firstDueDate": "2025-02-28",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.07",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [
+          {
+            "label": "IUSI",
+            "amount": "350.00",
+            "effectiveFrom": "2025-02-28"
+          },
+          {
+            "label": "Seguro de daños",
+            "amount": "45.00",
+            "effectiveFrom": "2025-02-28"
+          }
+        ],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "events": [
+        {
+          "id": "ap3",
+          "type": "ActualPayment",
+          "date": "2025-04-30",
+          "installmentNumber": 3,
+          "total": "4658.47",
+          "breakdown": {
+            "capital": "833.13",
+            "interest": "2907.04",
+            "insurance": "523.30",
+            "fixedCharges": "395.00"
+          }
+        },
+        {
+          "id": "ap4",
+          "type": "ActualPayment",
+          "date": "2025-05-30",
+          "installmentNumber": 4,
+          "total": "4663.47",
+          "breakdown": {
+            "capital": "838.89",
+            "interest": "2902.19",
+            "insurance": "522.39",
+            "fixedCharges": "400.00"
+          }
+        }
+      ],
+      "expected": {
+        "installmentCount": 240,
+        "endDate": "2045-01-31",
+        "rows": [
+          {
+            "k": 3,
+            "dueDate": "2025-04-30",
+            "opening": "498350.74",
+            "level": "4263.47",
+            "interest": "2907.04",
+            "insurance": "523.27",
+            "insuranceComponents": [
+              "415.29",
+              "107.98"
+            ],
+            "capital": "833.16",
+            "fixedCharges": "395.00",
+            "total": "4658.47",
+            "closing": "497517.58",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": true
+          },
+          {
+            "k": 4,
+            "dueDate": "2025-05-31",
+            "opening": "497517.58",
+            "level": "4263.47",
+            "interest": "2902.19",
+            "insurance": "522.39",
+            "insuranceComponents": [
+              "414.60",
+              "107.79"
+            ],
+            "capital": "838.89",
+            "fixedCharges": "395.00",
+            "total": "4658.47",
+            "closing": "496678.69",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": true
+          },
+          {
+            "k": 5,
+            "dueDate": "2025-06-30",
+            "opening": "496678.69",
+            "level": "4263.47",
+            "interest": "2897.29",
+            "insurance": "521.51",
+            "insuranceComponents": [
+              "413.90",
+              "107.61"
+            ],
+            "capital": "844.67",
+            "fixedCharges": "395.00",
+            "total": "4658.47",
+            "closing": "495834.02",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 240,
+            "dueDate": "2045-01-31",
+            "opening": "4232.65",
+            "level": "4263.47",
+            "interest": "24.69",
+            "insurance": "4.44",
+            "insuranceComponents": [
+              "3.52",
+              "0.92"
+            ],
+            "capital": "4232.65",
+            "fixedCharges": "395.00",
+            "total": "4656.78",
+            "closing": "0.00",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          }
+        ],
+        "totals": {
+          "interest": "443416.24",
+          "insurance": "79814.87",
+          "capital": "500000.00",
+          "fixedCharges": "94800.00",
+          "prepayments": "0.00",
+          "commissions": "0.00",
+          "total": "1118031.11",
+          "totalPaid": "1118031.11"
+        },
+        "realDelta": {
+          "perAnchor": [],
+          "perComponent": [
+            {
+              "eventId": "ap3",
+              "k": 3,
+              "capital": "-0.03",
+              "interest": "0.00",
+              "insurance": "0.03",
+              "fixedCharges": "0.00"
+            },
+            {
+              "eventId": "ap4",
+              "k": 4,
+              "capital": "0.00",
+              "interest": "0.00",
+              "insurance": "0.00",
+              "fixedCharges": "5.00"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

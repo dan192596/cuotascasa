@@ -1,0 +1,441 @@
+{
+  "synthetic": true,
+  "schema": "cuotascasa/algorithm-example@1",
+  "id": "ex15-due-date-consistency",
+  "title": "Par firstDueDate/paymentDay inválido (InvalidInputError) y válido en febrero bisiesto",
+  "pendingItems": [
+    15
+  ],
+  "sections": [
+    "ALG.DATES"
+  ],
+  "eventTypes": [],
+  "cases": [
+    {
+      "id": "invalid-eom",
+      "operation": "buildSchedule",
+      "description": "END_OF_MONTH con 2027-03-15",
+      "terms": {
+        "principal": "60000.00",
+        "termMonths": 12,
+        "disbursementDate": "2028-01-31",
+        "currency": "GTQ",
+        "interestRate": "0.075",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "FIXED",
+        "firstDueDate": "2027-03-15",
+        "paymentDay": "END_OF_MONTH"
+      },
+      "events": [],
+      "expected": {
+        "error": {
+          "type": "InvalidInputError",
+          "rule": "ALG.DATES"
+        }
+      }
+    },
+    {
+      "id": "invalid-day-15",
+      "operation": "buildSchedule",
+      "description": "paymentDay 15 con 2027-03-10",
+      "terms": {
+        "principal": "60000.00",
+        "termMonths": 12,
+        "disbursementDate": "2028-01-31",
+        "currency": "GTQ",
+        "interestRate": "0.075",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "FIXED",
+        "firstDueDate": "2027-03-10",
+        "paymentDay": 15
+      },
+      "events": [],
+      "expected": {
+        "error": {
+          "type": "InvalidInputError",
+          "rule": "ALG.DATES"
+        }
+      }
+    },
+    {
+      "id": "invalid-day-30-leap",
+      "operation": "buildSchedule",
+      "description": "paymentDay 30 con 2028-02-28 (debía ser 29)",
+      "terms": {
+        "principal": "60000.00",
+        "termMonths": 12,
+        "disbursementDate": "2028-01-31",
+        "currency": "GTQ",
+        "interestRate": "0.075",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "FIXED",
+        "firstDueDate": "2028-02-28",
+        "paymentDay": 30
+      },
+      "events": [],
+      "expected": {
+        "error": {
+          "type": "InvalidInputError",
+          "rule": "ALG.DATES"
+        }
+      }
+    },
+    {
+      "id": "valid-day-31-leap",
+      "operation": "buildSchedule",
+      "description": "paymentDay 31 con 2028-02-29",
+      "terms": {
+        "principal": "60000.00",
+        "termMonths": 12,
+        "disbursementDate": "2028-01-31",
+        "currency": "GTQ",
+        "interestRate": "0.075",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "FIXED",
+        "firstDueDate": "2028-02-29",
+        "paymentDay": 31
+      },
+      "events": [],
+      "expected": {
+        "installmentCount": 12,
+        "endDate": "2029-01-31",
+        "rows": [
+          {
+            "k": 1,
+            "dueDate": "2028-02-29",
+            "opening": "60000.00",
+            "level": "5240.41",
+            "interest": "375.00",
+            "insurance": "63.00",
+            "insuranceComponents": [
+              "50.00",
+              "13.00"
+            ],
+            "capital": "4802.41",
+            "fixedCharges": "0.00",
+            "total": "5240.41",
+            "closing": "55197.59",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 2,
+            "dueDate": "2028-03-31",
+            "opening": "55197.59",
+            "level": "5240.41",
+            "interest": "344.98",
+            "insurance": "57.96",
+            "insuranceComponents": [
+              "46.00",
+              "11.96"
+            ],
+            "capital": "4837.47",
+            "fixedCharges": "0.00",
+            "total": "5240.41",
+            "closing": "50360.12",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 3,
+            "dueDate": "2028-04-30",
+            "opening": "50360.12",
+            "level": "5240.41",
+            "interest": "314.75",
+            "insurance": "52.88",
+            "insuranceComponents": [
+              "41.97",
+              "10.91"
+            ],
+            "capital": "4872.78",
+            "fixedCharges": "0.00",
+            "total": "5240.41",
+            "closing": "45487.34",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 12,
+            "dueDate": "2029-01-31",
+            "opening": "5202.48",
+            "level": "5240.41",
+            "interest": "32.52",
+            "insurance": "5.46",
+            "insuranceComponents": [
+              "4.33",
+              "1.13"
+            ],
+            "capital": "5202.48",
+            "fixedCharges": "0.00",
+            "total": "5240.46",
+            "closing": "0.00",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          }
+        ],
+        "totals": {
+          "interest": "2470.00",
+          "insurance": "414.97",
+          "capital": "60000.00",
+          "fixedCharges": "0.00",
+          "prepayments": "0.00",
+          "commissions": "0.00",
+          "total": "62884.97",
+          "totalPaid": "62884.97"
+        }
+      }
+    },
+    {
+      "id": "valid-day-30-leap",
+      "operation": "buildSchedule",
+      "description": "paymentDay 30 con 2028-02-29",
+      "terms": {
+        "principal": "60000.00",
+        "termMonths": 12,
+        "disbursementDate": "2028-01-31",
+        "currency": "GTQ",
+        "interestRate": "0.075",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "FIXED",
+        "firstDueDate": "2028-02-29",
+        "paymentDay": 30
+      },
+      "events": [],
+      "expected": {
+        "installmentCount": 12,
+        "endDate": "2029-01-30",
+        "rows": [
+          {
+            "k": 1,
+            "dueDate": "2028-02-29",
+            "opening": "60000.00",
+            "level": "5240.41",
+            "interest": "375.00",
+            "insurance": "63.00",
+            "insuranceComponents": [
+              "50.00",
+              "13.00"
+            ],
+            "capital": "4802.41",
+            "fixedCharges": "0.00",
+            "total": "5240.41",
+            "closing": "55197.59",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 2,
+            "dueDate": "2028-03-30",
+            "opening": "55197.59",
+            "level": "5240.41",
+            "interest": "344.98",
+            "insurance": "57.96",
+            "insuranceComponents": [
+              "46.00",
+              "11.96"
+            ],
+            "capital": "4837.47",
+            "fixedCharges": "0.00",
+            "total": "5240.41",
+            "closing": "50360.12",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 3,
+            "dueDate": "2028-04-30",
+            "opening": "50360.12",
+            "level": "5240.41",
+            "interest": "314.75",
+            "insurance": "52.88",
+            "insuranceComponents": [
+              "41.97",
+              "10.91"
+            ],
+            "capital": "4872.78",
+            "fixedCharges": "0.00",
+            "total": "5240.41",
+            "closing": "45487.34",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 12,
+            "dueDate": "2029-01-30",
+            "opening": "5202.48",
+            "level": "5240.41",
+            "interest": "32.52",
+            "insurance": "5.46",
+            "insuranceComponents": [
+              "4.33",
+              "1.13"
+            ],
+            "capital": "5202.48",
+            "fixedCharges": "0.00",
+            "total": "5240.46",
+            "closing": "0.00",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          }
+        ],
+        "totals": {
+          "interest": "2470.00",
+          "insurance": "414.97",
+          "capital": "60000.00",
+          "fixedCharges": "0.00",
+          "prepayments": "0.00",
+          "commissions": "0.00",
+          "total": "62884.97",
+          "totalPaid": "62884.97"
+        }
+      }
+    },
+    {
+      "id": "valid-eom-leap",
+      "operation": "buildSchedule",
+      "description": "END_OF_MONTH con 2028-02-29",
+      "terms": {
+        "principal": "60000.00",
+        "termMonths": 12,
+        "disbursementDate": "2028-01-31",
+        "currency": "GTQ",
+        "interestRate": "0.075",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "FIXED",
+        "firstDueDate": "2028-02-29",
+        "paymentDay": "END_OF_MONTH"
+      },
+      "events": [],
+      "expected": {
+        "installmentCount": 12,
+        "endDate": "2029-01-31",
+        "rows": [
+          {
+            "k": 1,
+            "dueDate": "2028-02-29",
+            "opening": "60000.00",
+            "level": "5240.41",
+            "interest": "375.00",
+            "insurance": "63.00",
+            "insuranceComponents": [
+              "50.00",
+              "13.00"
+            ],
+            "capital": "4802.41",
+            "fixedCharges": "0.00",
+            "total": "5240.41",
+            "closing": "55197.59",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 2,
+            "dueDate": "2028-03-31",
+            "opening": "55197.59",
+            "level": "5240.41",
+            "interest": "344.98",
+            "insurance": "57.96",
+            "insuranceComponents": [
+              "46.00",
+              "11.96"
+            ],
+            "capital": "4837.47",
+            "fixedCharges": "0.00",
+            "total": "5240.41",
+            "closing": "50360.12",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 3,
+            "dueDate": "2028-04-30",
+            "opening": "50360.12",
+            "level": "5240.41",
+            "interest": "314.75",
+            "insurance": "52.88",
+            "insuranceComponents": [
+              "41.97",
+              "10.91"
+            ],
+            "capital": "4872.78",
+            "fixedCharges": "0.00",
+            "total": "5240.41",
+            "closing": "45487.34",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 12,
+            "dueDate": "2029-01-31",
+            "opening": "5202.48",
+            "level": "5240.41",
+            "interest": "32.52",
+            "insurance": "5.46",
+            "insuranceComponents": [
+              "4.33",
+              "1.13"
+            ],
+            "capital": "5202.48",
+            "fixedCharges": "0.00",
+            "total": "5240.46",
+            "closing": "0.00",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          }
+        ],
+        "totals": {
+          "interest": "2470.00",
+          "insurance": "414.97",
+          "capital": "60000.00",
+          "fixedCharges": "0.00",
+          "prepayments": "0.00",
+          "commissions": "0.00",
+          "total": "62884.97",
+          "totalPaid": "62884.97"
+        }
+      }
+    }
+  ]
+}

@@ -5,8 +5,8 @@
 > Cada regla tiene un identificador estable `[ALG.*]` que el código, las pruebas y los fixtures citan.
 > En caso de contradicción entre documentos, **este documento gana** (ver precedencia en `CLAUDE.md`).
 >
-> **Estado:** v1 de planificación (2026-10-04). La tarjeta **W0-02** la completa con un ejemplo sintético resuelto
-> por regla (`docs/specs/algorithm-examples/`), según la lista de [ALG.PENDING]. Después de W0 solo la modifica Opus,
+> **Estado:** v1 (2026-10-04), completada por **W0-02**: un ejemplo sintético resuelto por cada ítem de [ALG.PENDING]
+> en `docs/specs/algorithm-examples/` (índice en `INDEX.md`). Después de W0 solo la modifica Opus,
 > y cada cambio obliga a regenerar el oráculo.
 >
 > **Validación:** el perfil `FHA_GT_V1` reprodujo **al centavo todas las filas, incluidos los totales**, de una tabla
@@ -15,19 +15,20 @@
 
 ---
 
-## [ALG.CONV] Convenciones numéricas
+## <a id="alg-conv"></a>[ALG.CONV] Convenciones numéricas
 
 - **Contexto decimal:** precisión de **34 dígitos significativos** y redondeo intermedio **`ROUND_HALF_EVEN`**. Se aplica a toda operación que no sea un `HALF_UP_2` explícito:
   - Python: `decimal` con `prec = 34` (su modo por defecto ya es `ROUND_HALF_EVEN`).
   - TypeScript: `Decimal.set({ precision: 34, rounding: Decimal.ROUND_HALF_EVEN })`.
 - **`HALF_UP_2(x)`:** redondeo a 2 decimales, mitad lejos de cero (`ROUND_HALF_UP`): 0.005 → 0.01 y −0.005 → −0.01. Es el **único** redondeo a centavos y ocurre **solo** donde esta especificación escribe `HALF_UP_2`. Los demás valores intermedios quedan en el contexto de 34 dígitos.
 - **Potencias:** `(1 + r)^(−m)` se calcula como `1 / P`, con `P = (1 + r)^m` por exponenciación entera en el contexto decimal.
+- **Orden de operaciones:** cada fórmula se evalúa tal como está escrita, de izquierda a derecha, y cada operación se redondea al contexto de 34 dígitos: `B · r / (1 − 1/P)` es `(B · r) / (1 − (1 / P))`; `charge · i / (i + f)` es `(charge · i) / (i + f)`; `insurance · fⱼ / f` es `(insurance · fⱼ) / f`; `B · i / 12` es `(B · i) / 12`; `B · fⱼ / 12` es `(B · fⱼ) / 12`. El cargo de `FHA_GT_V1` se evalúa como `(B · (i + f)) / 12`, nunca como `B` por una `r` ya redondeada al contexto: con `i + f = 0.07` y `B = 1506.00`, `charge = HALF_UP_2(8.785) = 8.79`. Las sumas y restas de montos de 2 decimales son exactas.
 - **Montos:** strings decimales con 2 decimales (`"500000.00"`) en todas las fronteras (JSON, almacenamiento, UI). Nunca `number` de JavaScript.
 - **Tasas:** strings decimales anuales (`"0.07"` = 7 %, `"0.0126"` = 1.26 %).
 - **Fechas:** `LocalDate` con formato `AAAA-MM-DD`, sin hora ni zona. Nunca `Date` dentro del dominio. El dominio **no** usa la fecha de hoy; quien necesite "hoy" lo recibe de la capa de datos (`Clock.today()`).
 - **Base de interés:** mensual 30/360. El cargo de un periodo no depende del día real de pago.
 
-## [ALG.TERMS] Condiciones de un préstamo
+## <a id="alg-terms"></a>[ALG.TERMS] Condiciones de un préstamo
 
 | Campo | Significado |
 |---|---|
@@ -45,12 +46,16 @@
 
 `f = Σ fⱼ`. La tasa periódica es **`r = (i + f) / 12`**, sin `HALF_UP_2`.
 
-## [ALG.TERM] Plazo vigente (variable de estado)
+## <a id="alg-term"></a>[ALG.TERM] Plazo vigente (variable de estado)
 
 `term` es el **número de la última cuota del calendario vigente**. Empieza en `termMonths`, y un plazo puede estar en uno de dos modos:
 
-- **Fijo:** `term` es un dato. Lo usan el plan original, `REDUCE_INSTALLMENT` y `RECALC_INSTALLMENT_KEEP_TERM`.
-- **Derivado:** `term` se recalcula **por simulación**. Desde el estado actual se aplica [ALG.PERIOD] con `level` fijo hasta la cuota que cumple [ALG.LAST.DERIVED_TERM]. Nunca se usan fórmulas logarítmicas. Lo usan `REDUCE_TERM`, `AdvanceInstallments`, `KEEP_INSTALLMENT_ADJUST_TERM` y `BANK_INSTALLMENT`.
+- **Fijo:** `term` es un dato y no cambia aunque [ALG.LAST.FIXED_TERM] liquide antes (por ejemplo, tras un ancla que baja el saldo); [ALG.RATE.RECALC_KEEP_TERM] y [ALG.PREPAY.REDUCE_INSTALLMENT] usan ese dato. Lo usan el plan original, `REDUCE_INSTALLMENT` y `RECALC_INSTALLMENT_KEEP_TERM`.
+- **Derivado:** `term` se recalcula **por simulación**. Desde el estado actual se aplica [ALG.PERIOD.FHA_GT_V1] o [ALG.PERIOD.SIMPLE], según el perfil, con `level` fijo hasta la cuota que cumple [ALG.LAST.DERIVED_TERM]. Nunca se usan fórmulas logarítmicas. Lo usan `REDUCE_TERM`, `KEEP_INSTALLMENT_ADJUST_TERM` y `BANK_INSTALLMENT`; `AdvanceInstallments` conserva el modo que encuentra ([ALG.ADVANCE]).
+
+**Plazo vigente en las fases 1 y 3.** Cuando un `RateChange` `RECALC_INSTALLMENT_KEEP_TERM` de la fase 1 de la cuota `k` necesita el `term` vigente de un plazo derivado, se usa `term = (k − 1) + remainingTerm` del estado tras la cuota `k − 1`, con el saldo de apertura de `k` ya re-anclado por la fase 0 si hubo ancla. En la fase 3, con plazo derivado, `REDUCE_INSTALLMENT` usa `term = k + remainingTerm` del estado tras pagar la cuota `k`, antes de restar ese abono.
+
+**Amortización nula o negativa.** En plazo derivado, si una cuota calculada como normal tiene `level − financialCharge ≤ 0` ([ALG.LAST]), se lanza `NegativeAmortizationError` con la regla [ALG.TERM], porque el plazo no terminaría. En la cuota `k` de un `RateChange` con `KEEP_INSTALLMENT_ADJUST_TERM` o `BANK_INSTALLMENT`, la misma condición se reporta con la regla de la política ([ALG.RATE.KEEP_INSTALLMENT], [ALG.RATE.BANK_INSTALLMENT]). En plazo fijo no se valida: si `level` queda en `0.00` (por ejemplo, tras un abono `REDUCE_INSTALLMENT` que deja un saldo de centavos), esas cuotas tienen capital `0.00` y la cuota `term` liquida el saldo.
 
 **`PeriodState`** es el estado **después de pagar la cuota `k`, incluida su fase 3** (abonos). Contiene:
 - `balance`;
@@ -64,21 +69,22 @@ Funciones auxiliares de implementación única (W0-03 las declara y W1-01 las im
 - **`remainingTerm(state)`:** número de cuotas `k+1 … última`, contado por simulación. En plazo derivado, **`term = k + remainingTerm(state)`**. Ejemplo de [ALG.EXAMPLE]: tras el abono `REDUCE_TERM` en `k = 12`, `remainingTerm = 208` y `term = 220`.
 - **`projectCapital(state, n)`:** suma del `capital` de las cuotas `k+1 … k+n` del calendario vigente, por la misma simulación. Ejemplo: tras la cuota 12 sin abono, `projectCapital(state, 6) = 5446.87`.
 
-## [ALG.DATES] Fechas de vencimiento
+## <a id="alg-dates"></a>[ALG.DATES] Fechas de vencimiento
 
 - La cuota `k` (1-indexada) vence en el mes `firstDueDate + (k − 1)` meses.
 - Con `END_OF_MONTH`, vence el último día de ese mes.
 - Con `paymentDay = d`, vence el día `min(d, días del mes)`. Ejemplo: `d = 31` en febrero da 28, o 29 en año bisiesto.
 - **Consistencia:** el día de `firstDueDate` debe coincidir con la regla de `paymentDay` para su propio mes. Ejemplos de pares inválidos: `END_OF_MONTH` con `2027-03-15`, o `paymentDay = 15` con `2027-03-10`. Ante un par inválido se lanza `InvalidInputError`, y la UI re-deriva el día al cambiar `paymentDay`.
 
-## [ALG.ZERO] Tasas en cero
+## <a id="alg-zero"></a>[ALG.ZERO] Tasas en cero
 
 - **Si `r = 0`** (todas las tasas en cero): `level = HALF_UP_2(B / m)`, `charge = interest = insurance = 0` y `capital = level`. La última cuota liquida el saldo.
 - **Perfil `FHA_GT_V1` con `f = 0`:** `interest = charge`, `insurance = 0` y no se aplica [ALG.PERIOD.SPLIT].
+- **Sin seguros:** `insuranceRates` puede ser `[]` o una lista de tasas en cero. Ambas formas son válidas y dan las mismas cifras; solo cambia `insuranceComponents`, que es `[]` con la lista vacía y lleva un `0.00` por tasa con tasas en cero.
 - **Perfil `FHA_GT_V1` con `i = 0` y `f > 0`:** la fórmula general da `interest = 0` e `insurance = charge`.
 - Nunca se divide entre cero. Las implementaciones deben tratar estos casos antes de aplicar las fórmulas generales.
 
-## [ALG.LEVEL] Cuota nivelada
+## <a id="alg-level"></a>[ALG.LEVEL] Cuota nivelada
 
 ```
 P     = (1 + r)^m
@@ -88,12 +94,12 @@ level = HALF_UP_2( B · r / (1 − 1/P) )
 `B` es el saldo y `m` el número de cuotas restantes del plazo fijo. Al inicio, `B = principal` y `m = termMonths`.
 La cuota nivelada cubre capital + interés + seguros porcentuales. **No incluye cargos fijos.**
 
-## [ALG.PERIOD.FHA_GT_V1] Cálculo de un periodo, perfil `FHA_GT_V1`
+## <a id="alg-period-fha-gt-v1"></a>[ALG.PERIOD.FHA_GT_V1] Cálculo de un periodo, perfil `FHA_GT_V1`
 
 Para una cuota que no es la última, con saldo de apertura `B`:
 
 ```
-charge    = HALF_UP_2( B · r )                  # cargo financiero combinado
+charge    = HALF_UP_2( (B · (i + f)) / 12 )     # cargo financiero combinado; nunca B · r ([ALG.CONV])
 interest  = HALF_UP_2( charge · i / (i + f) )   # reparto proporcional
 insurance = charge − interest                   # el residuo va a seguros
 capital   = level − charge
@@ -101,7 +107,7 @@ closing   = B − capital
 total     = capital + interest + insurance + Σ cargos fijos vigentes
 ```
 
-## [ALG.PERIOD.SPLIT] Reparto de `insurance` entre componentes
+## <a id="alg-period-split"></a>[ALG.PERIOD.SPLIT] Reparto de `insurance` entre componentes
 
 Para los componentes `f₁…f_m`, en orden de arreglo:
 
@@ -112,7 +118,7 @@ ins_m = insurance − Σ_{j<m} insⱼ          (el último recibe el residuo)
 
 Aplica en el perfil `FHA_GT_V1`, tanto en cuotas normales como en la última. Con un solo componente, `ins₁ = insurance`.
 
-## [ALG.PERIOD.SIMPLE] Cálculo de un periodo, perfil `SIMPLE`
+## <a id="alg-period-simple"></a>[ALG.PERIOD.SIMPLE] Cálculo de un periodo, perfil `SIMPLE`
 
 ```
 interest   = HALF_UP_2( B · i / 12 )
@@ -120,7 +126,7 @@ insuranceⱼ = HALF_UP_2( B · fⱼ / 12 )      (cada componente redondeado por 
 capital    = level − interest − Σ insuranceⱼ
 ```
 
-## [ALG.LAST] Última cuota
+## <a id="alg-last"></a>[ALG.LAST] Última cuota
 
 En la última cuota:
 
@@ -136,28 +142,29 @@ Por eso la última cuota puede quedar un poco mayor o menor que las demás.
 
 Para decidir cuál es la última se usa **`financialCharge`** de la cuota calculada como normal. En `FHA_GT_V1` es `charge`; en `SIMPLE` es `interest + Σ insuranceⱼ`. Las dos reglas siguientes la usan igual.
 
-- **[ALG.LAST.FIXED_TERM] Plazo fijo:** la cuota número `term`. Si antes ocurre que `level − financialCharge ≥ B`, esa cuota liquida antes.
-- **[ALG.LAST.DERIVED_TERM] Plazo derivado:** la primera cuota donde `level − financialCharge ≥ B`.
+- <a id="alg-last-fixed-term"></a>**[ALG.LAST.FIXED_TERM] Plazo fijo:** la cuota número `term`. Si antes ocurre que `level − financialCharge ≥ B`, esa cuota liquida antes.
+- <a id="alg-last-derived-term"></a>**[ALG.LAST.DERIVED_TERM] Plazo derivado:** la primera cuota donde `level − financialCharge ≥ B`.
 
-## [ALG.FIXED] Cargos fijos
+## <a id="alg-fixed"></a>[ALG.FIXED] Cargos fijos
 
 - Un cargo con `effectiveFrom = d` se suma al `total` de toda cuota cuyo vencimiento sea `≥ d`, hasta que un `FixedChargeChange` lo reemplace.
 - Los cargos fijos **no** afectan el saldo, la cuota nivelada ni el interés.
 
 ---
 
-## [ALG.EVENTS] Eventos
+## <a id="alg-events"></a>[ALG.EVENTS] Eventos
 
 Un préstamo es una **línea de tiempo**: las condiciones originales más eventos fechados.
 
-**[ALG.EVENTS.ANCHOR] Cuota de aplicación `k`:**
+<a id="alg-events-anchor"></a>**[ALG.EVENTS.ANCHOR] Cuota de aplicación `k`:**
 
-1. Si el evento trae `installmentNumber`, **ese número manda**: `k = installmentNumber`, y la fecha queda como dato informativo. Se valida que `1 ≤ k ≤ term` vigente; si no, se lanza un error de validación tipado.
+1. Si el evento trae `installmentNumber`, **ese número manda**: `k = installmentNumber`, y la fecha queda como dato informativo. Salvo en eventos heredados (regla 3), se valida que `k ≥ 1` y que `k` no pase de la última cuota del calendario (la que liquida el saldo); si no, se lanza un error de validación tipado.
 2. Si no lo trae, `k` es la **primera cuota con vencimiento `≥` fecha del evento**.
+3. **Fuera de rango.** Si un evento sin `installmentNumber` cae en una cuota posterior a la última cuota del calendario, se lanza un error de validación tipado con la menor de esas `k`: ningún evento propio del calendario se ignora en silencio. Vale para eventos reales e hipotéticos. Excepción: un calendario derivado no vuelve a validar el rango de ningún evento que hereda, con o sin `installmentNumber` (ni por la regla 1 ni por esta), porque ya se validaron en su camino de origen. El escenario de [ALG.PATHS] hereda los eventos reales; en [ALG.GOAL], el camino base `SCENARIO` hereda los reales y cada prueba de la búsqueda hereda todos los eventos de su camino base. El calendario modelado de [ALG.VALIDATE] hereda todos los eventos reales que conserva. Si los eventos nuevos liquidan o acortan el préstamo, los heredados que quedan después de la última cuota no se aplican. El abono de la búsqueda por meta tiene su propia regla en [ALG.GOAL].
 
 `ActualPayment` exige `installmentNumber`; la UI lo sugiere a partir de la fecha y es editable, lo que cubre los pagos tardíos. `ReportedBalance` lo admite como opcional. Los demás eventos se asocian por fecha.
 
-**[ALG.EVENTS.ORDER] Orden total.** Los eventos se ordenan por la clave `(k, fase, fecha, rangoDeTipo, id)`:
+<a id="alg-events-order"></a>**[ALG.EVENTS.ORDER] Orden total.** Los eventos se ordenan por la clave `(k, fase, fecha, rangoDeTipo, id)`:
 
 | Fase | Eventos (rangoDeTipo) | Efecto |
 |---|---|---|
@@ -167,52 +174,52 @@ Un préstamo es una **línea de tiempo**: las condiciones originales más evento
 | 3 | `Prepayment` (0), luego `AdvanceInstallments` (1) | Se aplican después de pagar la cuota `k`, en orden de fecha y luego de rango |
 | 4 | `ActualPayment` | Solo comparación |
 
-### [ALG.RATE] Cambio de tasa (`RateChange`)
+### <a id="alg-rate"></a>[ALG.RATE] Cambio de tasa (`RateChange`)
 
 Nuevas tasas `i'` y/o `fⱼ'` desde la cuota `k` (inclusive), con saldo de apertura `B`. Tiene tres políticas:
 
-- **[ALG.RATE.RECALC_KEEP_TERM]** Política **`RECALC_INSTALLMENT_KEEP_TERM`** (por defecto): `level` según [ALG.LEVEL] con `r'` y `m = term − (k − 1)`, usando el `term` vigente de [ALG.TERM]. El plazo queda **fijo**.
-- **[ALG.RATE.KEEP_INSTALLMENT]** Política **`KEEP_INSTALLMENT_ADJUST_TERM`**: `level` no cambia y el plazo queda **derivado**. Si `level − HALF_UP_2(B·r') ≤ 0`, se lanza `NegativeAmortizationError`.
-- **[ALG.RATE.BANK_INSTALLMENT]** Política **`BANK_INSTALLMENT`**: `level` es el valor informado (cuota nivelada, sin cargos fijos). El plazo queda **derivado** y aplica la misma validación de amortización negativa.
+- <a id="alg-rate-recalc-keep-term"></a>**[ALG.RATE.RECALC_KEEP_TERM]** Política **`RECALC_INSTALLMENT_KEEP_TERM`** (por defecto): `level` según [ALG.LEVEL] con `r'` y `m = term − (k − 1)`, usando el `term` vigente de [ALG.TERM]. El plazo queda **fijo**.
+- <a id="alg-rate-keep-installment"></a>**[ALG.RATE.KEEP_INSTALLMENT]** Política **`KEEP_INSTALLMENT_ADJUST_TERM`**: `level` no cambia y el plazo queda **derivado**. Si `level − financialCharge ≤ 0`, se lanza `NegativeAmortizationError`; `financialCharge` es el del perfil ([ALG.LAST]), calculado con el saldo `B` de la cuota `k` y las tasas nuevas.
+- <a id="alg-rate-bank-installment"></a>**[ALG.RATE.BANK_INSTALLMENT]** Política **`BANK_INSTALLMENT`**: `level` es el valor informado en `bankInstallment` (cuota nivelada, sin cargos fijos). El plazo queda **derivado** y aplica la misma validación de amortización negativa.
 
-### [ALG.FIXEDCHANGE] Cambio de cargos fijos (`FixedChargeChange`)
+### <a id="alg-fixedchange"></a>[ALG.FIXEDCHANGE] Cambio de cargos fijos (`FixedChargeChange`)
 
-Trae la **lista completa** de cargos fijos vigentes desde la cuota `k`. Todos los cargos anteriores dejan de aplicarse, incluidos los de `effectiveFrom` futuro definidos en las condiciones. Para quitar un cargo, se envía la lista sin él.
+Trae la **lista completa** de cargos fijos vigentes desde la cuota `k`. Todos los cargos anteriores dejan de aplicarse, incluidos los de `effectiveFrom` futuro definidos en las condiciones. Para quitar un cargo, se envía la lista sin él. Los cargos de la lista no llevan `effectiveFrom` propio: rigen desde el vencimiento de la cuota `k`.
 
-### [ALG.PREPAY] Abono a capital (`Prepayment`)
+### <a id="alg-prepay"></a>[ALG.PREPAY] Abono a capital (`Prepayment`)
 
 Se aplica **inmediatamente después de pagar la cuota `k`** (fase 3), así que reduce el interés desde la cuota `k + 1`.
 
-- **[ALG.PREPAY.CAP]** El abono se recorta a `min(amount, closing_k)`. Si iguala el saldo, el préstamo termina en la cuota `k` (liquidación anticipada, `payoff`).
-- **[ALG.PREPAY.REDUCE_TERM]** Modo `REDUCE_TERM`: `level` no cambia y el plazo queda derivado.
-- **[ALG.PREPAY.REDUCE_INSTALLMENT]** Modo `REDUCE_INSTALLMENT`: `level` según [ALG.LEVEL] con `B'` (saldo después del abono) y `m = term − k`. El plazo queda fijo.
-- **[ALG.PREPAY.COMMISSION]** Comisión opcional:
+- <a id="alg-prepay-cap"></a>**[ALG.PREPAY.CAP]** El abono se recorta al saldo vigente: `min(amount, closing_k − abonos ya aplicados en k)`. Si iguala ese saldo, el préstamo termina en la cuota `k` (liquidación anticipada, `payoff`). Si el saldo ya es `0.00` (la cuota `k` fue la última, o un abono anterior de la misma `k` liquidó), el abono aplicado es `0.00` y no cobra comisión.
+- <a id="alg-prepay-reduce-term"></a>**[ALG.PREPAY.REDUCE_TERM]** Modo `REDUCE_TERM`: `level` no cambia y el plazo queda derivado. Si el calendario tenía plazo fijo y su última cuota era mayor que una normal (`level − financialCharge < B`), un abono muy pequeño no absorbe esa diferencia y el calendario derivado termina una cuota después (`monthsSaved = −1`).
+- <a id="alg-prepay-reduce-installment"></a>**[ALG.PREPAY.REDUCE_INSTALLMENT]** Modo `REDUCE_INSTALLMENT`: `level` según [ALG.LEVEL] con `B'` (saldo después del abono) y `m = term − k`. El plazo queda fijo.
+- <a id="alg-prepay-commission"></a>**[ALG.PREPAY.COMMISSION]** Comisión opcional:
   - `FLAT`: un monto fijo.
   - `PERCENT`: `HALF_UP_2(abono aplicado · tasa)`.
 
   La comisión **no** reduce el saldo y se suma a `totalPaid`.
 
-### [ALG.ADVANCE] Adelantar N cuotas (`AdvanceInstallments`)
+### <a id="alg-advance"></a>[ALG.ADVANCE] Adelantar N cuotas (`AdvanceInstallments`)
 
 - **Monto:** `projectCapital(state, N)`, el capital de las cuotas `k+1 … k+N` del calendario **vigente justo antes del evento**.
-- **Aplicación:** se aplica como `Prepayment` con `REDUCE_TERM`. Se recorta igual que [ALG.PREPAY.CAP].
+- **Aplicación:** se aplica como un abono que se recorta igual que [ALG.PREPAY.CAP]. `level` no cambia y el modo del plazo tampoco: con plazo fijo, `term` baja en `N`; con plazo derivado, sigue derivado.
 - **Propiedad:** si no hay eventos posteriores, el resto del calendario es idéntico al vigente desde la cuota `k+N+1`, y `monthsSaved = N` exactamente.
 
-### [ALG.ANCHOR] Saldo reportado (`ReportedBalance`)
+### <a id="alg-anchor"></a>[ALG.ANCHOR] Saldo reportado (`ReportedBalance`)
 
 - Registra `Bᵣ`, el saldo que informó el banco como **saldo de apertura de la cuota `k`**, es decir, antes de pagarla.
 - En la fase 0 se calcula **`realDelta = Bᵣ − apertura proyectada de k`** en el camino real, antes de re-anclar.
 - **Re-anclaje:** la apertura de la cuota `k` pasa a ser `Bᵣ`. `level` y el modo del plazo no cambian, y la última cuota absorbe la diferencia según [ALG.LAST].
 - `reportedRate` y `totalInstallment`, si existen, son **informativos** en v1. Se muestran, pero no alteran el cálculo.
 
-### [ALG.ACTUAL] Pago real (`ActualPayment`)
+### <a id="alg-actual"></a>[ALG.ACTUAL] Pago real (`ActualPayment`)
 
-- **Solo compara** (fase 4): marca la cuota `k` como pagada y, si trae desglose, calcula `realDelta` por componente (real − proyectado).
+- **Solo compara** (fase 4): marca la cuota `k` como pagada y, si trae desglose, calcula `realDelta` por componente (real − proyectado). El pago trae su `total` y un desglose opcional con los cuatro componentes: `capital`, `interest`, `insurance` (suma de seguros) y `fixedCharges` (suma de cargos fijos). `realDelta` se calcula para cada uno, contra la fila `k` del camino real. El `total` del pago no genera `realDelta` en v1.
 - **No altera** el camino. El anclaje solo ocurre con `ReportedBalance`.
 
 ---
 
-## [ALG.PATHS] Los tres caminos
+## <a id="alg-paths"></a>[ALG.PATHS] Los tres caminos
 
 | Camino | Composición |
 |---|---|
@@ -220,13 +227,15 @@ Se aplica **inmediatamente después de pagar la cuota `k`** (fase 3), así que r
 | **Camino real** | Condiciones + eventos reales + anclas `ReportedBalance` |
 | **Escenario** | Camino real + eventos hipotéticos del escenario |
 
-**[ALG.PATHS.CUTOFF] Corte.**
+Los eventos hipotéticos son `RateChange`, `FixedChargeChange`, `Prepayment` y `AdvanceInstallments`; `ReportedBalance` y `ActualPayment` solo son reales.
+
+<a id="alg-paths-cutoff"></a>**[ALG.PATHS.CUTOFF] Corte.**
 - `cutoffK` es el máximo `k` (según [ALG.EVENTS.ANCHOR]) entre los `ReportedBalance`, `ActualPayment`, `Prepayment` reales y `AdvanceInstallments` reales. Si no hay ninguno, vale 0.
 - Los `RateChange` y `FixedChargeChange` reales **no** mueven el corte; pueden estar fechados en el futuro.
-- Un evento hipotético con `k ≤ cutoffK` lanza un **error de validación tipado**.
+- Un evento hipotético del escenario con `k ≤ cutoffK` lanza un **error de validación tipado**, con la menor de esas `k`. El abono de la búsqueda por meta no es un evento del escenario: su regla está en [ALG.GOAL].
 - La comparación es por número de cuota. La fecha de hoy no interviene.
 
-## [ALG.METRICS] Métricas de comparación
+## <a id="alg-metrics"></a>[ALG.METRICS] Métricas de comparación
 
 Todas comparan un escenario contra su **base**. Por defecto la base es el camino real sin eventos hipotéticos.
 
@@ -236,37 +245,44 @@ Todas comparan un escenario contra su **base**. Por defecto la base es el camino
 - **`totalPaid`** = Σ `total` + Σ abonos + Σ comisiones.
 - **`netSaving`** = `totalPaid` de la base − `totalPaid` del escenario. Incluye los cargos fijos que ya no se pagan y descuenta las comisiones.
 
-## [ALG.YEARLY] Subtotales anuales
+## <a id="alg-yearly"></a>[ALG.YEARLY] Subtotales anuales
 
-Se agrupa por **año calendario del vencimiento**, sumando `capital`, `interest`, seguros, cargos fijos, abonos y `total`.
+Se agrupa por **año calendario del vencimiento** (`dueDate`). Por año (`year`) se suman `capital`, `interest`, `insurance` (suma de seguros), `fixedCharges`, `prepayments` (abonos aplicados), `commissions` y `total`; `total` es la suma del `total` de las filas, sin abonos ni comisiones. Un año sin cuotas no aparece.
 
-## [ALG.GOAL] Búsqueda por meta
+## <a id="alg-goal"></a>[ALG.GOAL] Búsqueda por meta
 
 **Entrada:**
-- Un camino base (real o escenario).
-- Una fecha de abono `d`, que lo asocia a la cuota `k` según [ALG.EVENTS.ANCHOR]. Se exige `k > cutoffK`; si no, error de validación tipado.
+- Un camino base (real o escenario). La búsqueda parte de los caminos ya construidos ([ALG.PATHS]): sus errores se lanzan antes, y el escenario, si existe, se valida aunque la base sea el camino real. Con `basePath = SCENARIO` y sin escenario (`scenarioEvents = null`), se lanza `InfeasibleGoalError` sin `k`.
+- Una fecha de abono `d`, que lo asocia a la cuota `k` según [ALG.EVENTS.ANCHOR]. Se exige `k > cutoffK` y que `k` no pase de la última cuota del camino base; si no, se lanza `InfeasibleGoalError` ([ALG.ERRORS]). En esta sección, `closing_k` es el saldo que encuentra el abono de la búsqueda, es decir, el saldo vigente de [ALG.PREPAY.CAP]: el cierre de la cuota `k` en el camino base menos lo que aplican los `Prepayment` y `AdvanceInstallments` del camino base que [ALG.EVENTS.ORDER] pone antes que él en esa misma `k` (los de fecha anterior o igual a `d`).
 - Una meta, de dos tipos posibles:
   - **`FINISH_BY(fecha)`**, con modo `REDUCE_TERM`. La meta se cumple si `endDate ≤ fecha`.
   - **`MAX_INSTALLMENT(valor)`**, con modo `REDUCE_INSTALLMENT`. La meta se cumple si el `total` de la cuota `k+1` es `≤ valor`. La liquidación total en `k` (no existe la cuota `k+1`) **cuenta como cumplida**.
+  - Una meta `MAX_INSTALLMENT` con valor negativo está mal formada: se lanza `InfeasibleGoalError` sin `k`. Con `0.00` es válida.
 
 **Método:**
-- Bisección sobre centavos enteros en `[1, closing_k × 100]`. La meta es monótona respecto del monto.
+- Bisección sobre centavos enteros en `[1, closing_k × 100]`: con `closing_k`, la prueba liquida en `k`. La meta es monótona respecto del monto.
 - La búsqueda **no aplica comisión**. Si el usuario agrega una comisión al abono resultante, las métricas se recalculan.
+- Cada prueba agrega al camino base un `Prepayment` con fecha `d`, sin comisión y con el modo de la meta. En [ALG.EVENTS.ORDER] va por su fecha; si empata en fecha con un evento de la fase 3 del camino base, va después de él.
 
 **Resultado:** `GoalSeekResult` (nunca se lanza excepción por una meta inalcanzable):
 - **`ALREADY_MET`:** la meta ya se cumple con monto 0.
-- **`FOUND{ amount, metrics, isPayoff }`:** el **mínimo** monto, al centavo, que cumple la meta; con un centavo menos ya no se cumple. `isPayoff` indica que el monto liquida el préstamo.
-- **`INFEASIBLE{ payoffAmount, reason }`:** ni liquidando en `k` se cumple. Pasa, por ejemplo, con `FINISH_BY` cuando la fecha es anterior al vencimiento de `k` (`reason = GOAL_DATE_BEFORE_PREPAYMENT`).
+- **`FOUND{ amount, metrics, isPayoff }`:** el **mínimo** monto, al centavo, que cumple la meta; con un centavo menos ya no se cumple. `isPayoff` indica que el monto liquida el préstamo: `amount = closing_k`.
+- **`INFEASIBLE{ payoffAmount, reason }`:** ni liquidando en `k` se cumple; `payoffAmount = closing_k` y `reason = GOAL_DATE_BEFORE_PREPAYMENT`.
 
-`InfeasibleGoalError` queda reservado para entradas inválidas (meta mal formada).
+**Alcance de `INFEASIBLE`.** Con `FINISH_BY` ocurre si y solo si la fecha meta es anterior al vencimiento de `k`. Con `MAX_INSTALLMENT` nunca ocurre, porque la liquidación en `k` siempre cumple la meta; si la meta es menor que los cargos fijos de la cuota `k+1`, el resultado es `FOUND` con `isPayoff`.
 
-## [ALG.VALIDATE] Validación de plantilla contra un saldo real
+**`metrics` de `FOUND`.** Son las de [ALG.METRICS] del camino base con el abono encontrado, comparado con el mismo camino base sin el abono.
+
+`InfeasibleGoalError` queda reservado para entradas inválidas: escenario faltante o `MAX_INSTALLMENT` negativo (sin `k`), y abono con `k ≤ cutoffK` o después de la última cuota del camino base (con `k`) ([ALG.ERRORS]).
+
+## <a id="alg-validate"></a>[ALG.VALIDATE] Validación de plantilla contra un saldo real
 
 - **Diferencia:** `realDelta = Bᵣ − apertura modelada de k`, con el mismo signo que [ALG.ANCHOR].
-  - **Modelado:** el camino real calculado **conservando solo las anclas con `k' < k`**. Se excluyen todas las anclas de la misma `k` y de cuotas posteriores. Así coincide con la fase 0 de [ALG.EVENTS.ORDER], donde todas las anclas de una misma `k` se comparan contra la misma apertura proyectada. En el asistente de alta coincide con el plan original.
+  - **Modelado:** el camino real calculado **conservando solo las anclas con `k' < k`**. Se excluyen todas las anclas de la misma `k` y de cuotas posteriores. Hereda todos los eventos reales que conserva, así que no vuelve a validar su rango ([ALG.EVENTS.ANCHOR], regla 3). Así coincide con la fase 0 de [ALG.EVENTS.ORDER], donde todas las anclas de una misma `k` se comparan contra la misma apertura proyectada. En el asistente de alta coincide con el plan original.
+  - **Fuera de rango:** si la cuota `k` del saldo reportado no está entre la 1 y la última cuota del calendario modelado, se lanza un error de validación tipado ([ALG.EVENTS.ANCHOR]).
 - **Semáforo**, en unidades de la moneda del préstamo:
   - **`GREEN`:** `|realDelta| ≤ 1.00`.
-  - **`AMBER`:** `|realDelta| ≤ máx(50.00, 0.0002 · Bᵣ)`.
+  - **`AMBER`:** `|realDelta| ≤ máx(50.00, 0.0002 · Bᵣ)`. El límite no se redondea ([ALG.CONV]).
   - **`RED`:** cualquier otra diferencia.
 - **Causa** (determinista en v1):
   - Si es `GREEN`, no hay causa.
@@ -274,19 +290,40 @@ Se agrupa por **año calendario del vencimiento**, sumando `capital`, `interest`
   - Si no, `UNKNOWN`.
   - `RATE_MISMATCH`, `INSURANCE_RATE_MISMATCH`, `ROUNDING_PROFILE` y `MISSING_EVENT` quedan **reservadas** (no se emiten en v1).
 
-## [ALG.TEMPLATES] Plantillas (versionadas en código)
+## <a id="alg-templates"></a>[ALG.TEMPLATES] Plantillas (versionadas en código)
 
-| Plantilla | Componentes | Perfil | Día de pago | `rateType` |
-|---|---|---|---|---|
-| `fha-gt@1` "FHA Guatemala v1" | Interés (lo ingresa el usuario) + seguro de hipoteca FHA `0.01` + desgravamen `0.0026` | `FHA_GT_V1` | `END_OF_MONTH` | `VARIABLE` |
-| `simple@1` "Hipotecario simple" | Solo interés | `SIMPLE` | Lo elige el usuario | Lo elige el usuario |
+| Plantilla | `interestRate` | `insuranceRates` | `roundingProfile` | `paymentDay` | `rateType` | `fixedCharges` |
+|---|---|---|---|---|---|---|
+| `fha-gt@1` "FHA Guatemala v1" | La ingresa el usuario | `["0.01", "0.0026"]`: seguro de hipoteca FHA y desgravamen | `FHA_GT_V1` | `END_OF_MONTH` | `VARIABLE` | `[]` |
+| `simple@1` "Hipotecario simple" | La ingresa el usuario | `[]`: solo interés | `SIMPLE` | Sin valor precargado: lo elige el usuario | Sin valor precargado: lo elige el usuario | `[]` |
 
-**[ALG.TEMPLATES.FIXED]** Los cargos fijos pueden derivarse como `cuota total del banco − level`. El usuario los nombra y los puede editar.
+<a id="alg-templates-fixed"></a>**[ALG.TEMPLATES.FIXED]** Los cargos fijos pueden derivarse como `cuota total del banco − level`. El usuario los nombra y los puede editar. Si la diferencia es negativa, se lanza un error de validación tipado.
 El préstamo guarda una **copia** de los valores de la plantilla (`templateRef = {id, version}`). Cambiar la plantilla después no altera préstamos existentes.
+
+## <a id="alg-errors"></a>[ALG.ERRORS] Errores tipados
+
+Cuando este documento dice «error de validación tipado», el error es `InvalidInputError`. Lista cerrada de v1:
+
+| Error | Regla | Cuándo |
+|---|---|---|
+| `InvalidInputError` | [ALG.DATES] | El día de `firstDueDate` no cumple la regla de `paymentDay` en su mes |
+| `InvalidInputError` | [ALG.EVENTS.ANCHOR] | `installmentNumber` menor que 1 o después de la última cuota del calendario, `ActualPayment` sin `installmentNumber`, o evento sin `installmentNumber` después de la última cuota (regla 3), incluido el saldo reportado de [ALG.VALIDATE] |
+| `InvalidInputError` | [ALG.PATHS.CUTOFF] | Evento hipotético del escenario con `k ≤ cutoffK` |
+| `NegativeAmortizationError` | [ALG.RATE.KEEP_INSTALLMENT], [ALG.RATE.BANK_INSTALLMENT] | `level − financialCharge ≤ 0` en la cuota `k` del cambio, con el perfil y las tasas nuevas ([ALG.LAST]) |
+| `NegativeAmortizationError` | [ALG.TERM] | Plazo derivado con `level − financialCharge ≤ 0` en una cuota que no es la `k` de un cambio de tasa con esas políticas |
+| `InvalidInputError` | [ALG.CONV], [ALG.TERMS], [ALG.EVENTS], [ALG.TEMPLATES], [ALG.TEMPLATES.FIXED] | Entrada mal formada en una frontera, antes de calcular: string decimal, fecha, entero o día de pago inválidos, porcentaje de un total cero, condiciones fuera de los rangos de [ALG.TERMS], evento sin sus campos, plantilla desconocida o cargo fijo derivado negativo. Los ejemplos no los cubren |
+| `InfeasibleGoalError` | [ALG.GOAL] | Abono de la búsqueda con `k ≤ cutoffK` o después de la última cuota del camino base (con `k`); `basePath = SCENARIO` sin escenario o `MAX_INSTALLMENT` negativo (sin `k`). Nunca por una meta inalcanzable |
+| `CurrencyMismatchError` | [ALG.TERMS] | Comparar calendarios de monedas distintas |
+
+Los ejemplos registran un error esperado como `{"type": <clase>, "rule": <id de la regla, sin corchetes>, "k": <cuota, si aplica>}`. En el dominio, la cuota es `NegativeAmortizationError.k`, o `details.k` de `InvalidInputError` y de `InfeasibleGoalError`.
+
+**Varios errores.** Una entrada con más de un error puede lanzar cualquiera de ellos; ningún ejemplo combina errores. Si varios eventos fallan por la misma regla ([ALG.EVENTS.ANCHOR] o [ALG.PATHS.CUTOFF]), el error lleva la menor de sus `k`.
 
 ---
 
-## [ALG.EXAMPLE] Ejemplo resuelto sintético
+## <a id="alg-example"></a>[ALG.EXAMPLE] Ejemplo resuelto sintético
+
+Copias legibles por máquina: `docs/specs/algorithm-examples/core/ex00-base-fha.json` (sin eventos) y `docs/specs/algorithm-examples/events/ex00-base-prepayments.json` (abonos).
 
 **Datos:** `principal = 500000.00`, `termMonths = 240`, `i = 0.07`, `insuranceRates = [0.01, 0.0026]` (`f = 0.0126`), `firstDueDate = 2025-02-28`, `END_OF_MONTH`, perfil `FHA_GT_V1`, cargos fijos IUSI `350.00` + seguro de daños `45.00`.
 
@@ -317,9 +354,9 @@ El préstamo guarda una **copia** de los valores de la plantilla (`templateRef =
 
 ---
 
-## [ALG.PENDING] Ejemplos que agrega W0-02
+## <a id="alg-pending"></a>[ALG.PENDING] Ejemplos resueltos de W0-02
 
-Cada ejemplo se agrega a `docs/specs/algorithm-examples/` con `synthetic: true`, id de sección y strings decimales:
+W0-02 publicó los ejemplos en `docs/specs/algorithm-examples/`, con `synthetic: true`, ids de sección y strings decimales. `INDEX.md` mapea cada ítem a sus archivos, y cada archivo se recalculó con un cálculo independiente:
 
 1. Perfil `SIMPLE`, incluida la última cuota con dos componentes. Debe distinguir las lecturas de [ALG.LAST].
 2. `paymentDay` 15, 30 y 31, más `END_OF_MONTH`, cruzando febrero de año bisiesto y no bisiesto.
@@ -327,15 +364,16 @@ Cada ejemplo se agrega a `docs/specs/algorithm-examples/` con `synthetic: true`,
 4. `REDUCE_TERM` en `k = 12` seguido de `RateChange` `RECALC_INSTALLMENT_KEEP_TERM` en `k = 24` (uso del `term` vigente).
 5. `FixedChargeChange` con lista completa, quitando un cargo y con un cargo de `effectiveFrom` futuro.
 6. Comisiones `FLAT` y `PERCENT`, y `payoff` por [ALG.PREPAY.CAP].
-7. Ancla y `RateChange` en la misma `k`, y dos anclas en la misma `k`.
+7. Ancla y `RateChange` en la misma `k`, dos anclas en la misma `k`, y un ancla que sube el saldo en plazo derivado (`NegativeAmortizationError` de [ALG.TERM]).
 8. Pago tardío con `installmentNumber`.
 9. `realDelta` por componente.
-10. `cutoffK` con un abono real posterior a un ancla, y error al poner un hipotético en `k ≤ cutoffK`.
-11. Búsqueda por meta: `ALREADY_MET`, `FOUND` (incluido `isPayoff`) e `INFEASIBLE`, para ambas metas.
-12. Semáforo `GREEN`, `AMBER` y `RED` en ambos bordes, e `INSTALLMENT_MISALIGNMENT`.
+10. `cutoffK` con un abono real posterior a un ancla, y error al poner un hipotético en `k ≤ cutoffK`. Además, un escenario que liquida antes de un evento real futuro y lo hereda sin error ([ALG.EVENTS.ANCHOR]).
+11. Búsqueda por meta: `ALREADY_MET` y `FOUND` (incluido `isPayoff`) para ambas metas, e `INFEASIBLE` para `FINISH_BY` (con `MAX_INSTALLMENT` no existe; ver [ALG.GOAL]). Además, un evento real futuro que las pruebas heredan sin error y un abono posterior a la última cuota del camino base (`InfeasibleGoalError`).
+12. Semáforo `GREEN`, `AMBER` y `RED` en ambos bordes, `INSTALLMENT_MISALIGNMENT`, y un saldo reportado después de la última cuota (`InvalidInputError`).
 13. Subtotales anuales y métricas (`interestSaved`, `monthsSaved`, `totalPaid`, `netSaving`).
-14. [ALG.ZERO]: `r = 0`, y `FHA_GT_V1` con `f = 0` y con `i = 0`.
+14. [ALG.ZERO]: `r = 0`, y `FHA_GT_V1` con `f = 0` (tasas en cero o `insuranceRates = []`) y con `i = 0`.
 15. Par `firstDueDate`/`paymentDay` inválido (`InvalidInputError`) y válido en febrero bisiesto.
-16. Ancla con `installmentNumber` explícito distinto de la cuota que daría su fecha.
+16. Ancla con `installmentNumber` explícito distinto de la cuota que daría su fecha, y evento fuera de rango por número o por fecha ([ALG.EVENTS.ANCHOR]).
+17. Empate exacto de medio centavo en el cargo de `FHA_GT_V1` ([ALG.CONV], [ALG.PERIOD.FHA_GT_V1]).
 
 Los ejemplos con eventos van en archivos JSON separados de los ejemplos sin eventos. El oráculo `core` y W1-01 solo reproducen los ejemplos sin eventos.

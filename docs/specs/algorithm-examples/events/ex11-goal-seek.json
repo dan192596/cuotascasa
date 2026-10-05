@@ -1,0 +1,824 @@
+{
+  "synthetic": true,
+  "schema": "cuotascasa/algorithm-example@1",
+  "id": "ex11-goal-seek",
+  "title": "Búsqueda por meta: FINISH_BY y MAX_INSTALLMENT; entradas inválidas, evento real futuro heredado y abono después de la última cuota",
+  "pendingItems": [
+    11
+  ],
+  "sections": [
+    "ALG.GOAL",
+    "ALG.PREPAY.REDUCE_TERM",
+    "ALG.PREPAY.REDUCE_INSTALLMENT",
+    "ALG.METRICS",
+    "ALG.EVENTS.ANCHOR"
+  ],
+  "eventTypes": [
+    "Prepayment",
+    "RateChange",
+    "ReportedBalance"
+  ],
+  "cases": [
+    {
+      "id": "finish-by-already-met",
+      "operation": "goalSeek",
+      "description": "Meta 2045-01-31 = fin actual",
+      "terms": {
+        "principal": "500000.00",
+        "termMonths": 240,
+        "disbursementDate": "2025-01-31",
+        "firstDueDate": "2025-02-28",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.07",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [
+          {
+            "label": "IUSI",
+            "amount": "350.00",
+            "effectiveFrom": "2025-02-28"
+          },
+          {
+            "label": "Seguro de daños",
+            "amount": "45.00",
+            "effectiveFrom": "2025-02-28"
+          }
+        ],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "realEvents": [],
+      "scenarioEvents": null,
+      "request": {
+        "basePath": "REAL",
+        "prepaymentDate": "2026-01-15",
+        "goal": {
+          "kind": "FINISH_BY",
+          "date": "2045-01-31"
+        }
+      },
+      "expected": {
+        "kind": "ALREADY_MET"
+      },
+      "context": {
+        "k": 12,
+        "closingK": "489756.31"
+      }
+    },
+    {
+      "id": "finish-by-found",
+      "operation": "goalSeek",
+      "description": "Terminar a más tardar el 2040-12-31",
+      "terms": {
+        "principal": "500000.00",
+        "termMonths": 240,
+        "disbursementDate": "2025-01-31",
+        "firstDueDate": "2025-02-28",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.07",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [
+          {
+            "label": "IUSI",
+            "amount": "350.00",
+            "effectiveFrom": "2025-02-28"
+          },
+          {
+            "label": "Seguro de daños",
+            "amount": "45.00",
+            "effectiveFrom": "2025-02-28"
+          }
+        ],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "realEvents": [],
+      "scenarioEvents": null,
+      "request": {
+        "basePath": "REAL",
+        "prepaymentDate": "2026-01-15",
+        "goal": {
+          "kind": "FINISH_BY",
+          "date": "2040-12-31"
+        }
+      },
+      "expected": {
+        "kind": "FOUND",
+        "amount": "51790.59",
+        "metrics": {
+          "currency": "GTQ",
+          "interestSaved": "157117.77",
+          "monthsSaved": 49,
+          "baseEndDate": "2045-01-31",
+          "endDate": "2040-12-31",
+          "baseTotalPaid": "1118031.11",
+          "totalPaid": "941558.34",
+          "netSaving": "176472.77"
+        },
+        "isPayoff": false
+      },
+      "context": {
+        "k": 12,
+        "closingK": "489756.31"
+      }
+    },
+    {
+      "id": "finish-by-found-payoff",
+      "operation": "goalSeek",
+      "description": "Meta 2026-02-15: solo la liquidación en k = 12 la cumple",
+      "terms": {
+        "principal": "500000.00",
+        "termMonths": 240,
+        "disbursementDate": "2025-01-31",
+        "firstDueDate": "2025-02-28",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.07",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [
+          {
+            "label": "IUSI",
+            "amount": "350.00",
+            "effectiveFrom": "2025-02-28"
+          },
+          {
+            "label": "Seguro de daños",
+            "amount": "45.00",
+            "effectiveFrom": "2025-02-28"
+          }
+        ],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "realEvents": [],
+      "scenarioEvents": null,
+      "request": {
+        "basePath": "REAL",
+        "prepaymentDate": "2026-01-15",
+        "goal": {
+          "kind": "FINISH_BY",
+          "date": "2026-02-15"
+        }
+      },
+      "expected": {
+        "kind": "FOUND",
+        "amount": "489756.31",
+        "metrics": {
+          "currency": "GTQ",
+          "interestSaved": "482313.16",
+          "monthsSaved": 228,
+          "baseEndDate": "2045-01-31",
+          "endDate": "2026-01-31",
+          "baseTotalPaid": "1118031.11",
+          "totalPaid": "545657.95",
+          "netSaving": "572373.16"
+        },
+        "isPayoff": true
+      },
+      "context": {
+        "k": 12,
+        "closingK": "489756.31"
+      }
+    },
+    {
+      "id": "finish-by-infeasible",
+      "operation": "goalSeek",
+      "description": "Meta 2025-12-31, anterior al vencimiento de k = 12",
+      "terms": {
+        "principal": "500000.00",
+        "termMonths": 240,
+        "disbursementDate": "2025-01-31",
+        "firstDueDate": "2025-02-28",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.07",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [
+          {
+            "label": "IUSI",
+            "amount": "350.00",
+            "effectiveFrom": "2025-02-28"
+          },
+          {
+            "label": "Seguro de daños",
+            "amount": "45.00",
+            "effectiveFrom": "2025-02-28"
+          }
+        ],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "realEvents": [],
+      "scenarioEvents": null,
+      "request": {
+        "basePath": "REAL",
+        "prepaymentDate": "2026-01-15",
+        "goal": {
+          "kind": "FINISH_BY",
+          "date": "2025-12-31"
+        }
+      },
+      "expected": {
+        "kind": "INFEASIBLE",
+        "payoffAmount": "489756.31",
+        "reason": "GOAL_DATE_BEFORE_PREPAYMENT"
+      },
+      "context": {
+        "k": 12,
+        "closingK": "489756.31"
+      }
+    },
+    {
+      "id": "max-installment-already-met",
+      "operation": "goalSeek",
+      "description": "Cuota máxima 4658.47 = total actual de la cuota 13",
+      "terms": {
+        "principal": "500000.00",
+        "termMonths": 240,
+        "disbursementDate": "2025-01-31",
+        "firstDueDate": "2025-02-28",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.07",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [
+          {
+            "label": "IUSI",
+            "amount": "350.00",
+            "effectiveFrom": "2025-02-28"
+          },
+          {
+            "label": "Seguro de daños",
+            "amount": "45.00",
+            "effectiveFrom": "2025-02-28"
+          }
+        ],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "realEvents": [],
+      "scenarioEvents": null,
+      "request": {
+        "basePath": "REAL",
+        "prepaymentDate": "2026-01-15",
+        "goal": {
+          "kind": "MAX_INSTALLMENT",
+          "amount": "4658.47"
+        }
+      },
+      "expected": {
+        "kind": "ALREADY_MET"
+      },
+      "context": {
+        "k": 12,
+        "closingK": "489756.31"
+      }
+    },
+    {
+      "id": "max-installment-found",
+      "operation": "goalSeek",
+      "description": "Cuota máxima 4500.00",
+      "terms": {
+        "principal": "500000.00",
+        "termMonths": 240,
+        "disbursementDate": "2025-01-31",
+        "firstDueDate": "2025-02-28",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.07",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [
+          {
+            "label": "IUSI",
+            "amount": "350.00",
+            "effectiveFrom": "2025-02-28"
+          },
+          {
+            "label": "Seguro de daños",
+            "amount": "45.00",
+            "effectiveFrom": "2025-02-28"
+          }
+        ],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "realEvents": [],
+      "scenarioEvents": null,
+      "request": {
+        "basePath": "REAL",
+        "prepaymentDate": "2026-01-15",
+        "goal": {
+          "kind": "MAX_INSTALLMENT",
+          "amount": "4500.00"
+        }
+      },
+      "expected": {
+        "kind": "FOUND",
+        "amount": "18202.96",
+        "metrics": {
+          "currency": "GTQ",
+          "interestSaved": "17923.68",
+          "monthsSaved": 0,
+          "baseEndDate": "2045-01-31",
+          "endDate": "2045-01-31",
+          "baseTotalPaid": "1118031.11",
+          "totalPaid": "1100107.43",
+          "netSaving": "17923.68"
+        },
+        "isPayoff": false
+      },
+      "context": {
+        "k": 12,
+        "closingK": "489756.31"
+      }
+    },
+    {
+      "id": "max-installment-found-payoff",
+      "operation": "goalSeek",
+      "description": "Cuota máxima 390.00, menor que los cargos fijos (395.00)",
+      "terms": {
+        "principal": "500000.00",
+        "termMonths": 240,
+        "disbursementDate": "2025-01-31",
+        "firstDueDate": "2025-02-28",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.07",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [
+          {
+            "label": "IUSI",
+            "amount": "350.00",
+            "effectiveFrom": "2025-02-28"
+          },
+          {
+            "label": "Seguro de daños",
+            "amount": "45.00",
+            "effectiveFrom": "2025-02-28"
+          }
+        ],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "realEvents": [],
+      "scenarioEvents": null,
+      "request": {
+        "basePath": "REAL",
+        "prepaymentDate": "2026-01-15",
+        "goal": {
+          "kind": "MAX_INSTALLMENT",
+          "amount": "390.00"
+        }
+      },
+      "expected": {
+        "kind": "FOUND",
+        "amount": "489756.31",
+        "metrics": {
+          "currency": "GTQ",
+          "interestSaved": "482313.16",
+          "monthsSaved": 228,
+          "baseEndDate": "2045-01-31",
+          "endDate": "2026-01-31",
+          "baseTotalPaid": "1118031.11",
+          "totalPaid": "545657.95",
+          "netSaving": "572373.16"
+        },
+        "isPayoff": true
+      },
+      "context": {
+        "k": 12,
+        "closingK": "489756.31"
+      }
+    },
+    {
+      "id": "goal-before-cutoff",
+      "operation": "goalSeek",
+      "description": "Ancla real en k = 12: un abono de la búsqueda en k = 12 es una entrada inválida",
+      "terms": {
+        "principal": "500000.00",
+        "termMonths": 240,
+        "disbursementDate": "2025-01-31",
+        "firstDueDate": "2025-02-28",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.07",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [
+          {
+            "label": "IUSI",
+            "amount": "350.00",
+            "effectiveFrom": "2025-02-28"
+          },
+          {
+            "label": "Seguro de daños",
+            "amount": "45.00",
+            "effectiveFrom": "2025-02-28"
+          }
+        ],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "realEvents": [
+        {
+          "id": "rb1",
+          "type": "ReportedBalance",
+          "date": "2026-01-10",
+          "balance": "490642.52"
+        }
+      ],
+      "scenarioEvents": null,
+      "request": {
+        "basePath": "REAL",
+        "prepaymentDate": "2026-01-15",
+        "goal": {
+          "kind": "FINISH_BY",
+          "date": "2040-12-31"
+        }
+      },
+      "expected": {
+        "error": {
+          "type": "InfeasibleGoalError",
+          "rule": "ALG.GOAL",
+          "k": 12
+        }
+      }
+    },
+    {
+      "id": "finish-by-found-payoff-future-real-change",
+      "operation": "goalSeek",
+      "description": "RateChange real en k = 30: cada prueba de la búsqueda lo hereda; liquidar en k = 12 no es error",
+      "terms": {
+        "principal": "500000.00",
+        "termMonths": 240,
+        "disbursementDate": "2025-01-31",
+        "firstDueDate": "2025-02-28",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.07",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [
+          {
+            "label": "IUSI",
+            "amount": "350.00",
+            "effectiveFrom": "2025-02-28"
+          },
+          {
+            "label": "Seguro de daños",
+            "amount": "45.00",
+            "effectiveFrom": "2025-02-28"
+          }
+        ],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "realEvents": [
+        {
+          "id": "r-real",
+          "type": "RateChange",
+          "date": "2027-07-15",
+          "interestRate": "0.0725",
+          "policy": "RECALC_INSTALLMENT_KEEP_TERM"
+        }
+      ],
+      "scenarioEvents": null,
+      "request": {
+        "basePath": "REAL",
+        "prepaymentDate": "2026-01-15",
+        "goal": {
+          "kind": "FINISH_BY",
+          "date": "2026-02-15"
+        }
+      },
+      "expected": {
+        "kind": "FOUND",
+        "amount": "489756.31",
+        "metrics": {
+          "currency": "GTQ",
+          "interestSaved": "497526.20",
+          "monthsSaved": 228,
+          "baseEndDate": "2045-01-31",
+          "endDate": "2026-01-31",
+          "baseTotalPaid": "1133244.15",
+          "totalPaid": "545657.95",
+          "netSaving": "587586.20"
+        },
+        "isPayoff": true
+      },
+      "context": {
+        "k": 12,
+        "closingK": "489756.31"
+      }
+    },
+    {
+      "id": "prepayment-after-base-end",
+      "operation": "goalSeek",
+      "description": "Abono de la búsqueda el 2045-02-15 (k = 241), después de la última cuota: InfeasibleGoalError",
+      "terms": {
+        "principal": "500000.00",
+        "termMonths": 240,
+        "disbursementDate": "2025-01-31",
+        "firstDueDate": "2025-02-28",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.07",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [
+          {
+            "label": "IUSI",
+            "amount": "350.00",
+            "effectiveFrom": "2025-02-28"
+          },
+          {
+            "label": "Seguro de daños",
+            "amount": "45.00",
+            "effectiveFrom": "2025-02-28"
+          }
+        ],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "realEvents": [],
+      "scenarioEvents": null,
+      "request": {
+        "basePath": "REAL",
+        "prepaymentDate": "2045-02-15",
+        "goal": {
+          "kind": "FINISH_BY",
+          "date": "2045-03-31"
+        }
+      },
+      "expected": {
+        "error": {
+          "type": "InfeasibleGoalError",
+          "rule": "ALG.GOAL",
+          "k": 241
+        }
+      }
+    },
+    {
+      "id": "scenario-base-missing",
+      "operation": "goalSeek",
+      "description": "basePath SCENARIO sin escenario (scenarioEvents = null): InfeasibleGoalError sin k",
+      "terms": {
+        "principal": "500000.00",
+        "termMonths": 240,
+        "disbursementDate": "2025-01-31",
+        "firstDueDate": "2025-02-28",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.07",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [
+          {
+            "label": "IUSI",
+            "amount": "350.00",
+            "effectiveFrom": "2025-02-28"
+          },
+          {
+            "label": "Seguro de daños",
+            "amount": "45.00",
+            "effectiveFrom": "2025-02-28"
+          }
+        ],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "realEvents": [],
+      "scenarioEvents": null,
+      "request": {
+        "basePath": "SCENARIO",
+        "prepaymentDate": "2026-01-15",
+        "goal": {
+          "kind": "FINISH_BY",
+          "date": "2040-12-31"
+        }
+      },
+      "expected": {
+        "error": {
+          "type": "InfeasibleGoalError",
+          "rule": "ALG.GOAL"
+        }
+      }
+    },
+    {
+      "id": "max-installment-negative",
+      "operation": "goalSeek",
+      "description": "MAX_INSTALLMENT con valor −1.00: meta mal formada, InfeasibleGoalError sin k",
+      "terms": {
+        "principal": "500000.00",
+        "termMonths": 240,
+        "disbursementDate": "2025-01-31",
+        "firstDueDate": "2025-02-28",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.07",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [
+          {
+            "label": "IUSI",
+            "amount": "350.00",
+            "effectiveFrom": "2025-02-28"
+          },
+          {
+            "label": "Seguro de daños",
+            "amount": "45.00",
+            "effectiveFrom": "2025-02-28"
+          }
+        ],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "realEvents": [],
+      "scenarioEvents": null,
+      "request": {
+        "basePath": "REAL",
+        "prepaymentDate": "2026-01-15",
+        "goal": {
+          "kind": "MAX_INSTALLMENT",
+          "amount": "-1.00"
+        }
+      },
+      "expected": {
+        "error": {
+          "type": "InfeasibleGoalError",
+          "rule": "ALG.GOAL"
+        }
+      }
+    },
+    {
+      "id": "scenario-base-same-date",
+      "operation": "goalSeek",
+      "description": "Base SCENARIO con un abono hipotético REDUCE_INSTALLMENT 100000.00 el 2026-01-15 (id p-hyp): el abono de la búsqueda, de la misma fecha, se aplica después de él",
+      "terms": {
+        "principal": "500000.00",
+        "termMonths": 240,
+        "disbursementDate": "2025-01-31",
+        "firstDueDate": "2025-02-28",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.07",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [
+          {
+            "label": "IUSI",
+            "amount": "350.00",
+            "effectiveFrom": "2025-02-28"
+          },
+          {
+            "label": "Seguro de daños",
+            "amount": "45.00",
+            "effectiveFrom": "2025-02-28"
+          }
+        ],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "realEvents": [],
+      "scenarioEvents": [
+        {
+          "id": "p-hyp",
+          "type": "Prepayment",
+          "date": "2026-01-15",
+          "amount": "100000.00",
+          "mode": "REDUCE_INSTALLMENT"
+        }
+      ],
+      "request": {
+        "basePath": "SCENARIO",
+        "prepaymentDate": "2026-01-15",
+        "goal": {
+          "kind": "FINISH_BY",
+          "date": "2040-12-31"
+        }
+      },
+      "expected": {
+        "kind": "FOUND",
+        "amount": "41215.91",
+        "metrics": {
+          "currency": "GTQ",
+          "interestSaved": "125037.50",
+          "monthsSaved": 49,
+          "baseEndDate": "2045-01-31",
+          "endDate": "2040-12-31",
+          "baseTotalPaid": "1019551.30",
+          "totalPaid": "875158.80",
+          "netSaving": "144392.50"
+        },
+        "isPayoff": false
+      },
+      "context": {
+        "k": 12,
+        "closingK": "389756.31"
+      }
+    },
+    {
+      "id": "scenario-base-same-date-payoff",
+      "operation": "goalSeek",
+      "description": "Misma base SCENARIO con p-hyp; meta 2026-02-15: solo liquidar en k = 12 la cumple. closing_k = 489756.31 − 100000.00 = 389756.31, el saldo que encuentra el abono de la búsqueda",
+      "terms": {
+        "principal": "500000.00",
+        "termMonths": 240,
+        "disbursementDate": "2025-01-31",
+        "firstDueDate": "2025-02-28",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.07",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [
+          {
+            "label": "IUSI",
+            "amount": "350.00",
+            "effectiveFrom": "2025-02-28"
+          },
+          {
+            "label": "Seguro de daños",
+            "amount": "45.00",
+            "effectiveFrom": "2025-02-28"
+          }
+        ],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "realEvents": [],
+      "scenarioEvents": [
+        {
+          "id": "p-hyp",
+          "type": "Prepayment",
+          "date": "2026-01-15",
+          "amount": "100000.00",
+          "mode": "REDUCE_INSTALLMENT"
+        }
+      ],
+      "request": {
+        "basePath": "SCENARIO",
+        "prepaymentDate": "2026-01-15",
+        "goal": {
+          "kind": "FINISH_BY",
+          "date": "2026-02-15"
+        }
+      },
+      "expected": {
+        "kind": "FOUND",
+        "amount": "389756.31",
+        "metrics": {
+          "currency": "GTQ",
+          "interestSaved": "383833.35",
+          "monthsSaved": 228,
+          "baseEndDate": "2045-01-31",
+          "endDate": "2026-01-31",
+          "baseTotalPaid": "1019551.30",
+          "totalPaid": "545657.95",
+          "netSaving": "473893.35"
+        },
+        "isPayoff": true
+      },
+      "context": {
+        "k": 12,
+        "closingK": "389756.31"
+      }
+    }
+  ]
+}

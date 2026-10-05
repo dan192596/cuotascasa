@@ -1,0 +1,334 @@
+{
+  "synthetic": true,
+  "schema": "cuotascasa/algorithm-example@1",
+  "id": "ex13a-yearly-subtotals",
+  "title": "Subtotales anuales del calendario base (año calendario del vencimiento)",
+  "pendingItems": [
+    13
+  ],
+  "sections": [
+    "ALG.YEARLY",
+    "ALG.EXAMPLE"
+  ],
+  "eventTypes": [],
+  "cases": [
+    {
+      "id": "main",
+      "operation": "buildSchedule",
+      "description": "Calendario base; 2025 tiene 11 cuotas y 2045 una",
+      "terms": {
+        "principal": "500000.00",
+        "termMonths": 240,
+        "disbursementDate": "2025-01-31",
+        "firstDueDate": "2025-02-28",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.07",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [
+          {
+            "label": "IUSI",
+            "amount": "350.00",
+            "effectiveFrom": "2025-02-28"
+          },
+          {
+            "label": "Seguro de daños",
+            "amount": "45.00",
+            "effectiveFrom": "2025-02-28"
+          }
+        ],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "events": [],
+      "expected": {
+        "installmentCount": 240,
+        "endDate": "2045-01-31",
+        "rows": [
+          {
+            "k": 11,
+            "dueDate": "2025-12-31",
+            "opening": "491522.68",
+            "level": "4263.47",
+            "interest": "2867.21",
+            "insurance": "516.10",
+            "insuranceComponents": [
+              "409.60",
+              "106.50"
+            ],
+            "capital": "880.16",
+            "fixedCharges": "395.00",
+            "total": "4658.47",
+            "closing": "490642.52",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 12,
+            "dueDate": "2026-01-31",
+            "opening": "490642.52",
+            "level": "4263.47",
+            "interest": "2862.08",
+            "insurance": "515.18",
+            "insuranceComponents": [
+              "408.87",
+              "106.31"
+            ],
+            "capital": "886.21",
+            "fixedCharges": "395.00",
+            "total": "4658.47",
+            "closing": "489756.31",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 240,
+            "dueDate": "2045-01-31",
+            "opening": "4232.65",
+            "level": "4263.47",
+            "interest": "24.69",
+            "insurance": "4.44",
+            "insuranceComponents": [
+              "3.52",
+              "0.92"
+            ],
+            "capital": "4232.65",
+            "fixedCharges": "395.00",
+            "total": "4656.78",
+            "closing": "0.00",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          }
+        ],
+        "totals": {
+          "interest": "443416.24",
+          "insurance": "79814.87",
+          "capital": "500000.00",
+          "fixedCharges": "94800.00",
+          "prepayments": "0.00",
+          "commissions": "0.00",
+          "total": "1118031.11",
+          "totalPaid": "1118031.11"
+        },
+        "yearly": [
+          {
+            "year": 2025,
+            "capital": "9357.48",
+            "interest": "31814.14",
+            "insurance": "5726.55",
+            "fixedCharges": "4345.00",
+            "prepayments": "0.00",
+            "commissions": "0.00",
+            "total": "51243.17"
+          },
+          {
+            "year": 2026,
+            "capital": "11046.56",
+            "interest": "33995.83",
+            "insurance": "6119.25",
+            "fixedCharges": "4740.00",
+            "prepayments": "0.00",
+            "commissions": "0.00",
+            "total": "55901.64"
+          },
+          {
+            "year": 2027,
+            "capital": "11994.34",
+            "interest": "33192.62",
+            "insurance": "5974.68",
+            "fixedCharges": "4740.00",
+            "prepayments": "0.00",
+            "commissions": "0.00",
+            "total": "55901.64"
+          },
+          {
+            "year": 2028,
+            "capital": "13023.47",
+            "interest": "32320.48",
+            "insurance": "5817.69",
+            "fixedCharges": "4740.00",
+            "prepayments": "0.00",
+            "commissions": "0.00",
+            "total": "55901.64"
+          },
+          {
+            "year": 2029,
+            "capital": "14140.88",
+            "interest": "31373.51",
+            "insurance": "5647.25",
+            "fixedCharges": "4740.00",
+            "prepayments": "0.00",
+            "commissions": "0.00",
+            "total": "55901.64"
+          },
+          {
+            "year": 2030,
+            "capital": "15354.18",
+            "interest": "30345.31",
+            "insurance": "5462.15",
+            "fixedCharges": "4740.00",
+            "prepayments": "0.00",
+            "commissions": "0.00",
+            "total": "55901.64"
+          },
+          {
+            "year": 2031,
+            "capital": "16671.56",
+            "interest": "29228.88",
+            "insurance": "5261.20",
+            "fixedCharges": "4740.00",
+            "prepayments": "0.00",
+            "commissions": "0.00",
+            "total": "55901.64"
+          },
+          {
+            "year": 2032,
+            "capital": "18101.97",
+            "interest": "28016.67",
+            "insurance": "5043.00",
+            "fixedCharges": "4740.00",
+            "prepayments": "0.00",
+            "commissions": "0.00",
+            "total": "55901.64"
+          },
+          {
+            "year": 2033,
+            "capital": "19655.12",
+            "interest": "26700.45",
+            "insurance": "4806.07",
+            "fixedCharges": "4740.00",
+            "prepayments": "0.00",
+            "commissions": "0.00",
+            "total": "55901.64"
+          },
+          {
+            "year": 2034,
+            "capital": "21341.52",
+            "interest": "25271.30",
+            "insurance": "4548.82",
+            "fixedCharges": "4740.00",
+            "prepayments": "0.00",
+            "commissions": "0.00",
+            "total": "55901.64"
+          },
+          {
+            "year": 2035,
+            "capital": "23172.62",
+            "interest": "23719.52",
+            "insurance": "4269.50",
+            "fixedCharges": "4740.00",
+            "prepayments": "0.00",
+            "commissions": "0.00",
+            "total": "55901.64"
+          },
+          {
+            "year": 2036,
+            "capital": "25160.83",
+            "interest": "22034.60",
+            "insurance": "3966.21",
+            "fixedCharges": "4740.00",
+            "prepayments": "0.00",
+            "commissions": "0.00",
+            "total": "55901.64"
+          },
+          {
+            "year": 2037,
+            "capital": "27319.64",
+            "interest": "20205.08",
+            "insurance": "3636.92",
+            "fixedCharges": "4740.00",
+            "prepayments": "0.00",
+            "commissions": "0.00",
+            "total": "55901.64"
+          },
+          {
+            "year": 2038,
+            "capital": "29663.67",
+            "interest": "18218.63",
+            "insurance": "3279.34",
+            "fixedCharges": "4740.00",
+            "prepayments": "0.00",
+            "commissions": "0.00",
+            "total": "55901.64"
+          },
+          {
+            "year": 2039,
+            "capital": "32208.82",
+            "interest": "16061.72",
+            "insurance": "2891.10",
+            "fixedCharges": "4740.00",
+            "prepayments": "0.00",
+            "commissions": "0.00",
+            "total": "55901.64"
+          },
+          {
+            "year": 2040,
+            "capital": "34972.32",
+            "interest": "13719.77",
+            "insurance": "2469.55",
+            "fixedCharges": "4740.00",
+            "prepayments": "0.00",
+            "commissions": "0.00",
+            "total": "55901.64"
+          },
+          {
+            "year": 2041,
+            "capital": "37972.94",
+            "interest": "11176.86",
+            "insurance": "2011.84",
+            "fixedCharges": "4740.00",
+            "prepayments": "0.00",
+            "commissions": "0.00",
+            "total": "55901.64"
+          },
+          {
+            "year": 2042,
+            "capital": "41231.01",
+            "interest": "8415.80",
+            "insurance": "1514.83",
+            "fixedCharges": "4740.00",
+            "prepayments": "0.00",
+            "commissions": "0.00",
+            "total": "55901.64"
+          },
+          {
+            "year": 2043,
+            "capital": "44768.63",
+            "interest": "5417.81",
+            "insurance": "975.20",
+            "fixedCharges": "4740.00",
+            "prepayments": "0.00",
+            "commissions": "0.00",
+            "total": "55901.64"
+          },
+          {
+            "year": 2044,
+            "capital": "48609.79",
+            "interest": "2162.57",
+            "insurance": "389.28",
+            "fixedCharges": "4740.00",
+            "prepayments": "0.00",
+            "commissions": "0.00",
+            "total": "55901.64"
+          },
+          {
+            "year": 2045,
+            "capital": "4232.65",
+            "interest": "24.69",
+            "insurance": "4.44",
+            "fixedCharges": "395.00",
+            "prepayments": "0.00",
+            "commissions": "0.00",
+            "total": "4656.78"
+          }
+        ]
+      }
+    }
+  ]
+}

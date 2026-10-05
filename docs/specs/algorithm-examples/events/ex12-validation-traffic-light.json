@@ -1,0 +1,553 @@
+{
+  "synthetic": true,
+  "schema": "cuotascasa/algorithm-example@1",
+  "id": "ex12-validation-traffic-light",
+  "title": "Semáforo GREEN, AMBER y RED en ambos bordes, INSTALLMENT_MISALIGNMENT y saldo reportado fuera de rango",
+  "pendingItems": [
+    12
+  ],
+  "sections": [
+    "ALG.VALIDATE",
+    "ALG.ANCHOR",
+    "ALG.EVENTS.ANCHOR"
+  ],
+  "eventTypes": [
+    "ReportedBalance"
+  ],
+  "cases": [
+    {
+      "id": "green-edge",
+      "operation": "validateAgainstReportedBalance",
+      "description": "|Δ| = 1.00 en k = 12",
+      "terms": {
+        "principal": "500000.00",
+        "termMonths": 240,
+        "disbursementDate": "2025-01-31",
+        "firstDueDate": "2025-02-28",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.07",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [
+          {
+            "label": "IUSI",
+            "amount": "350.00",
+            "effectiveFrom": "2025-02-28"
+          },
+          {
+            "label": "Seguro de daños",
+            "amount": "45.00",
+            "effectiveFrom": "2025-02-28"
+          }
+        ],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "realEvents": [],
+      "reported": {
+        "id": "rb-v",
+        "type": "ReportedBalance",
+        "date": "2026-01-10",
+        "balance": "490643.52"
+      },
+      "expected": {
+        "k": 12,
+        "reported": "490643.52",
+        "modeled": "490642.52",
+        "realDelta": "1.00",
+        "status": "GREEN",
+        "cause": null
+      },
+      "context": {
+        "modeledPrevious": "491522.68",
+        "modeledNext": "489756.31",
+        "amberLimit": "98.128704"
+      }
+    },
+    {
+      "id": "amber-after-green",
+      "operation": "validateAgainstReportedBalance",
+      "description": "|Δ| = 1.01 en k = 12, con installmentNumber",
+      "terms": {
+        "principal": "500000.00",
+        "termMonths": 240,
+        "disbursementDate": "2025-01-31",
+        "firstDueDate": "2025-02-28",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.07",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [
+          {
+            "label": "IUSI",
+            "amount": "350.00",
+            "effectiveFrom": "2025-02-28"
+          },
+          {
+            "label": "Seguro de daños",
+            "amount": "45.00",
+            "effectiveFrom": "2025-02-28"
+          }
+        ],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "realEvents": [],
+      "reported": {
+        "id": "rb-v",
+        "type": "ReportedBalance",
+        "date": "2026-01-10",
+        "installmentNumber": 12,
+        "balance": "490641.51"
+      },
+      "expected": {
+        "k": 12,
+        "reported": "490641.51",
+        "modeled": "490642.52",
+        "realDelta": "-1.01",
+        "status": "AMBER",
+        "cause": "UNKNOWN"
+      },
+      "context": {
+        "modeledPrevious": "491522.68",
+        "modeledNext": "489756.31",
+        "amberLimit": "98.128302"
+      }
+    },
+    {
+      "id": "amber-edge-high-balance",
+      "operation": "validateAgainstReportedBalance",
+      "description": "Δ = 98.14 ≤ 0.0002 · Bᵣ = 98.148132",
+      "terms": {
+        "principal": "500000.00",
+        "termMonths": 240,
+        "disbursementDate": "2025-01-31",
+        "firstDueDate": "2025-02-28",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.07",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [
+          {
+            "label": "IUSI",
+            "amount": "350.00",
+            "effectiveFrom": "2025-02-28"
+          },
+          {
+            "label": "Seguro de daños",
+            "amount": "45.00",
+            "effectiveFrom": "2025-02-28"
+          }
+        ],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "realEvents": [],
+      "reported": {
+        "id": "rb-v",
+        "type": "ReportedBalance",
+        "date": "2026-01-10",
+        "balance": "490740.66"
+      },
+      "expected": {
+        "k": 12,
+        "reported": "490740.66",
+        "modeled": "490642.52",
+        "realDelta": "98.14",
+        "status": "AMBER",
+        "cause": "UNKNOWN"
+      },
+      "context": {
+        "modeledPrevious": "491522.68",
+        "modeledNext": "489756.31",
+        "amberLimit": "98.148132"
+      }
+    },
+    {
+      "id": "red-after-amber-high-balance",
+      "operation": "validateAgainstReportedBalance",
+      "description": "Δ = 98.15 > 0.0002 · Bᵣ = 98.148134",
+      "terms": {
+        "principal": "500000.00",
+        "termMonths": 240,
+        "disbursementDate": "2025-01-31",
+        "firstDueDate": "2025-02-28",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.07",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [
+          {
+            "label": "IUSI",
+            "amount": "350.00",
+            "effectiveFrom": "2025-02-28"
+          },
+          {
+            "label": "Seguro de daños",
+            "amount": "45.00",
+            "effectiveFrom": "2025-02-28"
+          }
+        ],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "realEvents": [],
+      "reported": {
+        "id": "rb-v",
+        "type": "ReportedBalance",
+        "date": "2026-01-10",
+        "balance": "490740.67"
+      },
+      "expected": {
+        "k": 12,
+        "reported": "490740.67",
+        "modeled": "490642.52",
+        "realDelta": "98.15",
+        "status": "RED",
+        "cause": "UNKNOWN"
+      },
+      "context": {
+        "modeledPrevious": "491522.68",
+        "modeledNext": "489756.31",
+        "amberLimit": "98.148134"
+      }
+    },
+    {
+      "id": "amber-edge-low-balance",
+      "operation": "validateAgainstReportedBalance",
+      "description": "Bᵣ < 250000.00: Δ = 50.00 en k = 170",
+      "terms": {
+        "principal": "500000.00",
+        "termMonths": 240,
+        "disbursementDate": "2025-01-31",
+        "firstDueDate": "2025-02-28",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.07",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [
+          {
+            "label": "IUSI",
+            "amount": "350.00",
+            "effectiveFrom": "2025-02-28"
+          },
+          {
+            "label": "Seguro de daños",
+            "amount": "45.00",
+            "effectiveFrom": "2025-02-28"
+          }
+        ],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "realEvents": [],
+      "reported": {
+        "id": "rb-v",
+        "type": "ReportedBalance",
+        "date": "2039-03-10",
+        "balance": "238860.45"
+      },
+      "expected": {
+        "k": 170,
+        "reported": "238860.45",
+        "modeled": "238810.45",
+        "realDelta": "50.00",
+        "status": "AMBER",
+        "cause": "UNKNOWN"
+      },
+      "context": {
+        "modeledPrevious": "241412.20",
+        "modeledNext": "236190.79",
+        "amberLimit": "50.000000"
+      }
+    },
+    {
+      "id": "red-after-amber-low-balance",
+      "operation": "validateAgainstReportedBalance",
+      "description": "Bᵣ < 250000.00: Δ = −50.01 en k = 170",
+      "terms": {
+        "principal": "500000.00",
+        "termMonths": 240,
+        "disbursementDate": "2025-01-31",
+        "firstDueDate": "2025-02-28",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.07",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [
+          {
+            "label": "IUSI",
+            "amount": "350.00",
+            "effectiveFrom": "2025-02-28"
+          },
+          {
+            "label": "Seguro de daños",
+            "amount": "45.00",
+            "effectiveFrom": "2025-02-28"
+          }
+        ],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "realEvents": [],
+      "reported": {
+        "id": "rb-v",
+        "type": "ReportedBalance",
+        "date": "2039-03-10",
+        "balance": "238760.44"
+      },
+      "expected": {
+        "k": 170,
+        "reported": "238760.44",
+        "modeled": "238810.45",
+        "realDelta": "-50.01",
+        "status": "RED",
+        "cause": "UNKNOWN"
+      },
+      "context": {
+        "modeledPrevious": "241412.20",
+        "modeledNext": "236190.79",
+        "amberLimit": "50.000000"
+      }
+    },
+    {
+      "id": "misalignment-previous",
+      "operation": "validateAgainstReportedBalance",
+      "description": "Bᵣ a 0.40 de la apertura de k − 1",
+      "terms": {
+        "principal": "500000.00",
+        "termMonths": 240,
+        "disbursementDate": "2025-01-31",
+        "firstDueDate": "2025-02-28",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.07",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [
+          {
+            "label": "IUSI",
+            "amount": "350.00",
+            "effectiveFrom": "2025-02-28"
+          },
+          {
+            "label": "Seguro de daños",
+            "amount": "45.00",
+            "effectiveFrom": "2025-02-28"
+          }
+        ],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "realEvents": [],
+      "reported": {
+        "id": "rb-v",
+        "type": "ReportedBalance",
+        "date": "2026-01-10",
+        "balance": "491522.28"
+      },
+      "expected": {
+        "k": 12,
+        "reported": "491522.28",
+        "modeled": "490642.52",
+        "realDelta": "879.76",
+        "status": "RED",
+        "cause": "INSTALLMENT_MISALIGNMENT"
+      },
+      "context": {
+        "modeledPrevious": "491522.68",
+        "modeledNext": "489756.31",
+        "amberLimit": "98.304456"
+      }
+    },
+    {
+      "id": "misalignment-next",
+      "operation": "validateAgainstReportedBalance",
+      "description": "Bᵣ a 0.75 de la apertura de k + 1",
+      "terms": {
+        "principal": "500000.00",
+        "termMonths": 240,
+        "disbursementDate": "2025-01-31",
+        "firstDueDate": "2025-02-28",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.07",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [
+          {
+            "label": "IUSI",
+            "amount": "350.00",
+            "effectiveFrom": "2025-02-28"
+          },
+          {
+            "label": "Seguro de daños",
+            "amount": "45.00",
+            "effectiveFrom": "2025-02-28"
+          }
+        ],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "realEvents": [],
+      "reported": {
+        "id": "rb-v",
+        "type": "ReportedBalance",
+        "date": "2026-01-10",
+        "balance": "489757.06"
+      },
+      "expected": {
+        "k": 12,
+        "reported": "489757.06",
+        "modeled": "490642.52",
+        "realDelta": "-885.46",
+        "status": "RED",
+        "cause": "INSTALLMENT_MISALIGNMENT"
+      },
+      "context": {
+        "modeledPrevious": "491522.68",
+        "modeledNext": "489756.31",
+        "amberLimit": "97.951412"
+      }
+    },
+    {
+      "id": "modeled-with-prior-anchors",
+      "operation": "validateAgainstReportedBalance",
+      "description": "Modelado con el ancla de k = 6; se excluyen las de k = 12 y k = 20",
+      "terms": {
+        "principal": "500000.00",
+        "termMonths": 240,
+        "disbursementDate": "2025-01-31",
+        "firstDueDate": "2025-02-28",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.07",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [
+          {
+            "label": "IUSI",
+            "amount": "350.00",
+            "effectiveFrom": "2025-02-28"
+          },
+          {
+            "label": "Seguro de daños",
+            "amount": "45.00",
+            "effectiveFrom": "2025-02-28"
+          }
+        ],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "realEvents": [
+        {
+          "id": "rb6",
+          "type": "ReportedBalance",
+          "date": "2025-07-10",
+          "balance": "495836.52"
+        },
+        {
+          "id": "rb12",
+          "type": "ReportedBalance",
+          "date": "2026-01-05",
+          "balance": "490000.00"
+        },
+        {
+          "id": "rb20",
+          "type": "ReportedBalance",
+          "date": "2026-09-10",
+          "balance": "480000.00"
+        }
+      ],
+      "reported": {
+        "id": "rb-v",
+        "type": "ReportedBalance",
+        "date": "2026-01-10",
+        "balance": "490650.00"
+      },
+      "expected": {
+        "k": 12,
+        "reported": "490650.00",
+        "modeled": "490645.12",
+        "realDelta": "4.88",
+        "status": "AMBER",
+        "cause": "UNKNOWN"
+      },
+      "context": {
+        "modeledPrevious": "491525.26",
+        "modeledNext": "489758.92",
+        "amberLimit": "98.130000"
+      }
+    },
+    {
+      "id": "reported-after-last-installment",
+      "operation": "validateAgainstReportedBalance",
+      "description": "Saldo reportado el 2045-02-10 (k = 241), después de la última cuota",
+      "terms": {
+        "principal": "500000.00",
+        "termMonths": 240,
+        "disbursementDate": "2025-01-31",
+        "firstDueDate": "2025-02-28",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.07",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [
+          {
+            "label": "IUSI",
+            "amount": "350.00",
+            "effectiveFrom": "2025-02-28"
+          },
+          {
+            "label": "Seguro de daños",
+            "amount": "45.00",
+            "effectiveFrom": "2025-02-28"
+          }
+        ],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "realEvents": [],
+      "reported": {
+        "id": "rb-v",
+        "type": "ReportedBalance",
+        "date": "2045-02-10",
+        "balance": "1000.00"
+      },
+      "expected": {
+        "error": {
+          "type": "InvalidInputError",
+          "rule": "ALG.EVENTS.ANCHOR",
+          "k": 241
+        }
+      }
+    }
+  ]
+}

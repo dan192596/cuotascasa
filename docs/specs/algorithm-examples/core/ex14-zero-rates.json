@@ -1,0 +1,516 @@
+{
+  "synthetic": true,
+  "schema": "cuotascasa/algorithm-example@1",
+  "id": "ex14-zero-rates",
+  "title": "[ALG.ZERO]: r = 0, FHA_GT_V1 con f = 0 (tasas en cero o insuranceRates = []) y con i = 0",
+  "pendingItems": [
+    14
+  ],
+  "sections": [
+    "ALG.ZERO",
+    "ALG.LEVEL",
+    "ALG.PERIOD.FHA_GT_V1",
+    "ALG.LAST"
+  ],
+  "eventTypes": [],
+  "cases": [
+    {
+      "id": "r-zero",
+      "operation": "buildSchedule",
+      "description": "Todas las tasas en cero: level = HALF_UP_2(100000.00 / 7)",
+      "terms": {
+        "principal": "100000.00",
+        "termMonths": 7,
+        "disbursementDate": "2025-12-31",
+        "firstDueDate": "2026-01-31",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.00",
+        "insuranceRates": [
+          "0.00",
+          "0.00"
+        ],
+        "fixedCharges": [],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "events": [],
+      "expected": {
+        "installmentCount": 7,
+        "endDate": "2026-07-31",
+        "rows": [
+          {
+            "k": 1,
+            "dueDate": "2026-01-31",
+            "opening": "100000.00",
+            "level": "14285.71",
+            "interest": "0.00",
+            "insurance": "0.00",
+            "insuranceComponents": [
+              "0.00",
+              "0.00"
+            ],
+            "capital": "14285.71",
+            "fixedCharges": "0.00",
+            "total": "14285.71",
+            "closing": "85714.29",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 2,
+            "dueDate": "2026-02-28",
+            "opening": "85714.29",
+            "level": "14285.71",
+            "interest": "0.00",
+            "insurance": "0.00",
+            "insuranceComponents": [
+              "0.00",
+              "0.00"
+            ],
+            "capital": "14285.71",
+            "fixedCharges": "0.00",
+            "total": "14285.71",
+            "closing": "71428.58",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 3,
+            "dueDate": "2026-03-31",
+            "opening": "71428.58",
+            "level": "14285.71",
+            "interest": "0.00",
+            "insurance": "0.00",
+            "insuranceComponents": [
+              "0.00",
+              "0.00"
+            ],
+            "capital": "14285.71",
+            "fixedCharges": "0.00",
+            "total": "14285.71",
+            "closing": "57142.87",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 4,
+            "dueDate": "2026-04-30",
+            "opening": "57142.87",
+            "level": "14285.71",
+            "interest": "0.00",
+            "insurance": "0.00",
+            "insuranceComponents": [
+              "0.00",
+              "0.00"
+            ],
+            "capital": "14285.71",
+            "fixedCharges": "0.00",
+            "total": "14285.71",
+            "closing": "42857.16",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 5,
+            "dueDate": "2026-05-31",
+            "opening": "42857.16",
+            "level": "14285.71",
+            "interest": "0.00",
+            "insurance": "0.00",
+            "insuranceComponents": [
+              "0.00",
+              "0.00"
+            ],
+            "capital": "14285.71",
+            "fixedCharges": "0.00",
+            "total": "14285.71",
+            "closing": "28571.45",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 6,
+            "dueDate": "2026-06-30",
+            "opening": "28571.45",
+            "level": "14285.71",
+            "interest": "0.00",
+            "insurance": "0.00",
+            "insuranceComponents": [
+              "0.00",
+              "0.00"
+            ],
+            "capital": "14285.71",
+            "fixedCharges": "0.00",
+            "total": "14285.71",
+            "closing": "14285.74",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 7,
+            "dueDate": "2026-07-31",
+            "opening": "14285.74",
+            "level": "14285.71",
+            "interest": "0.00",
+            "insurance": "0.00",
+            "insuranceComponents": [
+              "0.00",
+              "0.00"
+            ],
+            "capital": "14285.74",
+            "fixedCharges": "0.00",
+            "total": "14285.74",
+            "closing": "0.00",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          }
+        ],
+        "totals": {
+          "interest": "0.00",
+          "insurance": "0.00",
+          "capital": "100000.00",
+          "fixedCharges": "0.00",
+          "prepayments": "0.00",
+          "commissions": "0.00",
+          "total": "100000.00",
+          "totalPaid": "100000.00"
+        }
+      }
+    },
+    {
+      "id": "fha-f-zero",
+      "operation": "buildSchedule",
+      "description": "FHA_GT_V1 con f = 0: interest = charge, sin reparto",
+      "terms": {
+        "principal": "200000.00",
+        "termMonths": 120,
+        "disbursementDate": "2025-12-31",
+        "firstDueDate": "2026-01-31",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.065",
+        "insuranceRates": [
+          "0.00",
+          "0.00"
+        ],
+        "fixedCharges": [],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "events": [],
+      "expected": {
+        "installmentCount": 120,
+        "endDate": "2035-12-31",
+        "rows": [
+          {
+            "k": 1,
+            "dueDate": "2026-01-31",
+            "opening": "200000.00",
+            "level": "2270.96",
+            "interest": "1083.33",
+            "insurance": "0.00",
+            "insuranceComponents": [
+              "0.00",
+              "0.00"
+            ],
+            "capital": "1187.63",
+            "fixedCharges": "0.00",
+            "total": "2270.96",
+            "closing": "198812.37",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 2,
+            "dueDate": "2026-02-28",
+            "opening": "198812.37",
+            "level": "2270.96",
+            "interest": "1076.90",
+            "insurance": "0.00",
+            "insuranceComponents": [
+              "0.00",
+              "0.00"
+            ],
+            "capital": "1194.06",
+            "fixedCharges": "0.00",
+            "total": "2270.96",
+            "closing": "197618.31",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 3,
+            "dueDate": "2026-03-31",
+            "opening": "197618.31",
+            "level": "2270.96",
+            "interest": "1070.43",
+            "insurance": "0.00",
+            "insuranceComponents": [
+              "0.00",
+              "0.00"
+            ],
+            "capital": "1200.53",
+            "fixedCharges": "0.00",
+            "total": "2270.96",
+            "closing": "196417.78",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 120,
+            "dueDate": "2035-12-31",
+            "opening": "2258.58",
+            "level": "2270.96",
+            "interest": "12.23",
+            "insurance": "0.00",
+            "insuranceComponents": [
+              "0.00",
+              "0.00"
+            ],
+            "capital": "2258.58",
+            "fixedCharges": "0.00",
+            "total": "2270.81",
+            "closing": "0.00",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          }
+        ],
+        "totals": {
+          "interest": "72515.05",
+          "insurance": "0.00",
+          "capital": "200000.00",
+          "fixedCharges": "0.00",
+          "prepayments": "0.00",
+          "commissions": "0.00",
+          "total": "272515.05",
+          "totalPaid": "272515.05"
+        }
+      }
+    },
+    {
+      "id": "fha-i-zero",
+      "operation": "buildSchedule",
+      "description": "FHA_GT_V1 con i = 0 y f > 0: interest = 0, insurance = charge",
+      "terms": {
+        "principal": "200000.00",
+        "termMonths": 120,
+        "disbursementDate": "2025-12-31",
+        "firstDueDate": "2026-01-31",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.00",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "events": [],
+      "expected": {
+        "installmentCount": 120,
+        "endDate": "2035-12-31",
+        "rows": [
+          {
+            "k": 1,
+            "dueDate": "2026-01-31",
+            "opening": "200000.00",
+            "level": "1774.74",
+            "interest": "0.00",
+            "insurance": "210.00",
+            "insuranceComponents": [
+              "166.67",
+              "43.33"
+            ],
+            "capital": "1564.74",
+            "fixedCharges": "0.00",
+            "total": "1774.74",
+            "closing": "198435.26",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 2,
+            "dueDate": "2026-02-28",
+            "opening": "198435.26",
+            "level": "1774.74",
+            "interest": "0.00",
+            "insurance": "208.36",
+            "insuranceComponents": [
+              "165.37",
+              "42.99"
+            ],
+            "capital": "1566.38",
+            "fixedCharges": "0.00",
+            "total": "1774.74",
+            "closing": "196868.88",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 3,
+            "dueDate": "2026-03-31",
+            "opening": "196868.88",
+            "level": "1774.74",
+            "interest": "0.00",
+            "insurance": "206.71",
+            "insuranceComponents": [
+              "164.06",
+              "42.65"
+            ],
+            "capital": "1568.03",
+            "fixedCharges": "0.00",
+            "total": "1774.74",
+            "closing": "195300.85",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 120,
+            "dueDate": "2035-12-31",
+            "opening": "1773.51",
+            "level": "1774.74",
+            "interest": "0.00",
+            "insurance": "1.86",
+            "insuranceComponents": [
+              "1.48",
+              "0.38"
+            ],
+            "capital": "1773.51",
+            "fixedCharges": "0.00",
+            "total": "1775.37",
+            "closing": "0.00",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          }
+        ],
+        "totals": {
+          "interest": "0.00",
+          "insurance": "12969.43",
+          "capital": "200000.00",
+          "fixedCharges": "0.00",
+          "prepayments": "0.00",
+          "commissions": "0.00",
+          "total": "212969.43",
+          "totalPaid": "212969.43"
+        }
+      }
+    },
+    {
+      "id": "fha-no-insurance",
+      "operation": "buildSchedule",
+      "description": "FHA_GT_V1 sin seguros con insuranceRates = []: mismas cifras que fha-f-zero",
+      "terms": {
+        "principal": "200000.00",
+        "termMonths": 120,
+        "disbursementDate": "2025-12-31",
+        "firstDueDate": "2026-01-31",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.065",
+        "insuranceRates": [],
+        "fixedCharges": [],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "events": [],
+      "expected": {
+        "installmentCount": 120,
+        "endDate": "2035-12-31",
+        "rows": [
+          {
+            "k": 1,
+            "dueDate": "2026-01-31",
+            "opening": "200000.00",
+            "level": "2270.96",
+            "interest": "1083.33",
+            "insurance": "0.00",
+            "insuranceComponents": [],
+            "capital": "1187.63",
+            "fixedCharges": "0.00",
+            "total": "2270.96",
+            "closing": "198812.37",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 2,
+            "dueDate": "2026-02-28",
+            "opening": "198812.37",
+            "level": "2270.96",
+            "interest": "1076.90",
+            "insurance": "0.00",
+            "insuranceComponents": [],
+            "capital": "1194.06",
+            "fixedCharges": "0.00",
+            "total": "2270.96",
+            "closing": "197618.31",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 3,
+            "dueDate": "2026-03-31",
+            "opening": "197618.31",
+            "level": "2270.96",
+            "interest": "1070.43",
+            "insurance": "0.00",
+            "insuranceComponents": [],
+            "capital": "1200.53",
+            "fixedCharges": "0.00",
+            "total": "2270.96",
+            "closing": "196417.78",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 120,
+            "dueDate": "2035-12-31",
+            "opening": "2258.58",
+            "level": "2270.96",
+            "interest": "12.23",
+            "insurance": "0.00",
+            "insuranceComponents": [],
+            "capital": "2258.58",
+            "fixedCharges": "0.00",
+            "total": "2270.81",
+            "closing": "0.00",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          }
+        ],
+        "totals": {
+          "interest": "72515.05",
+          "insurance": "0.00",
+          "capital": "200000.00",
+          "fixedCharges": "0.00",
+          "prepayments": "0.00",
+          "commissions": "0.00",
+          "total": "272515.05",
+          "totalPaid": "272515.05"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,556 @@
+{
+  "synthetic": true,
+  "schema": "cuotascasa/algorithm-example@1",
+  "id": "ex00-base-prepayments",
+  "title": "Abonos de [ALG.EXAMPLE]: reducir plazo, reducir cuota y adelantar 6; adelantar 6 con i = 0.0725 conserva el plazo fijo (234 cuotas)",
+  "pendingItems": [],
+  "sections": [
+    "ALG.EXAMPLE",
+    "ALG.PREPAY",
+    "ALG.PREPAY.REDUCE_TERM",
+    "ALG.PREPAY.REDUCE_INSTALLMENT",
+    "ALG.ADVANCE",
+    "ALG.TERM",
+    "ALG.LAST.DERIVED_TERM",
+    "ALG.LAST.FIXED_TERM",
+    "ALG.METRICS"
+  ],
+  "eventTypes": [
+    "AdvanceInstallments",
+    "Prepayment"
+  ],
+  "cases": [
+    {
+      "id": "reduce-term",
+      "operation": "buildSchedule",
+      "description": "Abono 20000.00 el 2026-01-15 (cuota 12), REDUCE_TERM",
+      "terms": {
+        "principal": "500000.00",
+        "termMonths": 240,
+        "disbursementDate": "2025-01-31",
+        "firstDueDate": "2025-02-28",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.07",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [
+          {
+            "label": "IUSI",
+            "amount": "350.00",
+            "effectiveFrom": "2025-02-28"
+          },
+          {
+            "label": "Seguro de daños",
+            "amount": "45.00",
+            "effectiveFrom": "2025-02-28"
+          }
+        ],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "events": [
+        {
+          "id": "p1",
+          "type": "Prepayment",
+          "date": "2026-01-15",
+          "amount": "20000.00",
+          "mode": "REDUCE_TERM"
+        }
+      ],
+      "expected": {
+        "installmentCount": 220,
+        "endDate": "2043-05-31",
+        "rows": [
+          {
+            "k": 12,
+            "dueDate": "2026-01-31",
+            "opening": "490642.52",
+            "level": "4263.47",
+            "interest": "2862.08",
+            "insurance": "515.18",
+            "insuranceComponents": [
+              "408.87",
+              "106.31"
+            ],
+            "capital": "886.21",
+            "fixedCharges": "395.00",
+            "total": "4658.47",
+            "closing": "489756.31",
+            "prepayment": "20000.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 13,
+            "dueDate": "2026-02-28",
+            "opening": "469756.31",
+            "level": "4263.47",
+            "interest": "2740.25",
+            "insurance": "493.24",
+            "insuranceComponents": [
+              "391.46",
+              "101.78"
+            ],
+            "capital": "1029.98",
+            "fixedCharges": "395.00",
+            "total": "4658.47",
+            "closing": "468726.33",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 219,
+            "dueDate": "2043-04-30",
+            "opening": "4587.82",
+            "level": "4263.47",
+            "interest": "26.76",
+            "insurance": "4.82",
+            "insuranceComponents": [
+              "3.83",
+              "0.99"
+            ],
+            "capital": "4231.89",
+            "fixedCharges": "395.00",
+            "total": "4658.47",
+            "closing": "355.93",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 220,
+            "dueDate": "2043-05-31",
+            "opening": "355.93",
+            "level": "4263.47",
+            "interest": "2.08",
+            "insurance": "0.37",
+            "insuranceComponents": [
+              "0.29",
+              "0.08"
+            ],
+            "capital": "355.93",
+            "fixedCharges": "395.00",
+            "total": "753.38",
+            "closing": "0.00",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          }
+        ],
+        "totals": {
+          "interest": "384795.21",
+          "insurance": "69263.10",
+          "capital": "480000.00",
+          "fixedCharges": "86900.00",
+          "prepayments": "20000.00",
+          "commissions": "0.00",
+          "total": "1020958.31",
+          "totalPaid": "1040958.31"
+        },
+        "comparedToNoEvents": {
+          "currency": "GTQ",
+          "interestSaved": "69172.80",
+          "monthsSaved": 20,
+          "baseEndDate": "2045-01-31",
+          "endDate": "2043-05-31",
+          "baseTotalPaid": "1118031.11",
+          "totalPaid": "1040958.31",
+          "netSaving": "77072.80"
+        }
+      }
+    },
+    {
+      "id": "reduce-installment",
+      "operation": "buildSchedule",
+      "description": "Abono 20000.00 el 2026-01-15 (cuota 12), REDUCE_INSTALLMENT",
+      "terms": {
+        "principal": "500000.00",
+        "termMonths": 240,
+        "disbursementDate": "2025-01-31",
+        "firstDueDate": "2025-02-28",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.07",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [
+          {
+            "label": "IUSI",
+            "amount": "350.00",
+            "effectiveFrom": "2025-02-28"
+          },
+          {
+            "label": "Seguro de daños",
+            "amount": "45.00",
+            "effectiveFrom": "2025-02-28"
+          }
+        ],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "events": [
+        {
+          "id": "p1",
+          "type": "Prepayment",
+          "date": "2026-01-15",
+          "amount": "20000.00",
+          "mode": "REDUCE_INSTALLMENT"
+        }
+      ],
+      "expected": {
+        "installmentCount": 240,
+        "endDate": "2045-01-31",
+        "rows": [
+          {
+            "k": 12,
+            "dueDate": "2026-01-31",
+            "opening": "490642.52",
+            "level": "4263.47",
+            "interest": "2862.08",
+            "insurance": "515.18",
+            "insuranceComponents": [
+              "408.87",
+              "106.31"
+            ],
+            "capital": "886.21",
+            "fixedCharges": "395.00",
+            "total": "4658.47",
+            "closing": "489756.31",
+            "prepayment": "20000.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 13,
+            "dueDate": "2026-02-28",
+            "opening": "469756.31",
+            "level": "4089.36",
+            "interest": "2740.25",
+            "insurance": "493.24",
+            "insuranceComponents": [
+              "391.46",
+              "101.78"
+            ],
+            "capital": "855.87",
+            "fixedCharges": "395.00",
+            "total": "4484.36",
+            "closing": "468900.44",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 240,
+            "dueDate": "2045-01-31",
+            "opening": "4061.89",
+            "level": "4089.36",
+            "interest": "23.69",
+            "insurance": "4.26",
+            "insuranceComponents": [
+              "3.38",
+              "0.88"
+            ],
+            "capital": "4061.89",
+            "fixedCharges": "395.00",
+            "total": "4484.84",
+            "closing": "0.00",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          }
+        ],
+        "totals": {
+          "interest": "426725.63",
+          "insurance": "76810.57",
+          "capital": "480000.00",
+          "fixedCharges": "94800.00",
+          "prepayments": "20000.00",
+          "commissions": "0.00",
+          "total": "1078336.20",
+          "totalPaid": "1098336.20"
+        },
+        "comparedToNoEvents": {
+          "currency": "GTQ",
+          "interestSaved": "19694.91",
+          "monthsSaved": 0,
+          "baseEndDate": "2045-01-31",
+          "endDate": "2045-01-31",
+          "baseTotalPaid": "1118031.11",
+          "totalPaid": "1098336.20",
+          "netSaving": "19694.91"
+        }
+      }
+    },
+    {
+      "id": "advance-6",
+      "operation": "buildSchedule",
+      "description": "Adelantar 6 cuotas el 2026-01-15 (cuota 12)",
+      "terms": {
+        "principal": "500000.00",
+        "termMonths": 240,
+        "disbursementDate": "2025-01-31",
+        "firstDueDate": "2025-02-28",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.07",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [
+          {
+            "label": "IUSI",
+            "amount": "350.00",
+            "effectiveFrom": "2025-02-28"
+          },
+          {
+            "label": "Seguro de daños",
+            "amount": "45.00",
+            "effectiveFrom": "2025-02-28"
+          }
+        ],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "events": [
+        {
+          "id": "a1",
+          "type": "AdvanceInstallments",
+          "date": "2026-01-15",
+          "count": 6
+        }
+      ],
+      "expected": {
+        "installmentCount": 234,
+        "endDate": "2044-07-31",
+        "rows": [
+          {
+            "k": 12,
+            "dueDate": "2026-01-31",
+            "opening": "490642.52",
+            "level": "4263.47",
+            "interest": "2862.08",
+            "insurance": "515.18",
+            "insuranceComponents": [
+              "408.87",
+              "106.31"
+            ],
+            "capital": "886.21",
+            "fixedCharges": "395.00",
+            "total": "4658.47",
+            "closing": "489756.31",
+            "prepayment": "5446.87",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 13,
+            "dueDate": "2026-02-28",
+            "opening": "484309.44",
+            "level": "4263.47",
+            "interest": "2825.14",
+            "insurance": "508.52",
+            "insuranceComponents": [
+              "403.59",
+              "104.93"
+            ],
+            "capital": "929.81",
+            "fixedCharges": "395.00",
+            "total": "4658.47",
+            "closing": "483379.63",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 234,
+            "dueDate": "2044-07-31",
+            "opening": "4232.65",
+            "level": "4263.47",
+            "interest": "24.69",
+            "insurance": "4.44",
+            "insuranceComponents": [
+              "3.52",
+              "0.92"
+            ],
+            "capital": "4232.65",
+            "fixedCharges": "395.00",
+            "total": "4656.78",
+            "closing": "0.00",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          }
+        ],
+        "totals": {
+          "interest": "426353.56",
+          "insurance": "76743.60",
+          "capital": "494553.13",
+          "fixedCharges": "92430.00",
+          "prepayments": "5446.87",
+          "commissions": "0.00",
+          "total": "1090080.29",
+          "totalPaid": "1095527.16"
+        },
+        "comparedToNoEvents": {
+          "currency": "GTQ",
+          "interestSaved": "20133.95",
+          "monthsSaved": 6,
+          "baseEndDate": "2045-01-31",
+          "endDate": "2044-07-31",
+          "baseTotalPaid": "1118031.11",
+          "totalPaid": "1095527.16",
+          "netSaving": "22503.95"
+        }
+      }
+    },
+    {
+      "id": "advance-6-fixed-term",
+      "operation": "buildSchedule",
+      "description": "i = 0.0725: la última cuota del plan es mayor que una normal (level − financialCharge < B). Adelantar 6 el 2026-01-15 conserva el plazo fijo (term = 240 − 6 = 234) y la cuota 234 es la 240 del plan",
+      "terms": {
+        "principal": "500000.00",
+        "termMonths": 240,
+        "disbursementDate": "2025-01-31",
+        "firstDueDate": "2025-02-28",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.0725",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [
+          {
+            "label": "IUSI",
+            "amount": "350.00",
+            "effectiveFrom": "2025-02-28"
+          },
+          {
+            "label": "Seguro de daños",
+            "amount": "45.00",
+            "effectiveFrom": "2025-02-28"
+          }
+        ],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "events": [
+        {
+          "id": "a1",
+          "type": "AdvanceInstallments",
+          "date": "2026-01-15",
+          "count": 6
+        }
+      ],
+      "expected": {
+        "installmentCount": 234,
+        "endDate": "2044-07-31",
+        "rows": [
+          {
+            "k": 12,
+            "dueDate": "2026-01-31",
+            "opening": "490921.75",
+            "level": "4342.28",
+            "interest": "2965.98",
+            "insurance": "515.47",
+            "insuranceComponents": [
+              "409.10",
+              "106.37"
+            ],
+            "capital": "860.83",
+            "fixedCharges": "395.00",
+            "total": "4737.28",
+            "closing": "490060.92",
+            "prepayment": "5294.69",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 13,
+            "dueDate": "2026-02-28",
+            "opening": "484766.23",
+            "level": "4342.28",
+            "interest": "2928.80",
+            "insurance": "509.00",
+            "insuranceComponents": [
+              "403.97",
+              "105.03"
+            ],
+            "capital": "904.48",
+            "fixedCharges": "395.00",
+            "total": "4737.28",
+            "closing": "483861.75",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 233,
+            "dueDate": "2044-06-30",
+            "opening": "8593.96",
+            "level": "4342.28",
+            "interest": "51.93",
+            "insurance": "9.02",
+            "insuranceComponents": [
+              "7.16",
+              "1.86"
+            ],
+            "capital": "4281.33",
+            "fixedCharges": "395.00",
+            "total": "4737.28",
+            "closing": "4312.63",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 234,
+            "dueDate": "2044-07-31",
+            "opening": "4312.63",
+            "level": "4342.28",
+            "interest": "26.06",
+            "insurance": "4.53",
+            "insuranceComponents": [
+              "3.60",
+              "0.93"
+            ],
+            "capital": "4312.63",
+            "fixedCharges": "395.00",
+            "total": "4738.22",
+            "closing": "0.00",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          }
+        ],
+        "totals": {
+          "interest": "444191.75",
+          "insurance": "77197.40",
+          "capital": "494705.31",
+          "fixedCharges": "92430.00",
+          "prepayments": "5294.69",
+          "commissions": "0.00",
+          "total": "1108524.46",
+          "totalPaid": "1113819.15"
+        },
+        "comparedToNoEvents": {
+          "currency": "GTQ",
+          "interestSaved": "20758.99",
+          "monthsSaved": 6,
+          "baseEndDate": "2045-01-31",
+          "endDate": "2044-07-31",
+          "baseTotalPaid": "1136948.14",
+          "totalPaid": "1113819.15",
+          "netSaving": "23128.99"
+        }
+      }
+    }
+  ]
+}

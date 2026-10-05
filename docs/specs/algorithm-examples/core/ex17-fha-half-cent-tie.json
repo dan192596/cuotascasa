@@ -1,0 +1,95 @@
+{
+  "synthetic": true,
+  "schema": "cuotascasa/algorithm-example@1",
+  "id": "ex17-fha-half-cent-tie",
+  "title": "Empate exacto de medio centavo en el cargo de FHA_GT_V1: HALF_UP_2(8.785) = 8.79",
+  "pendingItems": [
+    17
+  ],
+  "sections": [
+    "ALG.CONV",
+    "ALG.PERIOD.FHA_GT_V1",
+    "ALG.PERIOD.SPLIT",
+    "ALG.LEVEL",
+    "ALG.LAST"
+  ],
+  "eventTypes": [],
+  "cases": [
+    {
+      "id": "main",
+      "operation": "buildSchedule",
+      "description": "1506.00 con i + f = 0.0574 + 0.0126 = 0.07: charge = HALF_UP_2((1506.00 · 0.07) / 12) = HALF_UP_2(8.785) = 8.79, no 8.78 (B por una r ya redondeada)",
+      "terms": {
+        "principal": "1506.00",
+        "termMonths": 2,
+        "disbursementDate": "2026-02-28",
+        "firstDueDate": "2026-03-31",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.0574",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "events": [],
+      "expected": {
+        "installmentCount": 2,
+        "endDate": "2026-04-30",
+        "rows": [
+          {
+            "k": 1,
+            "dueDate": "2026-03-31",
+            "opening": "1506.00",
+            "level": "759.60",
+            "interest": "7.21",
+            "insurance": "1.58",
+            "insuranceComponents": [
+              "1.25",
+              "0.33"
+            ],
+            "capital": "750.81",
+            "fixedCharges": "0.00",
+            "total": "759.60",
+            "closing": "755.19",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 2,
+            "dueDate": "2026-04-30",
+            "opening": "755.19",
+            "level": "759.60",
+            "interest": "3.61",
+            "insurance": "0.79",
+            "insuranceComponents": [
+              "0.63",
+              "0.16"
+            ],
+            "capital": "755.19",
+            "fixedCharges": "0.00",
+            "total": "759.59",
+            "closing": "0.00",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          }
+        ],
+        "totals": {
+          "interest": "10.82",
+          "insurance": "2.37",
+          "capital": "1506.00",
+          "fixedCharges": "0.00",
+          "prepayments": "0.00",
+          "commissions": "0.00",
+          "total": "1519.19",
+          "totalPaid": "1519.19"
+        }
+      }
+    }
+  ]
+}

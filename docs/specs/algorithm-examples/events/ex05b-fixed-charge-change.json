@@ -1,0 +1,180 @@
+{
+  "synthetic": true,
+  "schema": "cuotascasa/algorithm-example@1",
+  "id": "ex05b-fixed-charge-change",
+  "title": "FixedChargeChange con lista completa: quita un cargo y anula uno futuro",
+  "pendingItems": [
+    5
+  ],
+  "sections": [
+    "ALG.FIXEDCHANGE",
+    "ALG.FIXED",
+    "ALG.EVENTS.ORDER"
+  ],
+  "eventTypes": [
+    "FixedChargeChange"
+  ],
+  "cases": [
+    {
+      "id": "main",
+      "operation": "buildSchedule",
+      "description": "Desde la cuota 12 solo IUSI 375.00; el seguro de daños y el cargo futuro dejan de regir",
+      "terms": {
+        "principal": "500000.00",
+        "termMonths": 240,
+        "disbursementDate": "2025-01-31",
+        "firstDueDate": "2025-02-28",
+        "paymentDay": "END_OF_MONTH",
+        "currency": "GTQ",
+        "interestRate": "0.07",
+        "insuranceRates": [
+          "0.01",
+          "0.0026"
+        ],
+        "fixedCharges": [
+          {
+            "label": "IUSI",
+            "amount": "350.00",
+            "effectiveFrom": "2025-02-28"
+          },
+          {
+            "label": "Seguro de daños",
+            "amount": "45.00",
+            "effectiveFrom": "2025-02-28"
+          },
+          {
+            "label": "Cuota de mantenimiento",
+            "amount": "25.00",
+            "effectiveFrom": "2026-06-15"
+          }
+        ],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "VARIABLE"
+      },
+      "events": [
+        {
+          "id": "c1",
+          "type": "FixedChargeChange",
+          "date": "2026-01-15",
+          "fixedCharges": [
+            {
+              "label": "IUSI",
+              "amount": "375.00"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "installmentCount": 240,
+        "endDate": "2045-01-31",
+        "rows": [
+          {
+            "k": 11,
+            "dueDate": "2025-12-31",
+            "opening": "491522.68",
+            "level": "4263.47",
+            "interest": "2867.21",
+            "insurance": "516.10",
+            "insuranceComponents": [
+              "409.60",
+              "106.50"
+            ],
+            "capital": "880.16",
+            "fixedCharges": "395.00",
+            "total": "4658.47",
+            "closing": "490642.52",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 12,
+            "dueDate": "2026-01-31",
+            "opening": "490642.52",
+            "level": "4263.47",
+            "interest": "2862.08",
+            "insurance": "515.18",
+            "insuranceComponents": [
+              "408.87",
+              "106.31"
+            ],
+            "capital": "886.21",
+            "fixedCharges": "375.00",
+            "total": "4638.47",
+            "closing": "489756.31",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 16,
+            "dueDate": "2026-05-31",
+            "opening": "487060.90",
+            "level": "4263.47",
+            "interest": "2841.19",
+            "insurance": "511.41",
+            "insuranceComponents": [
+              "405.88",
+              "105.53"
+            ],
+            "capital": "910.87",
+            "fixedCharges": "375.00",
+            "total": "4638.47",
+            "closing": "486150.03",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 17,
+            "dueDate": "2026-06-30",
+            "opening": "486150.03",
+            "level": "4263.47",
+            "interest": "2835.87",
+            "insurance": "510.46",
+            "insuranceComponents": [
+              "405.13",
+              "105.33"
+            ],
+            "capital": "917.14",
+            "fixedCharges": "375.00",
+            "total": "4638.47",
+            "closing": "485232.89",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 240,
+            "dueDate": "2045-01-31",
+            "opening": "4232.65",
+            "level": "4263.47",
+            "interest": "24.69",
+            "insurance": "4.44",
+            "insuranceComponents": [
+              "3.52",
+              "0.92"
+            ],
+            "capital": "4232.65",
+            "fixedCharges": "375.00",
+            "total": "4636.78",
+            "closing": "0.00",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          }
+        ],
+        "totals": {
+          "interest": "443416.24",
+          "insurance": "79814.87",
+          "capital": "500000.00",
+          "fixedCharges": "90220.00",
+          "prepayments": "0.00",
+          "commissions": "0.00",
+          "total": "1113451.11",
+          "totalPaid": "1113451.11"
+        }
+      }
+    }
+  ]
+}

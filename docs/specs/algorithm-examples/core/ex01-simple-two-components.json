@@ -1,0 +1,286 @@
+{
+  "synthetic": true,
+  "schema": "cuotascasa/algorithm-example@1",
+  "id": "ex01-simple-two-components",
+  "title": "Perfil SIMPLE con dos componentes y última cuota (contraste con FHA_GT_V1)",
+  "pendingItems": [
+    1
+  ],
+  "sections": [
+    "ALG.PERIOD.SIMPLE",
+    "ALG.LAST",
+    "ALG.LAST.FIXED_TERM",
+    "ALG.PERIOD.FHA_GT_V1",
+    "ALG.PERIOD.SPLIT",
+    "ALG.DATES"
+  ],
+  "eventTypes": [],
+  "cases": [
+    {
+      "id": "simple",
+      "operation": "buildSchedule",
+      "description": "SIMPLE: cada seguro se redondea por separado, también en la última cuota",
+      "terms": {
+        "principal": "180000.00",
+        "termMonths": 60,
+        "disbursementDate": "2026-02-10",
+        "firstDueDate": "2026-03-10",
+        "paymentDay": 10,
+        "currency": "USD",
+        "interestRate": "0.085",
+        "insuranceRates": [
+          "0.0035",
+          "0.0015"
+        ],
+        "fixedCharges": [],
+        "roundingProfile": "SIMPLE",
+        "rateType": "FIXED"
+      },
+      "events": [],
+      "expected": {
+        "installmentCount": 60,
+        "endDate": "2031-02-10",
+        "rows": [
+          {
+            "k": 1,
+            "dueDate": "2026-03-10",
+            "opening": "180000.00",
+            "level": "3736.50",
+            "interest": "1275.00",
+            "insurance": "75.00",
+            "insuranceComponents": [
+              "52.50",
+              "22.50"
+            ],
+            "capital": "2386.50",
+            "fixedCharges": "0.00",
+            "total": "3736.50",
+            "closing": "177613.50",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 2,
+            "dueDate": "2026-04-10",
+            "opening": "177613.50",
+            "level": "3736.50",
+            "interest": "1258.10",
+            "insurance": "74.00",
+            "insuranceComponents": [
+              "51.80",
+              "22.20"
+            ],
+            "capital": "2404.40",
+            "fixedCharges": "0.00",
+            "total": "3736.50",
+            "closing": "175209.10",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 4,
+            "dueDate": "2026-06-10",
+            "opening": "172786.66",
+            "level": "3736.50",
+            "interest": "1223.91",
+            "insurance": "72.00",
+            "insuranceComponents": [
+              "50.40",
+              "21.60"
+            ],
+            "capital": "2440.59",
+            "fixedCharges": "0.00",
+            "total": "3736.50",
+            "closing": "170346.07",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 59,
+            "dueDate": "2031-01-10",
+            "opening": "7389.97",
+            "level": "3736.50",
+            "interest": "52.35",
+            "insurance": "3.08",
+            "insuranceComponents": [
+              "2.16",
+              "0.92"
+            ],
+            "capital": "3681.07",
+            "fixedCharges": "0.00",
+            "total": "3736.50",
+            "closing": "3708.90",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 60,
+            "dueDate": "2031-02-10",
+            "opening": "3708.90",
+            "level": "3736.50",
+            "interest": "26.27",
+            "insurance": "1.54",
+            "insuranceComponents": [
+              "1.08",
+              "0.46"
+            ],
+            "capital": "3708.90",
+            "fixedCharges": "0.00",
+            "total": "3736.71",
+            "closing": "0.00",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          }
+        ],
+        "totals": {
+          "interest": "41735.29",
+          "insurance": "2454.92",
+          "capital": "180000.00",
+          "fixedCharges": "0.00",
+          "prepayments": "0.00",
+          "commissions": "0.00",
+          "total": "224190.21",
+          "totalPaid": "224190.21"
+        }
+      }
+    },
+    {
+      "id": "same-terms-fha",
+      "operation": "buildSchedule",
+      "description": "Mismas condiciones con FHA_GT_V1: seguro combinado y repartido",
+      "terms": {
+        "principal": "180000.00",
+        "termMonths": 60,
+        "disbursementDate": "2026-02-10",
+        "firstDueDate": "2026-03-10",
+        "paymentDay": 10,
+        "currency": "USD",
+        "interestRate": "0.085",
+        "insuranceRates": [
+          "0.0035",
+          "0.0015"
+        ],
+        "fixedCharges": [],
+        "roundingProfile": "FHA_GT_V1",
+        "rateType": "FIXED"
+      },
+      "events": [],
+      "expected": {
+        "installmentCount": 60,
+        "endDate": "2031-02-10",
+        "rows": [
+          {
+            "k": 1,
+            "dueDate": "2026-03-10",
+            "opening": "180000.00",
+            "level": "3736.50",
+            "interest": "1275.00",
+            "insurance": "75.00",
+            "insuranceComponents": [
+              "52.50",
+              "22.50"
+            ],
+            "capital": "2386.50",
+            "fixedCharges": "0.00",
+            "total": "3736.50",
+            "closing": "177613.50",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 2,
+            "dueDate": "2026-04-10",
+            "opening": "177613.50",
+            "level": "3736.50",
+            "interest": "1258.09",
+            "insurance": "74.01",
+            "insuranceComponents": [
+              "51.81",
+              "22.20"
+            ],
+            "capital": "2404.40",
+            "fixedCharges": "0.00",
+            "total": "3736.50",
+            "closing": "175209.10",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 4,
+            "dueDate": "2026-06-10",
+            "opening": "172786.67",
+            "level": "3736.50",
+            "interest": "1223.91",
+            "insurance": "71.99",
+            "insuranceComponents": [
+              "50.39",
+              "21.60"
+            ],
+            "capital": "2440.60",
+            "fixedCharges": "0.00",
+            "total": "3736.50",
+            "closing": "170346.07",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 59,
+            "dueDate": "2031-01-10",
+            "opening": "7390.01",
+            "level": "3736.50",
+            "interest": "52.35",
+            "insurance": "3.08",
+            "insuranceComponents": [
+              "2.16",
+              "0.92"
+            ],
+            "capital": "3681.07",
+            "fixedCharges": "0.00",
+            "total": "3736.50",
+            "closing": "3708.94",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          },
+          {
+            "k": 60,
+            "dueDate": "2031-02-10",
+            "opening": "3708.94",
+            "level": "3736.50",
+            "interest": "26.27",
+            "insurance": "1.55",
+            "insuranceComponents": [
+              "1.09",
+              "0.46"
+            ],
+            "capital": "3708.94",
+            "fixedCharges": "0.00",
+            "total": "3736.76",
+            "closing": "0.00",
+            "prepayment": "0.00",
+            "commission": "0.00",
+            "paid": false
+          }
+        ],
+        "totals": {
+          "interest": "41735.28",
+          "insurance": "2454.98",
+          "capital": "180000.00",
+          "fixedCharges": "0.00",
+          "prepayments": "0.00",
+          "commissions": "0.00",
+          "total": "224190.26",
+          "totalPaid": "224190.26"
+        }
+      }
+    }
+  ]
+}

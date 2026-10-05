@@ -52,7 +52,7 @@ El código usa **inglés**, la interfaz **español (Guatemala)** y la documentac
 | Marca de borrado | `tombstone` (`deletedAt`) | Borrado lógico hasta sincronizar |
 | Moneda | `Currency` (`GTQ`, `USD`) | Quetzal o dólar; nunca se mezclan |
 | Tipo de tasa | `rateType` (`FIXED`, `VARIABLE`) | Dato informativo del contrato; el motor no lo usa ([ALG.TERMS]) |
-| Plazo vigente | `term` | Número de la última cuota del calendario vigente; fijo o derivado ([ALG.TERM]) |
+| Plazo vigente | `term` | Número de la última cuota del calendario vigente: en plazo fijo, el dato (la cuota que liquida puede llegar antes); en plazo derivado, por simulación ([ALG.TERM]) |
 | Número de cuota | `installmentNumber` / `k` | Cuota a la que se asocia un evento ([ALG.EVENTS.ANCHOR]) |
 | Corte | `cutoffK` | Última cuota con dato real; los eventos hipotéticos van después ([ALG.PATHS.CUTOFF]) |
 | Liquidación anticipada | `payoff` / `isPayoff` | Abono que cancela todo el saldo |
@@ -67,3 +67,77 @@ El código usa **inglés**, la interfaz **español (Guatemala)** y la documentac
 | Estado del préstamo | `LoanStatus` (`active`, `paid`, `archived`) | Activo, pagado o archivado |
 | Tarjeta | card | Unidad de trabajo para un agente (`docs/plan/cards/`) |
 | Ola | wave | Grupo de tarjetas que pueden avanzar en paralelo |
+| Vencimiento | `dueDate` | Fecha en que vence una cuota ([ALG.DATES]) |
+| Día de pago | `paymentDay` (`1`–`31` o `END_OF_MONTH`) | Regla del día de vencimiento; `END_OF_MONTH` = último día del mes |
+| Primer vencimiento | `firstDueDate` | Fecha de vencimiento de la cuota 1 |
+| Tasa de interés | `interestRate` (`i`) | Tasa anual de interés, string decimal |
+| Tasa periódica | `r` | `(i + f) / 12` ([ALG.TERMS]), sin redondear a centavos: vive en el contexto de 34 dígitos ([ALG.CONV]); la usa [ALG.LEVEL] |
+| Cargo financiero | `financialCharge` | `charge` en `FHA_GT_V1`; `interest + Σ insuranceⱼ` en `SIMPLE`. Lo usan la prueba de última cuota ([ALG.LAST]) y las validaciones de amortización negativa ([ALG.RATE.KEEP_INSTALLMENT], [ALG.TERM]) |
+| Seguros por componente | `insuranceComponents` | Monto de cada seguro porcentual de una cuota, en el orden de `insuranceRates` |
+| Abonos / comisiones (sumados) | `prepayments` / `commissions` | Totales de abonos aplicados y de comisiones |
+| Estado tras la cuota k | `PeriodState` | Estado después de pagar la cuota `k`, incluida su fase 3 ([ALG.TERM]) |
+| Cuotas restantes | `remainingTerm` | Cuotas `k+1 … última` por simulación ([ALG.TERM]) |
+| Capital proyectado | `projectCapital` | Capital de las cuotas `k+1 … k+n` del calendario vigente ([ALG.TERM]) |
+| Límite ámbar | `amberLimit` | `máx(50.00, 0.0002 · Bᵣ)`, sin redondear ([ALG.VALIDATE]) |
+| Entrada inválida | `InvalidInputError` | Error de validación tipado ([ALG.ERRORS]) |
+| Amortización negativa | `NegativeAmortizationError` | La cuota no cubre el cargo financiero ([ALG.ERRORS]) |
+| Entrada inválida de la búsqueda por meta | `InfeasibleGoalError` | Escenario faltante, `MAX_INSTALLMENT` negativo, o abono con `k ≤ cutoffK` o después de la última cuota del camino base; nunca una meta inalcanzable ([ALG.ERRORS]) |
+| Monedas distintas | `CurrencyMismatchError` | Se comparan calendarios de monedas distintas ([ALG.ERRORS]) |
+| Cuota informada por el banco | `bankInstallment` | Cuota nivelada, sin cargos fijos, de un `RateChange` con `BANK_INSTALLMENT` ([ALG.RATE.BANK_INSTALLMENT]) |
+| Cuotas a adelantar | `count` | N de `AdvanceInstallments` ([ALG.ADVANCE]) |
+| Número de cuotas | `installmentCount` | Filas de un calendario (`Schedule`) |
+| Eventos reales / del escenario | `realEvents` / `scenarioEvents` | Entradas de `buildPaths` (`PathsInput`); `scenarioEvents = null`: sin escenario ([ALG.PATHS]) |
+| Evento heredado | inherited event | Evento, con o sin `installmentNumber`, que un calendario derivado (el escenario, el camino base `SCENARIO` de la búsqueda por meta, cada prueba de la búsqueda o el modelado de [ALG.VALIDATE]) toma de su camino de origen; no se vuelve a validar su rango ([ALG.EVENTS.ANCHOR], reglas 1 y 3) |
+| Cuota fuera de rango | `INSTALLMENT_OUT_OF_RANGE` | Código de `InvalidInputError`: `installmentNumber` menor que 1 o después de la última cuota del calendario, o evento posterior a la última cuota ([ALG.EVENTS.ANCHOR]); el abono de la búsqueda usa `PREPAYMENT_AFTER_END` de `InfeasibleGoalError` |
+| Solicitud de búsqueda por meta | `GoalSeekRequest` (`basePath`, `prepaymentDate`, `goal`) | Camino base, fecha del abono y meta (`kind` con `date` o `amount`) ([ALG.GOAL]) |
+| Saldo reportado / proyectado / modelado | `reported` / `projected` / `modeled` | Campos de la diferencia real por ancla ([ALG.ANCHOR]) y de la validación ([ALG.VALIDATE]) |
+| Diferencia real por ancla / por componente | `perAnchor` / `perComponent` | Listas de `RealDelta` ([ALG.ANCHOR], [ALG.ACTUAL]) |
+| Fin / total pagado de la base | `baseEndDate` / `baseTotalPaid` | Campos de `ComparisonMetrics` para la base ([ALG.METRICS]) |
+| Ejemplo resuelto | algorithm example (`docs/specs/algorithm-examples/`) | Copia JSON sintética de un ejemplo de `docs/algorithm.md` |
+
+## Identificadores de sección `[ALG.*]`
+
+Cada id de `docs/algorithm.md` se arma con estos tokens, separados por puntos (`[ALG.RATE.KEEP_INSTALLMENT]` = algoritmo · cambio de tasa · mantener cuota).
+
+| Token | Español | Inglés (código) |
+|---|---|---|
+| `ALG` | Algoritmo (prefijo de toda regla) | algorithm |
+| `ACTUAL` | Pago real | `ActualPayment` |
+| `ADVANCE` | Adelantar N cuotas | `AdvanceInstallments` |
+| `ANCHOR` | Ancla, y cuota de aplicación de un evento | `anchor` / `installmentNumber` |
+| `BANK_INSTALLMENT` | Cuota del banco | `BANK_INSTALLMENT` |
+| `CAP` | Tope del abono al saldo | cap |
+| `COMMISSION` | Comisión por abono | `commission` |
+| `CONV` | Convenciones numéricas | numeric conventions (`decimal-config`) |
+| `CUTOFF` | Corte | `cutoffK` |
+| `DATES` | Fechas de vencimiento | `dueDate` |
+| `DERIVED_TERM` | Plazo derivado | derived term |
+| `ERRORS` | Errores tipados | `DomainError` |
+| `EVENTS` | Eventos | `DomainEvent` |
+| `EXAMPLE` | Ejemplo resuelto | worked example |
+| `FHA_GT_V1` | Perfil FHA Guatemala v1 | `FHA_GT_V1` |
+| `FIXED` | Cargos fijos | `fixedCharges` |
+| `FIXEDCHANGE` | Cambio de cargos fijos | `FixedChargeChange` |
+| `FIXED_TERM` | Plazo fijo | fixed term |
+| `GOAL` | Búsqueda por meta | `goalSeek` |
+| `KEEP_INSTALLMENT` | Mantener cuota (ajustar plazo) | `KEEP_INSTALLMENT_ADJUST_TERM` |
+| `LAST` | Última cuota | last row |
+| `LEVEL` | Cuota nivelada | `level` / `levelPayment` |
+| `METRICS` | Métricas de comparación | `ComparisonMetrics` |
+| `ORDER` | Orden total de eventos | order key |
+| `PATHS` | Caminos | `Paths` / `PathKind` |
+| `PENDING` | Ejemplos resueltos de W0-02 (lista de pendientes ya cubierta) | worked-example checklist |
+| `PERIOD` | Cálculo de un periodo | period |
+| `PREPAY` | Abono a capital | `Prepayment` |
+| `RATE` | Cambio de tasa | `RateChange` |
+| `RECALC_KEEP_TERM` | Recalcular cuota (mantener plazo) | `RECALC_INSTALLMENT_KEEP_TERM` |
+| `REDUCE_INSTALLMENT` | Reducir cuota | `REDUCE_INSTALLMENT` |
+| `REDUCE_TERM` | Reducir plazo | `REDUCE_TERM` |
+| `SIMPLE` | Perfil simple | `SIMPLE` |
+| `SPLIT` | Reparto del seguro entre componentes | split |
+| `TEMPLATES` | Plantillas | `Template` |
+| `TERM` | Plazo vigente | `term` |
+| `TERMS` | Condiciones del préstamo | `LoanTerms` |
+| `VALIDATE` | Validación contra un saldo real | `validateAgainstReportedBalance` |
+| `YEARLY` | Subtotales anuales | `yearlySubtotals` / `YearlySubtotal` |
+| `ZERO` | Tasas en cero | zero rates |
