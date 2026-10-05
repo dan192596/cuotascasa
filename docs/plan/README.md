@@ -413,7 +413,7 @@ Para comparar contra la tabla real del banco hace falta crear `~/.cuotascasa-pri
 2. **Rangos por moneda:**
    - GTQ, de Q150,000 a Q2,500,000;
    - USD, con el rango propio que fije W0-04;
-   - tasas anuales de 5.5 % a 9.75 % y plazos de 5 a 30 años (60 a 360 cuotas);
+   - tasas anuales de 5.4 % a 9.8 % y plazos de 5 a 30 años (60 a 360 cuotas);
    - vencimientos con `END_OF_MONTH`, con día numérico y con inicio en año bisiesto.
 3. **Mezcla de eventos de `full`:** la matriz de cobertura de W2-06. Cada tipo de evento, política, modo y tipo de comisión aparece en al menos 3 fixtures, solo y combinado, y hay perfil `SIMPLE`, día numérico, ambas monedas y casos de última fila.
 4. **Esquema de los archivos privados:**

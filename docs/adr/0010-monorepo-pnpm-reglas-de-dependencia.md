@@ -77,7 +77,7 @@ El proyecto se construye con 72 tarjetas en 8 olas, con hasta unas 6 tarjetas So
    - `write-excel-file`, `jspdf` y `jspdf-autotable`: solo `packages/export`, en los directorios de su fila.
    - `decimal.js`: solo `packages/domain`. `zod`: solo `packages/schema`.
    - `@fontsource/*` y Tailwind: solo hojas de estilo bajo `apps/web/src/styles/`.
-   - Solo en pruebas (`*.spec.ts`, `testing/`, `contract/` y `e2e/`): Vitest, Playwright, `@axe-core/playwright`, `fast-check`, `fake-indexeddb`, `fflate` y `pdfjs-dist`.
+   - Solo en pruebas (`*.spec.ts`, `*.test-d.ts`, `testing/`, `contract/`, `packages/*/test/` y `e2e/`): Vitest, Playwright, `@axe-core/playwright`, `fast-check`, `fake-indexeddb`, `fflate` y `pdfjs-dist`. Las pruebas de un paquete pueden importar cualquier directorio de su propio paquete, y las pruebas de tipos y `packages/domain/test/` pueden nombrar el tipo `Date`.
 
    **Prohibiciones que conviene tener a la vista** (ya se deducen de la matriz):
 

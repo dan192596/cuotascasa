@@ -432,7 +432,7 @@ El archivo central de rutas solo lo edita Opus.
 1. `algorithm.md`, con un ejemplo sintético por regla (W0-02).
 2. Un oráculo Python escrito solo desde ese documento por otro linaje de agentes, en un sparse-checkout.
 3. Validación privada de Opus contra una tabla real, fuera del repo y solo con autorización explícita del dueño. Sin ella, se sigue el plan alternativo de ADR-0014.
-4. Préstamos sintéticos sembrados: unos 15 en el perfil `core` y unos 40 en `full`, en Q150k–Q2.5M y un rango en USD, a 5.5–9.75 % y 5–30 años, con cambios de tasa, todos los abonos y la última fila. La composición exacta vive en `tools/oracle/FORMAT.md`.
+4. Préstamos sintéticos sembrados: unos 15 en el perfil `core` y unos 40 en `full`, en Q150k–Q2.5M y un rango en USD, a 5.4–9.8 % y 5–30 años, con cambios de tasa, todos los abonos y la última fila. La composición exacta vive en `tools/oracle/FORMAT.md`.
 5. CI los regenera y compara. El motor TS debe coincidir al centavo mediante el arnés de conformidad congelado.
 
 | Capa | Qué se prueba |

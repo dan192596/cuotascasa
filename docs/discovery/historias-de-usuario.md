@@ -386,7 +386,7 @@ Trazabilidad: R22, R23, R26
 decidir un abono.
 
 - `algorithm.md` es la única fuente; el motor TypeScript y el oráculo Python los escriben linajes de agentes distintos.
-- Unos 40 préstamos sintéticos (Q 150,000 a Q 2,500,000; 5.5 % a 9.75 %; 5 a 30 años), con cambios de tasa y todos los
+- Unos 40 préstamos sintéticos (Q 150,000 a Q 2,500,000; 5.4 % a 9.8 %; 5 a 30 años), con cambios de tasa y todos los
   tipos de abono: el motor coincide al centavo.
 - Propiedades:
   - el capital suma el monto;
