@@ -1,0 +1,23 @@
+# Git hooks (ADR-0015). `pnpm install` installs them through the lefthook postinstall (the only allowed build script).
+# Never bypass these hooks with --no-verify or LEFTHOOK=0: only the oracle lineage may, and its PR says so (docs/plan/README.md §3).
+# Fail closed: if the shared hook cannot find lefthook (e.g. a checkout without node_modules), the commit is blocked.
+assert_lefthook_installed: true
+pre-commit:
+  commands:
+    gitleaks:
+      run: gitleaks git --pre-commit --staged --redact --verbose --no-banner --config .gitleaks.toml
+    prettier:
+      run: pnpm exec prettier --check --ignore-unknown {staged_files}
+    hygiene-denylist:
+      run: node tools/hygiene/denylist.mjs
+    hygiene-synthetic:
+      run: node tools/hygiene/synthetic-flag.mjs
+
+commit-msg:
+  commands:
+    conventional:
+      # Quoted: lefthook substitutes {1} verbatim, and in a linked worktree git passes an absolute path that may contain spaces.
+      run: node tools/hygiene/commit-msg.mjs "{1}"
+    # Here and not in pre-commit: lefthook skips every pre-commit command when nothing is staged (--allow-empty).
+    hygiene-noreply:
+      run: node tools/hygiene/noreply.mjs

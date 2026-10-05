@@ -1,0 +1,16 @@
+{
+  "name": "@cuotascasa/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@axe-core/playwright": "catalog:",
+    "@cuotascasa/schema": "workspace:*",
+    "@cuotascasa/sync": "workspace:*",
+    "@playwright/test": "catalog:",
+    "@types/node": "catalog:",
+    "fflate": "catalog:",
+    "pdfjs-dist": "catalog:",
+    "typescript": "catalog:"
+  }
+}

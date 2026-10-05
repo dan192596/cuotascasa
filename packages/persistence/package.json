@@ -1,0 +1,27 @@
+{
+  "name": "@cuotascasa/persistence",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/ports.ts",
+    "./memory": "./src/memory/index.ts",
+    "./dexie": "./src/dexie/index.ts",
+    "./contract": "./src/contract/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@cuotascasa/schema": "workspace:*",
+    "dexie": "catalog:"
+  },
+  "devDependencies": {
+    "fake-indexeddb": "catalog:",
+    "fast-check": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

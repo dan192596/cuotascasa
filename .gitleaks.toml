@@ -1,0 +1,12 @@
+# gitleaks configuration (ADR-0015 §5): the default ruleset plus project rules.
+# Used by the lefthook pre-commit hook and, from W0-06, by CI over the full history.
+title = "CuotasCasa"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "cuotascasa-google-oauth-client-id"
+description = "Google OAuth client ID in the repo: inject it at build time with --define GOOGLE_CLIENT_ID (ADR-0015 §9)"
+regex = '''[0-9]{6,}-[0-9a-z]{32}\.apps\.googleusercontent\.com\b'''
+keywords = ["apps.googleusercontent.com"]

@@ -43,3 +43,35 @@ coverage/
 playwright-report/
 test-results/
 .angular/
+
+# --- Datos reales: formatos adicionales (W0-01) ---
+*.odt
+*.rtf
+*.pages
+*.ofx
+*.qfx
+*.qif
+*.har
+
+# --- Secretos y estado local de Cloudflare (W0-01) ---
+.dev.vars
+.dev.vars.*
+.wrangler/
+client_secret*.json
+
+# --- Herramientas locales (W0-01) ---
+lefthook-local.yml
+.eslintcache
+*.tsbuildinfo
+*.log
+.superpowers/
+
+# --- Python del oráculo (W0-01) ---
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# --- Reportes de pruebas (W0-01) ---
+blob-report/

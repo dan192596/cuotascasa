@@ -1,0 +1,35 @@
+{
+  "name": "@cuotascasa/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@angular/cdk": "catalog:",
+    "@angular/common": "catalog:",
+    "@angular/compiler": "catalog:",
+    "@angular/core": "catalog:",
+    "@angular/forms": "catalog:",
+    "@angular/material": "catalog:",
+    "@angular/platform-browser": "catalog:",
+    "@angular/platform-server": "catalog:",
+    "@angular/router": "catalog:",
+    "@angular/service-worker": "catalog:",
+    "@angular/ssr": "catalog:",
+    "@cuotascasa/domain": "workspace:*",
+    "@cuotascasa/export": "workspace:*",
+    "@cuotascasa/persistence": "workspace:*",
+    "@cuotascasa/schema": "workspace:*",
+    "@cuotascasa/sync": "workspace:*",
+    "@fontsource/jetbrains-mono": "catalog:",
+    "@fontsource/source-serif-4": "catalog:",
+    "chart.js": "catalog:",
+    "ng2-charts": "catalog:",
+    "rxjs": "catalog:",
+    "tslib": "catalog:"
+  },
+  "devDependencies": {
+    "fake-indexeddb": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

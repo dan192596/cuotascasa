@@ -1,0 +1,31 @@
+{
+  "name": "@cuotascasa/export",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./model": "./src/model/index.ts",
+    "./csv": "./src/csv/index.ts",
+    "./excel": "./src/excel/index.ts",
+    "./pdf": "./src/pdf/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@cuotascasa/domain": "workspace:*",
+    "jspdf": "catalog:",
+    "jspdf-autotable": "catalog:",
+    "write-excel-file": "catalog:"
+  },
+  "devDependencies": {
+    "fast-check": "catalog:",
+    "fflate": "catalog:",
+    "pdfjs-dist": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

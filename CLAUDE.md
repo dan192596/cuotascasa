@@ -55,7 +55,7 @@ navegador (IndexedDB) y, opcionalmente, en una copia **cifrada** en el Google Dr
 
 | Área | Puede importar |
 |---|---|
-| `packages/domain` | `decimal.js` |
+| `packages/domain` | `decimal.js`, solo bajo `src/money/**` (las pruebas del paquete, `*.spec.ts`, `*.test-d.ts` y `test/`, pueden importarlo desde cualquier directorio) |
 | `packages/schema` | `zod` |
 | `packages/persistence` | `@cuotascasa/schema`; `dexie` solo bajo `src/dexie` |
 | `packages/sync` | `@cuotascasa/schema`; los tipos de `@types/google.accounts` solo bajo `src/google-drive` |
@@ -83,7 +83,7 @@ navegador (IndexedDB) y, opcionalmente, en una copia **cifrada** en el Google Dr
 - `chart.js` y `ng2-charts`: solo `features/scenarios/compare`.
 - `dexie`: solo `packages/persistence/src/dexie`.
 - `write-excel-file`, `jspdf` y `jspdf-autotable`: solo `packages/export`, en los directorios de su fila.
-- `decimal.js`: solo `packages/domain`. `zod`: solo `packages/schema`.
+- `decimal.js`: solo `packages/domain/src/money/**` y las pruebas de `packages/domain` (`*.spec.ts`, `*.test-d.ts` y `test/`). `zod`: solo `packages/schema`.
 - `@fontsource/*` y Tailwind: solo hojas de estilo bajo `apps/web/src/styles/`.
 - Solo en pruebas (`*.spec.ts`, `*.test-d.ts`, `testing/`, `contract/`, `packages/*/test/` y `e2e/`): Vitest, Playwright, `@axe-core/playwright`, `fast-check`, `fake-indexeddb`, `fflate` y `pdfjs-dist`. Las pruebas de un paquete pueden importar cualquier directorio de su propio paquete, y las pruebas de tipos y `packages/domain/test/` pueden nombrar el tipo `Date`.
 

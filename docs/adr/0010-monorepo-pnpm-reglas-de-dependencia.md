@@ -47,7 +47,7 @@ El proyecto se construye con 72 tarjetas en 8 olas, con hasta unas 6 tarjetas So
 
    | Área | Puede importar |
    |---|---|
-   | `packages/domain` | `decimal.js` |
+   | `packages/domain` | `decimal.js`, solo bajo `src/money/**` (las pruebas del paquete, `*.spec.ts`, `*.test-d.ts` y `test/`, pueden importarlo desde cualquier directorio) |
    | `packages/schema` | `zod` |
    | `packages/persistence` | `@cuotascasa/schema`; `dexie` solo bajo `src/dexie` |
    | `packages/sync` | `@cuotascasa/schema`; los tipos de `@types/google.accounts` solo bajo `src/google-drive` |
@@ -75,7 +75,7 @@ El proyecto se construye con 72 tarjetas en 8 olas, con hasta unas 6 tarjetas So
    - `chart.js` y `ng2-charts`: solo `features/scenarios/compare`.
    - `dexie`: solo `packages/persistence/src/dexie`.
    - `write-excel-file`, `jspdf` y `jspdf-autotable`: solo `packages/export`, en los directorios de su fila.
-   - `decimal.js`: solo `packages/domain`. `zod`: solo `packages/schema`.
+   - `decimal.js`: solo `packages/domain/src/money/**` y las pruebas de `packages/domain` (`*.spec.ts`, `*.test-d.ts` y `test/`). `zod`: solo `packages/schema`.
    - `@fontsource/*` y Tailwind: solo hojas de estilo bajo `apps/web/src/styles/`.
    - Solo en pruebas (`*.spec.ts`, `*.test-d.ts`, `testing/`, `contract/`, `packages/*/test/` y `e2e/`): Vitest, Playwright, `@axe-core/playwright`, `fast-check`, `fake-indexeddb`, `fflate` y `pdfjs-dist`. Las pruebas de un paquete pueden importar cualquier directorio de su propio paquete, y las pruebas de tipos y `packages/domain/test/` pueden nombrar el tipo `Date`.
 
@@ -125,3 +125,7 @@ El proyecto se construye con 72 tarjetas en 8 olas, con hasta unas 6 tarjetas So
 - ADR-0006, ADR-0014, ADR-0016, ADR-0019.
 - Tarjetas W0-01 (`eslint.config.mjs`), W0-05, W0-06 (`tools/lint-fixtures`) y W1-10. Las excepciones de la matriz vienen de W3-05, W3-13, W4-06, W4-09, W4-12, W5-02, W5-05 y W5-06.
 - Catálogos de pnpm: https://pnpm.io/catalogs
+
+## Enmiendas
+
+- 2026-10-04 (W0-01, decisión D12): `decimal.js` queda restringido a `packages/domain/src/money/**` en código de producción; las pruebas del paquete (`*.spec.ts`, `*.test-d.ts` y `test/`) pueden importarlo desde cualquier directorio. Se precisó la fila de `packages/domain` y la viñeta de terceros de §5; `CLAUDE.md` mantiene la copia idéntica.

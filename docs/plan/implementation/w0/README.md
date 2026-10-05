@@ -45,7 +45,7 @@ Los pasos 1 y 2 son independientes entre sí, igual que los pasos 3 y 4. Aun as�
 | P1 | ✅ Licencia confirmada por el dueño (2026-10-04): **MIT con titular "CuotasCasa contributors"**, sin nombres personales en el repo | W0-01 |
 | P2 | Instalar gitleaks (`brew install gitleaks`) | W0-01, Task W0-01.4 |
 | P3 | Instalar Python 3.13 (`brew install python@3.13`) | W0-04, Task W0-04.20 (y W1-02) |
-| P4 | Al crear el repo en GitHub: secret scanning, push protection y private vulnerability reporting | W0-06, Task W0-06.13 |
+| P4 | Al crear el repo en GitHub: secret scanning, push protection y private vulnerability reporting y, en la configuración de correo de GitHub, la opción «Block command line pushes that expose my email». | W0-06, Task W0-06.13 |
 
 ## Decisiones de Opus que prevalecen sobre el texto de las secciones
 
@@ -64,21 +64,26 @@ Se tomaron al cerrar la revisión del plan de W0 (2026-10-04). Si una sección d
 | D9 | El escenario activo se guarda en `SyncedSettings.activeScenarioByLoan`. Cada evento hipotético embebido lleva su propio `deletedAt`. | W0-04 |
 | D10 | `mergeDatasets` y `purgeTombstones` son internos de `@cuotascasa/sync`; `data/` usa el orquestador de sesión. | W0-04, W4-09 |
 | D11 | Sin seguros, ambas formas son válidas: `insuranceRates = []`, o tasas en cero con un `"0.00"` por componente. | W0-02, W0-04 |
-| D12 | `decimal.js` solo se importa en `packages/domain/src/money/**`. Se agrega una regla `no-restricted-imports` en W0-01.5 con un spot check, y se verifica con el lint de W0-03. | W0-01, W0-03 |
+| D12 | `decimal.js` solo se importa en `packages/domain/src/money/**`. Se agrega una regla `no-restricted-imports` en W0-01.5 con un spot check, y se verifica con el lint de W0-03. Las pruebas del paquete domain (`*.spec.ts`, `*.test-d.ts`, `test/`) están exentas; ADR-0010 §5 y `CLAUDE.md` se enmendaron en W0-01. | W0-01, W0-03 |
 | D13 | Umbral de cobertura del 100 % para `packages/domain/src/money/**` y `dates/**` en el `vitest.config.ts` raíz (el fragmento está en el FOR_OPUS de W0-03). | W0-01 |
 | D14 | Los scripts `oracle:gen` y `oracle:diff` usan `python3`, y el README del oráculo explica cómo activar el venv. | W0-01, W0-04 |
 | D15 | Todo commit de agente termina con la línea `Co-Authored-By`. | W0-01, W0-02 |
 | D16 | La verificación de la denylist en W0-02 usa `grep -nH`, para que nunca imprima el término encontrado sin el archivo. | W0-02 |
 | D17 | Decisiones de W0-05: <ul><li>`apps/web/.postcssrc.json` es de W0-05 (ya en `plan.json`).</li><li>W3-05 quita el preflight de Tailwind, según ADR-0012 («layout y utilidades»).</li><li>Se mantiene el plugin de Vitest para resolver paquetes en `ng test`.</li><li>Se aprueban los agregados: `data-layer.tokens.ts`, `PUBLIC_CLOCK`, el define `REPOSITORY_ISSUES_URL`, el contexto de `cc-event-form`, `compareScenarios`/`toLoanTerms` y `serviceWorker` + `ngsw-config.json` mínimos.</li></ul> | W0-05, W3-05 |
 | D18 | W0-06 congela `data/data-layer.tokens.ts`, el archivo de `PUBLIC_CLOCK` y `apps/web/.postcssrc.json`, con `editableBy: ["W0-05"]`. | W0-06 |
-| D19 | Ajustes de W0-06: <ul><li>Se omiten `resolve-ts.ts` y el override `bundler` de `tools/conformance` si `private-compare` corre en Node 24 sin ellos (W0-03 ya usa `nodenext`). Se verifica al ejecutar.</li><li>`matrix.ts` usa la etiqueta nueva «Solo en pruebas (…)» de ADR-0010 §5.</li><li>W0-06.11 vuelve a copiar el `check_examples.py` final de W0-02 (reglas 1 a 8) y sus pruebas.</li></ul> | W0-06 |
+| D19 | Ajustes de W0-06: <ul><li>Se omiten `resolve-ts.ts` y el override `bundler` de `tools/conformance` si `private-compare` corre en Node 24 sin ellos (W0-03 ya usa `nodenext`). Se verifica al ejecutar.</li><li>`matrix.ts` usa la etiqueta nueva «Solo en pruebas (…)» de ADR-0010 §5.</li><li>W0-06.11 vuelve a copiar el `check_examples.py` final de W0-02 (reglas 1 a 8) y sus pruebas.</li><li>El fixture PASS de la fila `decimal.js` de `tools/lint-fixtures/matrix.ts` va bajo `packages/domain/src/money/` (no `dates/`), porque D12 rechaza `dates/`.</li></ul> | W0-06 |
 | D20 | Opus agrega la fila de ADR-0024 a `docs/adr/README.md` al fusionar W0-04. | W0-04 |
 | D21 | Se aceptan estas decisiones de W0-01: <ul><li>Lecturas de la matriz: `@angular/platform-browser` cuenta como Angular y se prohíbe `bypassSecurityTrust*`.</li><li>Los módulos de Node solo se usan en pruebas, `tools/` y `e2e`.</li><li>`core/*` solo toma del dominio tipos y `*Error`.</li><li>`rxjs` queda fuera del código de la app, porque `toSignal` acepta `Subscribable`.</li><li>`environments` solo se usa desde `data/` y el cableado raíz.</li><li>Guardas en los scripts raíz y allowlist de builds en `pnpm-workspace.yaml`.</li><li>`gitleaks git --pre-commit --staged`.</li><li>Dependencias adicionales de herramientas, aprobadas por Opus.</li></ul> | W0-01 |
+| D22 | Hooks: fallan cerrado (`assert_lefthook_installed: true`) y `hygiene-noreply` corre en `commit-msg` (pre-commit se salta en commits vacíos). Orden de merge de cada tarjeta W0: `git merge --squash` → `pnpm install --frozen-lockfile` en `main` → `git commit` → borrar worktree y rama. | Todas las tarjetas W0 |
 
 ## Pendientes para olas posteriores
 
 - **Chart.js y ADR-0003 (antes de W5-05).** La gráfica necesita `number`. Recomendación: un único helper de visualización en `features/scenarios/compare`, con su excepción de lint y una enmienda a ADR-0003.
 - **Script inline de Beasties en el HTML prerenderizado.** ADR-0021 (W2-02) debe permitirlo con hash.
+- **W1-10:** guard de módulo principal con `import.meta.main` (Node ≥ 24.2, ya exigido por `engines`), incluido `tools/hygiene/commit-msg.mjs`; aceptar `Reapply "…"` en commit-msg; pruebas faltantes de commit-msg (borde 100/101 caracteres, salida 2 de la CLI, contenido de `COMMIT_TYPES`, `squash!`/`amend!`); ejecutar el check de `.gitignore` en un `git init` desechable con solo una copia de `.gitignore` (evita que `.gitignore` anidados enmascaren un patrón borrado) y agregar sondeos `x.xls`, `cuotascasa-backup-2026-01-01.json`, `.claude/settings.local.json`, `.env` y un `.pyc` fuera de `__pycache__/`; el check de noreply lee la identidad real (`git var GIT_AUTHOR_IDENT` y `GIT_COMMITTER_IDENT`), no solo `user.email`.
+- **W1-09 y W2-10:** los checks de `tools/edge/` se llaman `check*.mjs`; las pruebas `*.spec.*` y `*.test.*` quedan fuera del runner `edge:check`.
+- **Micro-tarjetas de Opus** (archivos congelados tras W0-01): endurecer `tools/catalog-check` (`parseArgs` estricto, errores que nombren el manifiesto, `Object.hasOwn`); variantes sintácticas en ESLint (`TSImportType` de `decimal.js`, acceso computado a `bypassSecurityTrust*`, `Number(row['amount'])`); `core/*` «solo tipos y errores» (W0-06 lo registra como límite conocido); `boundaries/no-unknown-files` al agregar un paquete; negación `!` si una tarjeta necesita fixtures `.log`; nombrar `LEFTHOOK=0` como bypass prohibido en `CLAUDE.md`.
+- **W6-03:** el README dice «todo fixture JSON» (no «todo fixture») lleva `synthetic: true`.
 
 ## Estado de verificación del plan
 

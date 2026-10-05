@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false,
+    "types": ["node"]
+  },
+  "include": ["*.ts", "tools/**/*.ts"],
+  "exclude": ["node_modules", "tools/conformance/**", "tools/lint-fixtures/**", "tools/oracle/**"]
+}

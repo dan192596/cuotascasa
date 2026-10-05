@@ -1,0 +1,15 @@
+{
+  "name": "@cuotascasa/conformance",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@cuotascasa/domain": "workspace:*",
+    "@cuotascasa/schema": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

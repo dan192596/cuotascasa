@@ -1,0 +1,7 @@
+# Generated or owned elsewhere: never reformatted by Prettier.
+pnpm-lock.yaml
+docs/
+CLAUDE.md
+.claude/
+tools/oracle/
+tools/plan/
