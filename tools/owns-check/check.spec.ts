@@ -94,6 +94,16 @@ describe('check.mjs over a scratch git repository', () => {
     expect(result.status).toBe(1);
   });
 
+  it('splits a rename into delete plus add (--no-renames), so moving an owned file out of owns fails', () => {
+    const repo = scratchRepo();
+    git(repo, 'switch', '--quiet', '-c', 'card/W1-04-memory');
+    git(repo, 'mv', 'packages/persistence/src/memory/index.ts', 'README.md');
+    git(repo, 'commit', '--quiet', '-m', 'test: rename out of owns');
+    const result = ownsCheck(repo);
+    expect(result.stderr).toBe('owns-check: W1-04: outside owns: README.md\n');
+    expect(result.status).toBe(1);
+  });
+
   it('fails when a tag is removed from enforced-features.json', () => {
     const repo = scratchRepo();
     git(repo, 'switch', '--quiet', '-c', 'card/W2-13-core');
