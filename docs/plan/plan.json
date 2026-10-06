@@ -396,7 +396,7 @@
             "R24"
           ],
           "size": "L",
-          "notes": "Oracle lineage: a separate agent spawned in a git sparse-checkout worktree created exactly as in docs/plan/README.md §3 step 3, with this list: `git -C .worktrees/<ID> sparse-checkout set --no-cone '/*' '!/*/' '/docs/algorithm.md' '/docs/glossary.md' '/docs/specs/algorithm-examples/' '/docs/specs/conformance-triage.md' '/docs/plan/README.md' '/docs/plan/cards/<ID>.md' '/tools/oracle/'` (<ID> = W1-02; the command is recorded in the PR). Do not run pnpm in this lineage. Create a venv with the Python in tools/oracle/.python-version, pip install --require-hashes -r tools/oracle/requirements-dev.txt, then python -m pytest and ruff check from tools/oracle; Opus re-runs hooks and full CI before merge. Never reads packages/ or tools/conformance/. Ambiguities go to Opus as questions and are never guessed. Launch context (D25): the controller confirms the owner's approval before the first `pip install --require-hashes -r tools/oracle/requirements-dev.txt` in the venv (W0-04 never ran it). The oracle covers schedule-shaped outputs only (FORMAT.md §11); goal seek ([ALG.GOAL]), [ALG.VALIDATE] and buildPaths stay out of its scope. The [ALG.DATES] firstDueDate/paymentDay check makes `compare` exit with `terms-invalid`; firstDueDate before disbursementDate is valid (disbursementDate is informative)."
+          "notes": "Oracle lineage: a separate agent spawned in a git sparse-checkout worktree created exactly as in docs/plan/README.md §3 step 3, with this list: `git -C .worktrees/<ID> sparse-checkout set --no-cone '/*' '!/*/' '/docs/algorithm.md' '/docs/glossary.md' '/docs/specs/algorithm-examples/' '/docs/specs/conformance-triage.md' '/docs/plan/README.md' '/docs/plan/cards/<ID>.md' '/tools/oracle/'` (<ID> = W1-02; the command is recorded in the PR). Do not run pnpm in this lineage. Create a venv with the Python in tools/oracle/.python-version, pip install --require-hashes -r tools/oracle/requirements-dev.txt, then python -m pytest and ruff check from tools/oracle; Opus re-runs hooks and full CI before merge. Never reads packages/ or tools/conformance/. Ambiguities go to Opus as questions and are never guessed. Launch context (D25): the controller confirms the owner's approval before the first `pip install --require-hashes -r tools/oracle/requirements-dev.txt` in the venv (W0-04 never ran it). The oracle covers schedule-shaped outputs only (FORMAT.md §11); goal seek ([ALG.GOAL]), [ALG.VALIDATE] and buildPaths stay out of its scope. The [ALG.DATES] firstDueDate/paymentDay check makes `compare` exit with `terms-invalid`; firstDueDate before disbursementDate is valid (disbursementDate is informative). Launch context (D29): before this card launches, an Opus micro-card on tools/oracle/FORMAT.md §8.3–§8.4 decides what a failing run may print (mismatchedRows can equal the total row count and maxAbsDiff a real amount, and README §6 versions every --log-line); compare must follow that decision."
         },
         {
           "id": "W1-03",
@@ -690,7 +690,7 @@
             "R24"
           ],
           "size": "S",
-          "notes": "Runs at the very start of W2. W2-06 and W2-13 depend on it inside the wave."
+          "notes": "Runs at the very start of W2. W2-06 and W2-13 depend on it inside the wave. Launch context (D29): after this card's first CI run, the owner adds `oracle-diff` and `conformance` to main's required checks with source GitHub Actions; never add paths/paths-ignore filters to the CI triggers (a required check that never reports blocks every PR). private-compare refuses any file inside a git checkout, so the private folder must not sit under one."
         },
         {
           "id": "W2-02",
@@ -727,7 +727,7 @@
             "R25"
           ],
           "size": "S",
-          "notes": "Runs at the start of W2. W2-09, W2-10, W2-11 and W2-12 depend on it inside the wave; W3-14 implements ADR-0023 inside core/pwa/. W0-06 lists W2-02 in the editableBy of apps/web/src/testing/build-output/ and apps/web/src/index.html (W0-05, E7), so ADR-0021/0022/0023 can change the service-worker and manifest assertions and the inline scripts. Launch context (D27): withEventReplay() adds inline scripts (`ng-event-dispatch-contract` and the `__jsaction_bootstrap` call, whose content varies with the page's event types) as soon as a prerendered page has a listener: ADR-0021 must cover them (per-build hashes or autoCsp) or drop withEventReplay(); build its evidence with a probe listener, not with today's stubs. Also add `withInMemoryScrolling({ scrollPositionRestoration: 'enabled' })` to provideRouter (jsdom has no scrollTo: keep the router spec's output clean), and an icon link plus a Spanish <noscript> to index.html."
+          "notes": "Runs at the start of W2. W2-09, W2-10, W2-11 and W2-12 depend on it inside the wave; W3-14 implements ADR-0023 inside core/pwa/. W0-06 lists W2-02 in the editableBy of apps/web/src/testing/build-output/ and apps/web/src/index.html (W0-05, E7), so ADR-0021/0022/0023 can change the service-worker and manifest assertions and the inline scripts. Launch context (D27): withEventReplay() adds inline scripts (`ng-event-dispatch-contract` and the `__jsaction_bootstrap` call, whose content varies with the page's event types) as soon as a prerendered page has a listener: ADR-0021 must cover them (per-build hashes or autoCsp) or drop withEventReplay(); build its evidence with a probe listener, not with today's stubs. Also add `withInMemoryScrolling({ scrollPositionRestoration: 'enabled' })` to provideRouter (jsdom has no scrollTo: keep the router spec's output clean), and an icon link plus a Spanish <noscript> to index.html. Launch context (D29): if keeping the router spec output clean after withInMemoryScrolling needs a window.scrollTo stub, both hosts (apps/web/src/app/app.routes.spec.ts and apps/web/vitest.config.ts) are frozen for W0-05: register one for W2-02 first or accept jsdom's notice. The icon link points into apps/web/public/icons/, which W3-14 owns."
         },
         {
           "id": "W2-03",
@@ -1111,7 +1111,8 @@
             "docs/specs/oracle-validation-log.md",
             "docs/specs/conformance-triage.md",
             "docs/algorithm.md",
-            "docs/specs/algorithm-examples/"
+            "docs/specs/algorithm-examples/",
+            "docs/glossary.md"
           ],
           "depends_on": [
             "W2-06",
@@ -1137,7 +1138,7 @@
             "R24"
           ],
           "size": "M",
-          "notes": "Start of W3. W3-02, W3-03 and W3-04 depend on it inside the wave."
+          "notes": "Start of W3. W3-02, W3-03 and W3-04 depend on it inside the wave. Launch context (D29): docs/glossary.md is owned because the CI docs job requires a glossary row for every token of a new [ALG.*] id."
         },
         {
           "id": "W3-02",
@@ -1618,7 +1619,7 @@
             "R25"
           ],
           "size": "S",
-          "notes": "Start of W3."
+          "notes": "Start of W3. Launch context (D29): owns-check exempts branches by name, fork PRs included: pass `HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}` via env and, when it differs from github.repository, run with `--branch \"fork/$HEAD_REF\"` (never exempt). If the audit moves to its own job, update main's required checks; document the exception path for an advisory without a fix (an ignore list in a frozen root file, via an opus/ PR)."
         },
         {
           "id": "W3-17",
@@ -1648,7 +1649,7 @@
             "R25"
           ],
           "size": "M",
-          "notes": "Owner prerequisites: Cloudflare API token, custom domain route, GitHub environment and variables. Deploying early surfaces production-only routing and header issues while the UI is small. Launch context (D27): also inject `--define REPOSITORY_ISSUES_URL=\"'<server_url>/<repository>/issues'\"` from the Actions context, so the owner's username never lands in the repo; /privacidad needs the contact link (Google consent screen)."
+          "notes": "Owner prerequisites: Cloudflare API token, custom domain route, GitHub environment and variables. Deploying early surfaces production-only routing and header issues while the UI is small. Launch context (D27): also inject `--define REPOSITORY_ISSUES_URL=\"'<server_url>/<repository>/issues'\"` from the Actions context, so the owner's username never lands in the repo; /privacidad needs the contact link (Google consent screen). Launch context (D29): ci.yml cancels in-progress runs on main, so a deploy-on-success skips cancelled commits; acceptable, or use `cancel-in-progress: ${{ github.event_name == 'pull_request' }}`."
         },
         {
           "id": "W3-18",
@@ -2812,7 +2813,8 @@
     {
       "path": "docs/glossary.md",
       "editableBy": [
-        "W0-02"
+        "W0-02",
+        "W3-01"
       ]
     },
     {
