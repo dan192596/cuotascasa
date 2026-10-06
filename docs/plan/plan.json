@@ -725,7 +725,7 @@
             "R25"
           ],
           "size": "S",
-          "notes": "Runs at the start of W2. W2-09, W2-10, W2-11 and W2-12 depend on it inside the wave; W3-14 implements ADR-0023 inside core/pwa/. W0-06 lists W2-02 in the editableBy of apps/web/src/testing/build-output/ and apps/web/src/index.html (W0-05, E7), so ADR-0021/0022/0023 can change the service-worker and manifest assertions and the inline scripts."
+          "notes": "Runs at the start of W2. W2-09, W2-10, W2-11 and W2-12 depend on it inside the wave; W3-14 implements ADR-0023 inside core/pwa/. W0-06 lists W2-02 in the editableBy of apps/web/src/testing/build-output/ and apps/web/src/index.html (W0-05, E7), so ADR-0021/0022/0023 can change the service-worker and manifest assertions and the inline scripts. Launch context (D27): withEventReplay() adds inline scripts (`ng-event-dispatch-contract` and the `__jsaction_bootstrap` call, whose content varies with the page's event types) as soon as a prerendered page has a listener: ADR-0021 must cover them (per-build hashes or autoCsp) or drop withEventReplay(); build its evidence with a probe listener, not with today's stubs. Also add `withInMemoryScrolling({ scrollPositionRestoration: 'enabled' })` to provideRouter (jsdom has no scrollTo: keep the router spec's output clean), and an icon link plus a Spanish <noscript> to index.html."
         },
         {
           "id": "W2-03",
@@ -1262,7 +1262,7 @@
             "R21"
           ],
           "size": "M",
-          "notes": ""
+          "notes": "Launch context (D27): core/ cannot import @cuotascasa/schema, so name the theme preference type as `ReturnType<SettingsStore['theme']>` from data/api.ts. The palette (docs/specs/design-palette.md) was approved on 2026-10-06; keyboard focus uses --cc-color-control-border, so the focus ring must differ from the resting border by thickness or offset, not only by colour. Inline links are underlined (accent against body ink is 1.80:1, WCAG 1.4.1). D17: drop Tailwind's preflight by importing only its theme and utilities layers, keeping `source('..')`. Tailwind v4 utilities live in `@layer utilities`, so unlayered Material styles and `body {}` win regardless of specificity: choose a layer order (or `!`) where a utility must override Material."
         },
         {
           "id": "W3-06",
@@ -1390,7 +1390,7 @@
             "R21"
           ],
           "size": "M",
-          "notes": "Launch context (D26): the «Préstamos» item points to /app/prestamos, which redirects to /app (W0-05, E5). The shell slot is the only host of cc-safari-banner on /app (E6)."
+          "notes": "Launch context (D26): the «Préstamos» item points to /app/prestamos, which redirects to /app (W0-05, E5). The shell slot is the only host of cc-safari-banner on /app (E6). Launch context (D27): with <base href=\"/\"> a skip link `href=\"#contenido\"` reloads the landing; make it a (click) that focuses `<main id=\"contenido\" tabindex=\"-1\">`. After each NavigationEnd except the first, use afterNextRender to focus the page's <h1> or <main> (WCAG 2.4.3)."
         },
         {
           "id": "W3-10",
@@ -1453,7 +1453,7 @@
             "R28"
           ],
           "size": "M",
-          "notes": "Single source for persist(): StorageHealth (W3-13). Runs in parallel with W3-10 (tests construct the memory adapter directly)."
+          "notes": "Single source for persist(): StorageHealth (W3-13). Runs in parallel with W3-10 (tests construct the memory adapter directly). Launch context (D27): the golden signal-store pattern serializes writes but not load(); if a store reloads while writes may be in flight, run the reload through the same queue so it cannot regress state."
         },
         {
           "id": "W3-12",
@@ -1491,7 +1491,7 @@
             "R28"
           ],
           "size": "M",
-          "notes": "Tests use fake stores built from the data/api.ts interfaces, so this runs in parallel with W3-10/W3-11."
+          "notes": "Tests use fake stores built from the data/api.ts interfaces, so this runs in parallel with W3-10/W3-11. Launch context (D27): an engine error caused only by the active scenario keeps every original and real value (paths with scenario = null; only activeScenarioEndDate, metrics().activeScenarioVsReal and yearlySubtotals().scenario are null); any other error nulls the nullable members, and the non-nullable ones keep their inert values. totalsByCurrency leaves out loans whose balance is null. compareScenarios puts a scenario whose events no longer compute in `failed`. Implement `checkRealWrite(loanId, write)` as a dry run over the real path with the write applied (never writes), with tests for a RateChange that triggers NegativeAmortizationError. toLoanTerms throws the domain's InvalidInputError for an invalid draft."
         },
         {
           "id": "W3-13",
@@ -1646,7 +1646,7 @@
             "R25"
           ],
           "size": "M",
-          "notes": "Owner prerequisites: Cloudflare API token, custom domain route, GitHub environment and variables. Deploying early surfaces production-only routing and header issues while the UI is small."
+          "notes": "Owner prerequisites: Cloudflare API token, custom domain route, GitHub environment and variables. Deploying early surfaces production-only routing and header issues while the UI is small. Launch context (D27): also inject `--define REPOSITORY_ISSUES_URL=\"'<server_url>/<repository>/issues'\"` from the Actions context, so the owner's username never lands in the repo; /privacidad needs the contact link (Google consent screen)."
         },
         {
           "id": "W3-18",
@@ -1844,7 +1844,7 @@
             "R21"
           ],
           "size": "M",
-          "notes": "Launch context (D26): a test that reads dist/ is named `*.dist.spec.ts` and lives in this card's owns: `pnpm test` excludes it and `ng test --configuration=dist` runs it after `pnpm build` (W0-05, B1)."
+          "notes": "Launch context (D26): a test that reads dist/ is named `*.dist.spec.ts` and lives in this card's owns: `pnpm test` excludes it and `ng test --configuration=dist` runs it after `pnpm build` (W0-05, B1). Launch context (D27): wrap the landing content in <main> (axe landmark-one-main)."
         },
         {
           "id": "W4-05",
@@ -1878,7 +1878,7 @@
             "R25"
           ],
           "size": "S",
-          "notes": "ISSUES_URL (build-time define, D17) reaches /privacidad as route data: keep the `issuesUrl` input of PrivacyPageComponent; public/ never imports environments/ (W0-05, B6). Launch context (D26): a test that reads dist/ is named `*.dist.spec.ts` and lives in this card's owns: `pnpm test` excludes it and `ng test --configuration=dist` runs it after `pnpm build` (W0-05, B1)."
+          "notes": "ISSUES_URL (build-time define, D17) reaches /privacidad as route data: keep the `issuesUrl` input of PrivacyPageComponent; public/ never imports environments/ (W0-05, B6). Launch context (D26): a test that reads dist/ is named `*.dist.spec.ts` and lives in this card's owns: `pnpm test` excludes it and `ng test --configuration=dist` runs it after `pnpm build` (W0-05, B1). Launch context (D27): render the contact link only when `issuesUrl()` is non-empty. Wrap the privacy and not-found page content in <main> (axe landmark-one-main)."
         },
         {
           "id": "W4-06",
@@ -2056,7 +2056,7 @@
             "R12"
           ],
           "size": "M",
-          "notes": "Launch context (D25): change the passphrase under SYNC_LOCK_NAME: decrypt the remote with the old key, re-encrypt with the new one, upload (keeping cuotascasa.prev.json), and only then KeyStore.save; otherwise the next sync on this device gets KeyMismatch."
+          "notes": "Launch context (D25): change the passphrase under SYNC_LOCK_NAME: decrypt the remote with the old key, re-encrypt with the new one, upload (keeping cuotascasa.prev.json), and only then KeyStore.save; otherwise the next sync on this device gets KeyMismatch. Launch context (D27): use exactly the data/api.ts status strings ('No configurado', 'Cambios sin sincronizar (n)') and define the needs-passphrase text there; W5-08's e2e reads them literally."
         },
         {
           "id": "W4-10",
@@ -2277,7 +2277,7 @@
             "R16"
           ],
           "size": "M",
-          "notes": ""
+          "notes": "Launch context (D27): before creating or updating a real record, call `LoanProjectionService.checkRealWrite(loanId, write)`; when it returns an error, show it inline and do not write (HU-10). While `realEndDate()` is null, pass the original plan's endDate to cc-event-form: `buildSchedule(toLoanTerms(loan)).endDate`."
         },
         {
           "id": "W5-04",
@@ -2314,7 +2314,7 @@
             "R17"
           ],
           "size": "L",
-          "notes": "Launch context (D26): the tools work on the active scenario (`forLoan(id).paths()`, goalSeek with basePath 'SCENARIO'); to use another scenario the editor first activates it with setActiveScenario (component-contracts.md §5)."
+          "notes": "Launch context (D26): the tools work on the active scenario (`forLoan(id).paths()`, goalSeek with basePath 'SCENARIO'); to use another scenario the editor first activates it with setActiveScenario (component-contracts.md §5). When `paths().scenario` is null (an active scenario without live events), goalSeek uses `basePath: 'REAL'` (component-contracts.md §5, D27)."
         },
         {
           "id": "W5-05",
@@ -2350,7 +2350,7 @@
             "R17"
           ],
           "size": "M",
-          "notes": "Launch context (D26): chart series use ink, ink-muted and accent plus dashes and markers; no new colour tokens (W0-05, E9)."
+          "notes": "Launch context (D26): chart series use ink, ink-muted and accent plus dashes and markers; no new colour tokens (W0-05, E9). Launch context (D27): show the scenarios in `ScenarioComparison.failed` with their error instead of hiding the comparison."
         },
         {
           "id": "W5-06",
@@ -2453,7 +2453,7 @@
             "R18"
           ],
           "size": "M",
-          "notes": ""
+          "notes": "Launch context (D27): assert the exact status strings that W4-09 produces from data/api.ts (including the needs-passphrase text)."
         }
       ]
     },

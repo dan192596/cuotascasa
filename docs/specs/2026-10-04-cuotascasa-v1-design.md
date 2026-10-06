@@ -277,7 +277,7 @@ IndexedDB local no se cifra, porque eso no protege contra XSS. El cifrado del di
 **Sistema de diseño:**
 
 - Fuentes autoalojadas; por ejemplo, Source Serif 4 y JetBrains Mono.
-- Paleta de tinta sobre papel: verde para «ya es tuyo», ámbar para diferencias pequeñas y rojo para diferencias grandes o errores. Los valores son una propuesta que el dueño aprueba en W0-05 (ADR-0012).
+- Paleta de tinta sobre papel: verde para «ya es tuyo», ámbar para diferencias pequeñas y rojo para diferencias grandes o errores. El dueño aprobó los valores el 2026-10-06; están congelados en `docs/specs/design-palette.md` (ADR-0012).
 - Tokens claro/oscuro, Material 22 compacto y Tailwind v4.
 - Formatos `Q 1,234.56`, `US$ 1,234.56` y `dd/mm/aaaa`.
 

@@ -58,7 +58,7 @@ aquí está la evidencia y el razonamiento que las sostienen.
 | [investigacion-frontend.md](investigacion-frontend.md) | Angular 22, librerías de UI, gráficas, decimales, exportación, e2e y locale es-GT |
 | [investigacion-almacenamiento-y-sync.md](investigacion-almacenamiento-y-sync.md) | Durabilidad por navegador, ITP de Safari, `persist()`, File System Access y sincronización con Drive `appDataFolder` |
 | [historias-de-usuario.md](historias-de-usuario.md) | 25 historias con criterios de aceptación, trazadas a R1–R28 |
-| [direccion-visual.md](direccion-visual.md) | Direcciones visuales exploradas, bocetos ASCII de las pantallas clave, medidor de casa y paleta propuesta (pendiente de aprobación en W0-05) |
+| [direccion-visual.md](direccion-visual.md) | Direcciones visuales exploradas, bocetos ASCII de las pantallas clave, medidor de casa y paleta aprobada por el dueño el 2026-10-06 (congelada en `docs/specs/design-palette.md`) |
 
 ## Pedidos originales del dueño y dónde quedaron
 

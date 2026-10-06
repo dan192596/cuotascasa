@@ -5,7 +5,7 @@ Fecha: 2026-10-04
 **Estado:**
 - La dirección visual está aprobada (ADR-0012).
 - Los bocetos son guía de diseño.
-- La paleta es una **propuesta que el dueño todavía no aprueba**: W0-05 se la presenta y, con su aprobación, la congela en `docs/specs/design-palette.md` (sección 3).
+- El dueño **aprobó la paleta el 2026-10-06** tal como se propuso (sección 3); la versión congelada es `docs/specs/design-palette.md`.
 
 > **Regla de datos.** Los números de los bocetos salen del ejemplo sintético de [`../algorithm.md`](../algorithm.md)
 > (`[ALG.EXAMPLE]`) o se calculan a partir de él. Si algún valor difiere del algoritmo, manda el algoritmo. Los nombres
@@ -30,7 +30,7 @@ Fecha: 2026-10-04
 
 La app se ve como una libreta bancaria (A), con una casa que se llena (B) donde se resume el avance, y con una tabla donde se puede escribir un abono hipotético como en una hoja de cálculo (C).
 
-## 3. Paleta propuesta «tinta sobre papel» (pendiente de aprobación del dueño)
+## 3. Paleta «tinta sobre papel» (aprobada por el dueño el 2026-10-06; la versión congelada es `docs/specs/design-palette.md`)
 
 Los nombres de la tabla son **roles**, no los nombres de los tokens. Esos nombres los congela W0-05 en `apps/web/src/design-contract/token-names.json`, y W3-05 asigna los valores.
 
@@ -50,7 +50,7 @@ Los nombres de la tabla son **roles**, no los nombres de los tokens. Esos nombre
 | ámbar | Diferencias pequeñas (texto e ícono) | `#875A00` | `#E6B85C` |
 | rojo | Diferencias grandes y errores (texto e ícono) | `#A12830` | `#F28C8C` |
 
-**Contraste verificado** con la fórmula de luminancia relativa de WCAG 2.2:
+**Contraste verificado** con la fórmula de luminancia relativa de WCAG 2.2 (tabla de la propuesta; la vigente, con la fila del mes actual y el texto sobre acento, está en `docs/specs/design-palette.md`):
 
 | Pares | Mínimo exigido | Peor caso en claro | Peor caso en oscuro |
 |---|---|---|---|

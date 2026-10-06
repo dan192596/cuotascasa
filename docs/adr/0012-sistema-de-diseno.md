@@ -21,7 +21,7 @@ Restricciones: escritorio primero, formatos de Guatemala, accesibilidad AA y nin
 ## Decisión
 
 1. **Dirección A como base.** Encabezados en **Source Serif 4**, números en **JetBrains Mono** con `tabular-nums` y tablas con renglones. La paleta es «tinta sobre papel».
-   - La **propuesta** de valores hexadecimales, para tema claro y oscuro y con el contraste ya verificado, está en `docs/discovery/direccion-visual.md`. **El dueño todavía no la aprueba.**
+   - La **propuesta** de valores hexadecimales, para tema claro y oscuro y con el contraste ya verificado, está en `docs/discovery/direccion-visual.md`. El dueño la aprobó el 2026-10-06 y la versión congelada es `docs/specs/design-palette.md` (W0-05).
    - W0-05 se la presenta. Con su aprobación, la copia a `docs/specs/design-palette.md` con la fecha y la congela. Si el dueño pide cambios, W0-05 los aplica sin bajar de los mínimos de contraste del punto 12.
    - Después de congelada, cambiar la paleta exige actualizar este ADR.
 2. **B en el dashboard y en la landing.** El medidor de casa muestra el porcentaje de capital pagado de cada préstamo y protagoniza el hero de `/`. Se rotula «capital pagado» para que no se confunda con el valor del inmueble.
