@@ -1,0 +1,19 @@
+{
+  "$comment": "Frozen CSS custom property names (W0-05, ADR-0012 decision 5). W3-05 owns the values in apps/web/src/styles/tokens.css. Each themed token is declared once as light-dark(<light>, <dark>); shared tokens do not depend on the theme. Roles: docs/specs/design-palette.md.",
+  "themed": [
+    "--cc-color-paper",
+    "--cc-color-surface",
+    "--cc-color-band",
+    "--cc-color-current-month",
+    "--cc-color-rule",
+    "--cc-color-control-border",
+    "--cc-color-ink",
+    "--cc-color-ink-muted",
+    "--cc-color-accent",
+    "--cc-color-positive",
+    "--cc-color-positive-fill",
+    "--cc-color-warning",
+    "--cc-color-danger"
+  ],
+  "shared": ["--cc-font-heading", "--cc-font-body", "--cc-font-numeric"]
+}

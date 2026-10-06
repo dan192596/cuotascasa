@@ -1,0 +1,8 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "types": ["node"]
+  },
+  "include": ["**/*.ts", "../packages/sync/src/testing/index.ts", "../packages/schema/src/testing/index.ts"]
+}

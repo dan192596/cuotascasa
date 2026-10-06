@@ -1,0 +1,6 @@
+/*
+ * Tailwind v4 entry (ADR-0012 decision 7: layout and utilities only). styles.scss loads it and
+ * apps/web/.postcssrc.json (@tailwindcss/postcss) compiles it. source('..') limits class detection to apps/web/src
+ * (relative to this directory), so the CSS does not depend on docs/ or packages/. W3-05 adds the @theme mapping.
+ */
+@import 'tailwindcss' source('..');

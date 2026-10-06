@@ -1,0 +1,11 @@
+// Global stylesheet entry (angular.json "styles"). W3-05 owns styles/ after W0-05.
+@use './tokens';
+@use './material-theme';
+@use './tailwind';
+
+body {
+  margin: 0;
+  background-color: var(--cc-color-paper);
+  color: var(--cc-color-ink);
+  font-family: var(--cc-font-body);
+}

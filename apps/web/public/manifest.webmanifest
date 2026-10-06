@@ -1,0 +1,9 @@
+{
+  "name": "CuotasCasa",
+  "short_name": "CuotasCasa",
+  "lang": "es-GT",
+  "dir": "ltr",
+  "start_url": "/app",
+  "display": "standalone",
+  "icons": []
+}

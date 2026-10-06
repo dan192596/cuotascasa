@@ -1,0 +1,32 @@
+/*
+ * Design tokens. Names are frozen in apps/web/src/design-contract/token-names.json (W0-05); W3-05 replaces these
+ * placeholder values with the approved palette of docs/specs/design-palette.md. Themed tokens use light-dark():
+ * the page follows the system, and ThemeService (W3-05) forces a theme with <html data-theme="light|dark">.
+ */
+:root {
+  color-scheme: light dark;
+  --cc-color-paper: light-dark(#ffffff, #121212);
+  --cc-color-surface: light-dark(#ffffff, #1e1e1e);
+  --cc-color-band: light-dark(#f2f2f2, #1a1a1a);
+  --cc-color-current-month: light-dark(#ececec, #2a2a2a);
+  --cc-color-rule: light-dark(#d9d9d9, #3a3a3a);
+  --cc-color-control-border: light-dark(#767676, #8c8c8c);
+  --cc-color-ink: light-dark(#1a1a1a, #f2f2f2);
+  --cc-color-ink-muted: light-dark(#4d4d4d, #bfbfbf);
+  --cc-color-accent: light-dark(#1a1a1a, #f2f2f2);
+  --cc-color-positive: light-dark(#1a1a1a, #f2f2f2);
+  --cc-color-positive-fill: light-dark(#767676, #8c8c8c);
+  --cc-color-warning: light-dark(#1a1a1a, #f2f2f2);
+  --cc-color-danger: light-dark(#1a1a1a, #f2f2f2);
+  --cc-font-heading: serif;
+  --cc-font-body: system-ui, sans-serif;
+  --cc-font-numeric: ui-monospace, monospace;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
