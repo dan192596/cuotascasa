@@ -725,7 +725,7 @@
             "R25"
           ],
           "size": "S",
-          "notes": "Runs at the start of W2. W2-09, W2-10, W2-11 and W2-12 depend on it inside the wave; W3-14 implements ADR-0023 inside core/pwa/."
+          "notes": "Runs at the start of W2. W2-09, W2-10, W2-11 and W2-12 depend on it inside the wave; W3-14 implements ADR-0023 inside core/pwa/. W0-06 lists W2-02 in the editableBy of apps/web/src/testing/build-output/ and apps/web/src/index.html (W0-05, E7), so ADR-0021/0022/0023 can change the service-worker and manifest assertions and the inline scripts."
         },
         {
           "id": "W2-03",
@@ -1327,7 +1327,7 @@
             "R21"
           ],
           "size": "L",
-          "notes": ""
+          "notes": "Launch context (D26): the frozen angular.json has an `anyComponentStyle` budget that fails at 8 kB; keep the ledger table's component styles under it, or stop and ask Opus (W2-02 owns angular.json)."
         },
         {
           "id": "W3-08",
@@ -1390,7 +1390,7 @@
             "R21"
           ],
           "size": "M",
-          "notes": ""
+          "notes": "Launch context (D26): the «Préstamos» item points to /app/prestamos, which redirects to /app (W0-05, E5). The shell slot is the only host of cc-safari-banner on /app (E6)."
         },
         {
           "id": "W3-10",
@@ -1420,7 +1420,7 @@
             "R10"
           ],
           "size": "S",
-          "notes": ""
+          "notes": "Launch context (D26): the build-time adapter flag is `isDevMode()`: the memory adapter in the dev server and in ng test, Dexie in production (W0-05, C12)."
         },
         {
           "id": "W3-11",
@@ -1438,7 +1438,7 @@
             "packages/persistence/src/ports.ts",
             "packages/schema/src/entities/"
           ],
-          "deliverables": "Signal stores implementing data/api.ts for loans (incl. create without anchor and createWithAnchor: Loan + ReportedBalance in one transaction), events, reported balances, payments, scenarios (activeScenarioId per loan) and settings. Cascading tombstones on loan delete, currency locked while any non-deleted LoanEvent, ReportedBalance, ActualPayment or Scenario of the loan exists, StorageHealth.requestPersist() called once after the first successful write, pendingChanges and changesSinceBackup exposed from the DataStore.",
+          "deliverables": "Signal stores implementing data/api.ts for loans (incl. create without anchor and createWithAnchor: Loan + ReportedBalance in one transaction), events, reported balances, payments, scenarios (activeScenarioId per loan) and settings. Cascading tombstones on loan delete, currency locked while any non-deleted LoanEvent, ReportedBalance, ActualPayment or Scenario of the loan exists, StorageHealth.requestPersist() called once after the first successful write, pendingChanges and changesSinceBackup move on writes in DATA_STORE (no api.ts member: BackupService.changesSinceBackup and SyncStatus.pendingChanges carry them to the UI; D26).",
           "acceptance_criteria": [
             "TestBed tests with the memory adapter cover every store method; a meta-test compares tested methods with data/api.ts",
             "createWithAnchor writes both records or neither (injected failure)",
@@ -1553,7 +1553,7 @@
             "R20"
           ],
           "size": "M",
-          "notes": "If the mechanism cannot be implemented inside core/pwa/, stop: Opus adjusts app.config.ts in a micro-card and amends ADR-0023."
+          "notes": "If the mechanism cannot be implemented inside core/pwa/, stop: Opus adjusts app.config.ts in a micro-card and amends ADR-0023. Launch context (D26): a test that reads dist/ is named `*.dist.spec.ts` and lives in this card's owns: `pnpm test` excludes it and `ng test --configuration=dist` runs it after `pnpm build` (W0-05, B1)."
         },
         {
           "id": "W3-15",
@@ -1809,7 +1809,7 @@
             "R21"
           ],
           "size": "M",
-          "notes": "public/ cannot use data/'s Clock (spec §9): if no landing-safe injectable clock exists, Opus adds one in a W0-05 contract micro-card before this card continues."
+          "notes": "W0-05 provides PUBLIC_CLOCK, the landing-safe injectable clock (D17). Launch context (D26): a test that reads dist/ is named `*.dist.spec.ts` and lives in this card's owns: `pnpm test` excludes it and `ng test --configuration=dist` runs it after `pnpm build` (W0-05, B1)."
         },
         {
           "id": "W4-04",
@@ -1844,7 +1844,7 @@
             "R21"
           ],
           "size": "M",
-          "notes": ""
+          "notes": "Launch context (D26): a test that reads dist/ is named `*.dist.spec.ts` and lives in this card's owns: `pnpm test` excludes it and `ng test --configuration=dist` runs it after `pnpm build` (W0-05, B1)."
         },
         {
           "id": "W4-05",
@@ -1878,7 +1878,7 @@
             "R25"
           ],
           "size": "S",
-          "notes": "The Issues URL is a build-time constant; if environments/build-constants.ts lacks it, Opus adds it in a micro-card."
+          "notes": "ISSUES_URL (build-time define, D17) reaches /privacidad as route data: keep the `issuesUrl` input of PrivacyPageComponent; public/ never imports environments/ (W0-05, B6). Launch context (D26): a test that reads dist/ is named `*.dist.spec.ts` and lives in this card's owns: `pnpm test` excludes it and `ng test --configuration=dist` runs it after `pnpm build` (W0-05, B1)."
         },
         {
           "id": "W4-06",
@@ -1906,7 +1906,7 @@
             "docs/discovery/direccion-visual.md",
             "docs/specs/2026-10-04-cuotascasa-v1-design.md"
           ],
-          "deliverables": "Loan cards showing the spec §9 derived values from LoanProjectionService (house meter = percentPaid, balance, nextInstallmentTotal, realEndDate plus activeScenarioEndDate when the active scenario has events, validation chip with 'Sin validar' for UNVALIDATED, status), per-currency totals over active loans, status filter activos/pagados/archivados, sync and backup status widget driven by SyncService status and BackupService.reminderDue, empty state with three actions (crear préstamo, restaurar respaldo, conectar Drive), cc-safari-banner host.",
+          "deliverables": "Loan cards showing the spec §9 derived values from LoanProjectionService (house meter = percentPaid, balance, nextInstallmentTotal, realEndDate plus activeScenarioEndDate when the active scenario has events, validation chip with 'Sin validar' for UNVALIDATED, status), per-currency totals over active loans, status filter activos/pagados/archivados, sync and backup status widget driven by SyncService status and BackupService.reminderDue, empty state with three actions (crear préstamo, restaurar respaldo, conectar Drive). The Safari banner lives only in the shell slot (W3-09); the dashboard does not host it (D26).",
           "acceptance_criteria": [
             "Component tests with fake services: card values and totals come from LoanProjectionService (spec §9); GTQ and USD totals render separately; an UNVALIDATED loan shows 'Sin validar'",
             "Paid and archived loans are hidden by default and shown via the filter",
@@ -1920,7 +1920,7 @@
             "R28"
           ],
           "size": "L",
-          "notes": ""
+          "notes": "Launch context (D26): the ADR-0010 allowance for the dashboard to import cc-safari-banner stays unused; the shell hosts the banner (W0-05, E6)."
         },
         {
           "id": "W4-07",
@@ -2147,7 +2147,7 @@
             "R16"
           ],
           "size": "M",
-          "notes": "Split out of the real-data screen to keep each card reviewable; the timeline (W5-03) composes it. If cc-event-form needs new inputs (rateType, due dates for the installment suggestion), Opus first changes its frozen contract in a W0-05 contract micro-card."
+          "notes": "Split out of the real-data screen to keep each card reviewable; the timeline (W5-03) composes it. If cc-event-form needs new inputs (rateType, due dates for the installment suggestion), Opus first changes its frozen contract in a W0-05 contract micro-card. Launch context (D26): «emits a DTO that parses with its schema entity» means once stamped: tests add a synthetic id, createdAt, updatedAt, updatedByDevice and deletedAt: null. EventFormContext carries schema primitives (paymentDay: number | 'END_OF_MONTH', endDate: string); convert them with parsePaymentDay and parseLocalDate. The golden pattern lists errors with `track $index`."
         }
       ]
     },
@@ -2314,7 +2314,7 @@
             "R17"
           ],
           "size": "L",
-          "notes": ""
+          "notes": "Launch context (D26): the tools work on the active scenario (`forLoan(id).paths()`, goalSeek with basePath 'SCENARIO'); to use another scenario the editor first activates it with setActiveScenario (component-contracts.md §5)."
         },
         {
           "id": "W5-05",
@@ -2350,7 +2350,7 @@
             "R17"
           ],
           "size": "M",
-          "notes": ""
+          "notes": "Launch context (D26): chart series use ink, ink-muted and accent plus dashes and markers; no new colour tokens (W0-05, E9)."
         },
         {
           "id": "W5-06",
