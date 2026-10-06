@@ -19,7 +19,7 @@
 
 - **Contexto decimal:** precisión de **34 dígitos significativos** y redondeo intermedio **`ROUND_HALF_EVEN`**. Se aplica a toda operación que no sea un `HALF_UP_2` explícito:
   - Python: `decimal` con `prec = 34` (su modo por defecto ya es `ROUND_HALF_EVEN`).
-  - TypeScript: `Decimal.set({ precision: 34, rounding: Decimal.ROUND_HALF_EVEN })`.
+  - TypeScript: un clon aislado, `Decimal.clone({ defaults: true, precision: 34, rounding: Decimal.ROUND_HALF_EVEN })` (`money/decimal-config.ts`); nunca `Decimal.set`, que cambia la configuración global (ADR-0003).
 - **`HALF_UP_2(x)`:** redondeo a 2 decimales, mitad lejos de cero (`ROUND_HALF_UP`): 0.005 → 0.01 y −0.005 → −0.01. Es el **único** redondeo a centavos y ocurre **solo** donde esta especificación escribe `HALF_UP_2`. Los demás valores intermedios quedan en el contexto de 34 dígitos.
 - **Potencias:** `(1 + r)^(−m)` se calcula como `1 / P`, con `P = (1 + r)^m` por exponenciación entera en el contexto decimal.
 - **Orden de operaciones:** cada fórmula se evalúa tal como está escrita, de izquierda a derecha, y cada operación se redondea al contexto de 34 dígitos: `B · r / (1 − 1/P)` es `(B · r) / (1 − (1 / P))`; `charge · i / (i + f)` es `(charge · i) / (i + f)`; `insurance · fⱼ / f` es `(insurance · fⱼ) / f`; `B · i / 12` es `(B · i) / 12`; `B · fⱼ / 12` es `(B · fⱼ) / 12`. El cargo de `FHA_GT_V1` se evalúa como `(B · (i + f)) / 12`, nunca como `B` por una `r` ya redondeada al contexto: con `i + f = 0.07` y `B = 1506.00`, `charge = HALF_UP_2(8.785) = 8.79`. Las sumas y restas de montos de 2 decimales son exactas.

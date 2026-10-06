@@ -9,7 +9,7 @@ El código usa **inglés**, la interfaz **español (Guatemala)** y la documentac
 | Banco | `bank` | Texto libre con el nombre del banco; nunca se publica en el repo con datos reales |
 | Nota | `note` | Texto libre opcional en `ReportedBalance`, `ActualPayment` y `LoanEvent` |
 | Monto / capital inicial | `principal` | Monto desembolsado |
-| Plazo | `termMonths` / `term` | Número de cuotas pactadas (plazo fijo) o resultante (plazo derivado) |
+| Plazo | `termMonths` / `term` | `termMonths`: cuotas pactadas en el contrato. `term`: plazo vigente ([ALG.TERM]); en plazo fijo es un dato (baja en N al adelantar cuotas, [ALG.ADVANCE]) y en plazo derivado resulta de simular |
 | Desembolso / liquidación | `disbursementDate` | Fecha en que el banco entregó el dinero |
 | Cuota | `Installment` | Pago periódico; también la fila de la tabla de amortización |
 | Cuota nivelada | `level` / `levelPayment` | Capital + interés + seguros porcentuales, constante (método francés) |
@@ -89,6 +89,10 @@ El código usa **inglés**, la interfaz **español (Guatemala)** y la documentac
 | Eventos reales / del escenario | `realEvents` / `scenarioEvents` | Entradas de `buildPaths` (`PathsInput`); `scenarioEvents = null`: sin escenario ([ALG.PATHS]) |
 | Evento heredado | inherited event | Evento, con o sin `installmentNumber`, que un calendario derivado (el escenario, el camino base `SCENARIO` de la búsqueda por meta, cada prueba de la búsqueda o el modelado de [ALG.VALIDATE]) toma de su camino de origen; no se vuelve a validar su rango ([ALG.EVENTS.ANCHOR], reglas 1 y 3) |
 | Cuota fuera de rango | `INSTALLMENT_OUT_OF_RANGE` | Código de `InvalidInputError`: `installmentNumber` menor que 1 o después de la última cuota del calendario, o evento posterior a la última cuota ([ALG.EVENTS.ANCHOR]); el abono de la búsqueda usa `PREPAYMENT_AFTER_END` de `InfeasibleGoalError` |
+| Modo del plazo | `termMode` (`FIXED`, `DERIVED`) | Si `term` es un dato o resulta de simular ([ALG.TERM]); lo guarda `PeriodState` |
+| Opciones de un calendario derivado | `ScheduleOptions` (`inheritedEvents`, `goalPrepayment`) | Cuarto parámetro de `buildSchedule`/`runSchedule`: los eventos heredados de su camino de origen, cuyo rango no se revalida (regla 3 de [ALG.EVENTS.ANCHOR]), y el abono de una prueba de la búsqueda por meta, que va después de los eventos de la fase 3 del camino base con su misma fecha ([ALG.GOAL]) |
+| Saldo tras el abono | `closingAfterPrepayment` | Cierre de la cuota después de sus abonos de la fase 3; es la apertura de la cuota siguiente, salvo re-anclaje |
+| Tipo de seguro | `InsuranceKind` (`mortgageInsurance`, `lifeInsurance`, `other`) | Clase de un componente de `insuranceRates` en una plantilla: seguro de hipoteca, desgravamen u otro seguro porcentual ([ALG.TEMPLATES]) |
 | Solicitud de búsqueda por meta | `GoalSeekRequest` (`basePath`, `prepaymentDate`, `goal`) | Camino base, fecha del abono y meta (`kind` con `date` o `amount`) ([ALG.GOAL]) |
 | Saldo reportado / proyectado / modelado | `reported` / `projected` / `modeled` | Campos de la diferencia real por ancla ([ALG.ANCHOR]) y de la validación ([ALG.VALIDATE]) |
 | Diferencia real por ancla / por componente | `perAnchor` / `perComponent` | Listas de `RealDelta` ([ALG.ANCHOR], [ALG.ACTUAL]) |
