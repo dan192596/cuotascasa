@@ -184,5 +184,18 @@ class CheckMode(unittest.TestCase):
         self.assertEqual(run_main(["--check"], self.root), 1)
 
 
+class RealPlan(unittest.TestCase):
+    """El plan del repo: válido y con todas las vistas al día (lo mismo que --check)."""
+
+    def test_repo_plan_is_valid_and_views_are_up_to_date(self):
+        plan = json.loads(rp.PLAN.read_text(encoding="utf-8"))
+        cards, problems = rp.validate(plan)
+        self.assertEqual(problems, [])
+        outputs = rp.build_outputs(plan, cards)
+        self.assertEqual(rp.stale_outputs(outputs, rp.ROOT), [])
+        self.assertEqual(rp.leftover_views(outputs, rp.ROOT), [])
+        self.assertEqual(json.loads(outputs["docs/plan/frozen-files.json"]), plan["frozen_files"])
+
+
 if __name__ == "__main__":
     unittest.main()

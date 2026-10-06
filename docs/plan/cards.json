@@ -1,0 +1,803 @@
+[
+  {
+    "id": "W0-01",
+    "wave": "W0",
+    "executor": "opus",
+    "branch": "card/W0-01-workspace-toolchain-dependency-policy-and-hygien",
+    "owns": [
+      "package.json",
+      "pnpm-workspace.yaml",
+      "pnpm-lock.yaml",
+      ".npmrc",
+      ".nvmrc",
+      "tsconfig.base.json",
+      "tsconfig.json",
+      "eslint.config.mjs",
+      ".prettierrc.json",
+      ".prettierignore",
+      ".editorconfig",
+      ".gitignore",
+      ".gitattributes",
+      "lefthook.yml",
+      ".gitleaks.toml",
+      "vitest.config.ts",
+      "LICENSE",
+      "README.md",
+      "SECURITY.md",
+      "packages/domain/package.json",
+      "packages/schema/package.json",
+      "packages/persistence/package.json",
+      "packages/sync/package.json",
+      "packages/export/package.json",
+      "apps/web/package.json",
+      "e2e/package.json",
+      "tools/conformance/package.json",
+      "tools/hygiene/",
+      "tools/catalog-check/"
+    ]
+  },
+  {
+    "id": "W0-02",
+    "wave": "W0",
+    "executor": "opus",
+    "branch": "card/W0-02-algorithm-spec-readiness-gate-worked-examples-de",
+    "owns": [
+      "docs/algorithm.md",
+      "docs/glossary.md",
+      "docs/specs/algorithm-examples/"
+    ]
+  },
+  {
+    "id": "W0-03",
+    "wave": "W0",
+    "executor": "opus",
+    "branch": "card/W0-03-domain-contracts-with-opus-implemented-money-dat",
+    "owns": [
+      "packages/domain/src/",
+      "packages/domain/test/",
+      "packages/domain/tsconfig.json",
+      "packages/domain/vitest.config.ts",
+      "packages/export/src/",
+      "packages/export/tsconfig.json",
+      "packages/export/vitest.config.ts"
+    ]
+  },
+  {
+    "id": "W0-04",
+    "wave": "W0",
+    "executor": "opus",
+    "branch": "card/W0-04-schema-persistence-contract-suite-sync-contracts",
+    "owns": [
+      "packages/schema/src/",
+      "packages/schema/tsconfig.json",
+      "packages/schema/vitest.config.ts",
+      "packages/persistence/src/",
+      "packages/persistence/tsconfig.json",
+      "packages/persistence/vitest.config.ts",
+      "packages/sync/src/",
+      "packages/sync/tsconfig.json",
+      "packages/sync/vitest.config.ts",
+      "tools/oracle/pyproject.toml",
+      "tools/oracle/FORMAT.md",
+      "tools/oracle/README.md",
+      "tools/oracle/.python-version",
+      "tools/oracle/requirements-dev.txt",
+      "docs/specs/drive-api-subset.md",
+      "docs/adr/0024-sync-merge-order.md"
+    ]
+  },
+  {
+    "id": "W0-05",
+    "wave": "W0",
+    "executor": "opus",
+    "branch": "card/W0-05-angular-22-skeleton-static-ssr-lazy-route-stubs",
+    "owns": [
+      "angular.json",
+      "apps/web/src/",
+      "apps/web/public/",
+      "apps/web/ngsw-config.json",
+      "apps/web/tsconfig.app.json",
+      "apps/web/tsconfig.spec.json",
+      "apps/web/vitest.config.ts",
+      "e2e/tsconfig.json",
+      "docs/specs/component-contracts.md",
+      "docs/specs/angular-patterns.md",
+      "docs/specs/design-palette.md",
+      "docs/specs/privacy-requirements.md",
+      "apps/web/.postcssrc.json"
+    ]
+  },
+  {
+    "id": "W0-06",
+    "wave": "W0",
+    "executor": "opus",
+    "branch": "card/W0-06-ci-owns-check-with-frozen-and-append-only-files",
+    "owns": [
+      ".github/",
+      "tools/owns-check/",
+      "tools/lint-fixtures/",
+      "tools/conformance/src/",
+      "tools/conformance/tsconfig.json",
+      "tools/conformance/vitest.config.ts",
+      "tools/conformance/enforced-features.json",
+      "docs/plan/cards.json",
+      "docs/plan/frozen-files.json",
+      "tools/plan/",
+      "docs/plan/plan.json"
+    ]
+  },
+  {
+    "id": "W1-01",
+    "wave": "W1",
+    "executor": "sonnet",
+    "branch": "card/W1-01-engine-schedule-core-level-payment-period-loop-r",
+    "owns": [
+      "packages/domain/src/schedule/"
+    ]
+  },
+  {
+    "id": "W1-02",
+    "wave": "W1",
+    "executor": "sonnet",
+    "branch": "card/W1-02-independent-python-oracle-core-algorithm-profile",
+    "owns": [
+      "tools/oracle/cuotascasa_oracle/",
+      "tools/oracle/tests/"
+    ]
+  },
+  {
+    "id": "W1-03",
+    "wave": "W1",
+    "executor": "sonnet",
+    "branch": "card/W1-03-backup-codec-pure-version-migrations-schema-arbi",
+    "owns": [
+      "packages/schema/src/codec/",
+      "packages/schema/src/migrations/",
+      "packages/schema/src/testing/",
+      "packages/schema/fixtures/"
+    ]
+  },
+  {
+    "id": "W1-04",
+    "wave": "W1",
+    "executor": "sonnet",
+    "branch": "card/W1-04-in-memory-datastore-adapter",
+    "owns": [
+      "packages/persistence/src/memory/"
+    ]
+  },
+  {
+    "id": "W1-05",
+    "wave": "W1",
+    "executor": "sonnet",
+    "branch": "card/W1-05-dexie-4-4-adapter-passing-the-persistence-contra",
+    "owns": [
+      "packages/persistence/src/dexie/"
+    ]
+  },
+  {
+    "id": "W1-06",
+    "wave": "W1",
+    "executor": "sonnet",
+    "branch": "card/W1-06-sync-merge-and-tombstone-purge-pure",
+    "owns": [
+      "packages/sync/src/merge/"
+    ]
+  },
+  {
+    "id": "W1-07",
+    "wave": "W1",
+    "executor": "opus",
+    "branch": "card/W1-07-crypto-envelope-and-non-extractable-per-device-k",
+    "owns": [
+      "packages/sync/src/crypto/"
+    ]
+  },
+  {
+    "id": "W1-08",
+    "wave": "W1",
+    "executor": "sonnet",
+    "branch": "card/W1-08-spike-csp-trusted-types-google-identity-services",
+    "owns": [
+      "tools/spikes/csp-gis/",
+      "docs/specs/spikes/csp-gis-evidence.md"
+    ]
+  },
+  {
+    "id": "W1-09",
+    "wave": "W1",
+    "executor": "sonnet",
+    "branch": "card/W1-09-spike-to-baseline-cloudflare-workers-static-asse",
+    "owns": [
+      "wrangler.jsonc",
+      "apps/web/public/_redirects",
+      "apps/web/public/_headers",
+      "tools/edge/",
+      "docs/adr/0022-cloudflare-static-routing.md"
+    ]
+  },
+  {
+    "id": "W1-10",
+    "wave": "W1",
+    "executor": "sonnet",
+    "branch": "card/W1-10-public-repo-hygiene-hooks-and-renovate-policy",
+    "owns": [
+      "tools/hygiene/",
+      "renovate.json"
+    ]
+  },
+  {
+    "id": "W2-01",
+    "wave": "W2",
+    "executor": "opus",
+    "branch": "card/W2-01-opus-gate-1-private-oracle-validation-core-fixtu",
+    "owns": [
+      "tools/oracle/fixtures/",
+      "docs/specs/oracle-validation-log.md",
+      ".github/workflows/ci.yml"
+    ]
+  },
+  {
+    "id": "W2-02",
+    "wave": "W2",
+    "executor": "opus",
+    "branch": "card/W2-02-opus-gate-csp-trusted-types-and-service-worker-d",
+    "owns": [
+      "angular.json",
+      "apps/web/src/app/app.config.ts",
+      "apps/web/src/app/app.routes.server.ts",
+      "apps/web/src/app/app-area.routes.ts",
+      "docs/adr/0021-csp-trusted-types-gis.md",
+      "docs/adr/0023-pwa-registration-scope.md",
+      "docs/adr/0022-cloudflare-static-routing.md",
+      "apps/web/src/index.html",
+      "apps/web/src/testing/build-output/"
+    ]
+  },
+  {
+    "id": "W2-03",
+    "wave": "W2",
+    "executor": "sonnet",
+    "branch": "card/W2-03-engine-events-ratechange-3-policies-and-fixedcha",
+    "owns": [
+      "packages/domain/src/events/rate-change/",
+      "packages/domain/src/events/fixed-charge-change/"
+    ]
+  },
+  {
+    "id": "W2-04",
+    "wave": "W2",
+    "executor": "sonnet",
+    "branch": "card/W2-04-engine-events-prepayment-modes-commission-payoff",
+    "owns": [
+      "packages/domain/src/events/prepayment/",
+      "packages/domain/src/events/advance-installments/"
+    ]
+  },
+  {
+    "id": "W2-05",
+    "wave": "W2",
+    "executor": "sonnet",
+    "branch": "card/W2-05-engine-reported-balance-anchors-actual-payments",
+    "owns": [
+      "packages/domain/src/events/reported-balance/",
+      "packages/domain/src/events/actual-payment/",
+      "packages/domain/src/paths/"
+    ]
+  },
+  {
+    "id": "W2-06",
+    "wave": "W2",
+    "executor": "sonnet",
+    "branch": "card/W2-06-oracle-every-event-type-and-the-full-40-loans-pr",
+    "owns": [
+      "tools/oracle/cuotascasa_oracle/",
+      "tools/oracle/tests/"
+    ]
+  },
+  {
+    "id": "W2-07",
+    "wave": "W2",
+    "executor": "sonnet",
+    "branch": "card/W2-07-templates-fha-guatemala-v1-hipotecario-simple-an",
+    "owns": [
+      "packages/domain/src/templates/",
+      "packages/domain/src/validation/"
+    ]
+  },
+  {
+    "id": "W2-08",
+    "wave": "W2",
+    "executor": "sonnet",
+    "branch": "card/W2-08-sync-session-orchestrator-download-decrypt-merge",
+    "owns": [
+      "packages/sync/src/session/"
+    ]
+  },
+  {
+    "id": "W2-09",
+    "wave": "W2",
+    "executor": "sonnet",
+    "branch": "card/W2-09-google-drive-syncprovider-gis-token-model-appdat",
+    "owns": [
+      "packages/sync/src/google-drive/"
+    ]
+  },
+  {
+    "id": "W2-10",
+    "wave": "W2",
+    "executor": "sonnet",
+    "branch": "card/W2-10-final-per-route-security-headers-csp-trusted-typ",
+    "owns": [
+      "apps/web/public/_headers",
+      "tools/edge/headers/"
+    ]
+  },
+  {
+    "id": "W2-11",
+    "wave": "W2",
+    "executor": "sonnet",
+    "branch": "card/W2-11-e2e-infrastructure-production-build-behind-wrang",
+    "owns": [
+      "e2e/playwright.config.ts",
+      "e2e/support/",
+      "e2e/specs/smoke.spec.ts"
+    ]
+  },
+  {
+    "id": "W2-12",
+    "wave": "W2",
+    "executor": "sonnet",
+    "branch": "card/W2-12-bundle-composition-and-budget-check-esbuild-meta",
+    "owns": [
+      "tools/bundle-check/"
+    ]
+  },
+  {
+    "id": "W2-13",
+    "wave": "W2",
+    "executor": "sonnet",
+    "branch": "card/W2-13-core-conformance-to-the-cent-and-core-engine-fix",
+    "owns": [
+      "packages/domain/src/schedule/",
+      "tools/conformance/enforced-features.json"
+    ]
+  },
+  {
+    "id": "W3-01",
+    "wave": "W3",
+    "executor": "opus",
+    "branch": "card/W3-01-opus-gate-2-full-fixtures-private-re-validation",
+    "owns": [
+      "tools/oracle/fixtures/",
+      "docs/specs/oracle-validation-log.md",
+      "docs/specs/conformance-triage.md",
+      "docs/algorithm.md",
+      "docs/specs/algorithm-examples/"
+    ]
+  },
+  {
+    "id": "W3-02",
+    "wave": "W3",
+    "executor": "sonnet",
+    "branch": "card/W3-02-engine-property-tests-fast-check-with-a-visible",
+    "owns": [
+      "packages/domain/test/properties/"
+    ]
+  },
+  {
+    "id": "W3-03",
+    "wave": "W3",
+    "executor": "sonnet",
+    "branch": "card/W3-03-goal-seek-finish-by-date-max-installment-bisecti",
+    "owns": [
+      "packages/domain/src/goal-seek/"
+    ]
+  },
+  {
+    "id": "W3-04",
+    "wave": "W3",
+    "executor": "sonnet",
+    "branch": "card/W3-04-oracle-maintenance-per-opus-triage",
+    "owns": [
+      "tools/oracle/cuotascasa_oracle/",
+      "tools/oracle/tests/"
+    ]
+  },
+  {
+    "id": "W3-05",
+    "wave": "W3",
+    "executor": "sonnet",
+    "branch": "card/W3-05-design-system-foundations-tokens-light-dark-self",
+    "owns": [
+      "apps/web/src/styles/",
+      "apps/web/src/app/core/theme/"
+    ]
+  },
+  {
+    "id": "W3-06",
+    "wave": "W3",
+    "executor": "sonnet",
+    "branch": "card/W3-06-ui-formatting-primitives-es-gt-money-date-percen",
+    "owns": [
+      "apps/web/src/app/ui/format/",
+      "apps/web/src/app/ui/money-input/"
+    ]
+  },
+  {
+    "id": "W3-07",
+    "wave": "W3",
+    "executor": "sonnet",
+    "branch": "card/W3-07-ui-ledger-table-component-libreta-style-keyboard",
+    "owns": [
+      "apps/web/src/app/ui/ledger-table/"
+    ]
+  },
+  {
+    "id": "W3-08",
+    "wave": "W3",
+    "executor": "sonnet",
+    "branch": "card/W3-08-ui-house-meter-and-feedback-components-status-ch",
+    "owns": [
+      "apps/web/src/app/ui/house-meter/",
+      "apps/web/src/app/ui/feedback/"
+    ]
+  },
+  {
+    "id": "W3-09",
+    "wave": "W3",
+    "executor": "sonnet",
+    "branch": "card/W3-09-app-shell-navigation-and-global-error-handling",
+    "owns": [
+      "apps/web/src/app/core/shell/",
+      "apps/web/src/app/core/errors/"
+    ]
+  },
+  {
+    "id": "W3-10",
+    "wave": "W3",
+    "executor": "sonnet",
+    "branch": "card/W3-10-data-layer-adapter-providers-clock-ids-and-devic",
+    "owns": [
+      "apps/web/src/app/data/providers/"
+    ]
+  },
+  {
+    "id": "W3-11",
+    "wave": "W3",
+    "executor": "sonnet",
+    "branch": "card/W3-11-data-layer-signal-stores",
+    "owns": [
+      "apps/web/src/app/data/stores/"
+    ]
+  },
+  {
+    "id": "W3-12",
+    "wave": "W3",
+    "executor": "sonnet",
+    "branch": "card/W3-12-data-layer-engine-facade-entities-domain-memoize",
+    "owns": [
+      "apps/web/src/app/data/engine/"
+    ]
+  },
+  {
+    "id": "W3-13",
+    "wave": "W3",
+    "executor": "sonnet",
+    "branch": "card/W3-13-storage-health-safari-itp-banner-and-persistence",
+    "owns": [
+      "apps/web/src/app/core/storage-health/"
+    ]
+  },
+  {
+    "id": "W3-14",
+    "wave": "W3",
+    "executor": "sonnet",
+    "branch": "card/W3-14-pwa-service-worker-limited-to-app-per-adr-0023-m",
+    "owns": [
+      "apps/web/ngsw-config.json",
+      "apps/web/src/app/core/pwa/",
+      "apps/web/public/manifest.webmanifest",
+      "apps/web/public/icons/",
+      "e2e/specs/pwa.spec.ts"
+    ]
+  },
+  {
+    "id": "W3-15",
+    "wave": "W3",
+    "executor": "sonnet",
+    "branch": "card/W3-15-export-report-model-and-csv-writer",
+    "owns": [
+      "packages/export/src/model/",
+      "packages/export/src/csv/"
+    ]
+  },
+  {
+    "id": "W3-16",
+    "wave": "W3",
+    "executor": "opus",
+    "branch": "card/W3-16-opus-integration-ci-gates-for-e2e-edge-bundle-an",
+    "owns": [
+      ".github/workflows/ci.yml",
+      "package.json"
+    ]
+  },
+  {
+    "id": "W3-17",
+    "wave": "W3",
+    "executor": "opus",
+    "branch": "card/W3-17-opus-integration-cloudflare-deploy-pipeline-and",
+    "owns": [
+      ".github/workflows/deploy.yml",
+      "apps/web/src/environments/"
+    ]
+  },
+  {
+    "id": "W3-18",
+    "wave": "W3",
+    "executor": "sonnet",
+    "branch": "card/W3-18-google-cloud-setup-guide-oauth-client-consent-sc",
+    "owns": [
+      "docs/guides/google-cloud-setup.md"
+    ]
+  },
+  {
+    "id": "W4-01",
+    "wave": "W4",
+    "executor": "opus",
+    "branch": "card/W4-01-opus-gate-3-post-maintenance-regeneration-and-re",
+    "owns": [
+      "tools/oracle/fixtures/",
+      "docs/specs/oracle-validation-log.md",
+      "docs/specs/conformance-triage.md"
+    ]
+  },
+  {
+    "id": "W4-02",
+    "wave": "W4",
+    "executor": "sonnet",
+    "branch": "card/W4-02-engine-full-conformance-all-fixtures-and-discrep",
+    "owns": [
+      "packages/domain/src/schedule/",
+      "packages/domain/src/events/rate-change/",
+      "packages/domain/src/events/fixed-charge-change/",
+      "packages/domain/src/events/prepayment/",
+      "packages/domain/src/events/advance-installments/",
+      "packages/domain/src/events/reported-balance/",
+      "packages/domain/src/events/actual-payment/",
+      "packages/domain/src/paths/",
+      "packages/domain/src/templates/",
+      "packages/domain/src/validation/",
+      "packages/domain/src/goal-seek/",
+      "packages/domain/test/properties/",
+      "tools/conformance/enforced-features.json"
+    ]
+  },
+  {
+    "id": "W4-03",
+    "wave": "W4",
+    "executor": "sonnet",
+    "branch": "card/W4-03-public-quick-simulator-domain-only-zero-network",
+    "owns": [
+      "apps/web/src/app/public/simulator/",
+      "e2e/specs/simulator.spec.ts"
+    ]
+  },
+  {
+    "id": "W4-04",
+    "wave": "W4",
+    "executor": "sonnet",
+    "branch": "card/W4-04-landing-page-prerendered-hero-tu-casa-se-va-llen",
+    "owns": [
+      "apps/web/src/app/public/landing/",
+      "e2e/specs/landing.spec.ts"
+    ]
+  },
+  {
+    "id": "W4-05",
+    "wave": "W4",
+    "executor": "sonnet",
+    "branch": "card/W4-05-privacy-policy-page-and-404-page",
+    "owns": [
+      "apps/web/src/app/public/privacy/",
+      "apps/web/src/app/public/not-found/",
+      "e2e/specs/privacy.spec.ts"
+    ]
+  },
+  {
+    "id": "W4-06",
+    "wave": "W4",
+    "executor": "sonnet",
+    "branch": "card/W4-06-dashboard-loan-cards-with-house-meter-per-curren",
+    "owns": [
+      "apps/web/src/app/features/dashboard/",
+      "e2e/specs/dashboard.spec.ts"
+    ]
+  },
+  {
+    "id": "W4-07",
+    "wave": "W4",
+    "executor": "sonnet",
+    "branch": "card/W4-07-loan-creation-wizard-4-steps-and-e2e-page-object",
+    "owns": [
+      "apps/web/src/app/features/loans/wizard/",
+      "e2e/specs/loan-wizard.spec.ts",
+      "e2e/page-objects/loan-wizard.po.ts"
+    ]
+  },
+  {
+    "id": "W4-08",
+    "wave": "W4",
+    "executor": "sonnet",
+    "branch": "card/W4-08-data-layer-backup-service-export-import-with-mig",
+    "owns": [
+      "apps/web/src/app/data/backup/"
+    ]
+  },
+  {
+    "id": "W4-09",
+    "wave": "W4",
+    "executor": "sonnet",
+    "branch": "card/W4-09-data-layer-sync-service-lazy-drive-provider-pass",
+    "owns": [
+      "apps/web/src/app/data/sync/"
+    ]
+  },
+  {
+    "id": "W4-10",
+    "wave": "W4",
+    "executor": "sonnet",
+    "branch": "card/W4-10-export-excel-writer-write-excel-file",
+    "owns": [
+      "packages/export/src/excel/"
+    ]
+  },
+  {
+    "id": "W4-11",
+    "wave": "W4",
+    "executor": "sonnet",
+    "branch": "card/W4-11-export-pdf-writer-jspdf-4-2-1-autotable",
+    "owns": [
+      "packages/export/src/pdf/"
+    ]
+  },
+  {
+    "id": "W4-12",
+    "wave": "W4",
+    "executor": "sonnet",
+    "branch": "card/W4-12-real-data-event-forms-pure-per-event-family",
+    "owns": [
+      "apps/web/src/app/features/real-data/forms/"
+    ]
+  },
+  {
+    "id": "W5-01",
+    "wave": "W5",
+    "executor": "sonnet",
+    "branch": "card/W5-01-loan-detail-summary-edit-archive-unarchive-mark",
+    "owns": [
+      "apps/web/src/app/features/loans/detail/",
+      "e2e/specs/loan-detail.spec.ts"
+    ]
+  },
+  {
+    "id": "W5-02",
+    "wave": "W5",
+    "executor": "sonnet",
+    "branch": "card/W5-02-amortization-ledger-table-views-real-delta-yearl",
+    "owns": [
+      "apps/web/src/app/features/schedule/",
+      "e2e/specs/schedule.spec.ts"
+    ]
+  },
+  {
+    "id": "W5-03",
+    "wave": "W5",
+    "executor": "sonnet",
+    "branch": "card/W5-03-real-data-timeline-with-forms-real-delta-and-inl",
+    "owns": [
+      "apps/web/src/app/features/real-data/timeline/",
+      "e2e/specs/real-data.spec.ts"
+    ]
+  },
+  {
+    "id": "W5-04",
+    "wave": "W5",
+    "executor": "sonnet",
+    "branch": "card/W5-04-scenarios-editor-crud-active-scenario-tools-abon",
+    "owns": [
+      "apps/web/src/app/features/scenarios/editor/",
+      "e2e/specs/scenarios.spec.ts"
+    ]
+  },
+  {
+    "id": "W5-05",
+    "wave": "W5",
+    "executor": "sonnet",
+    "branch": "card/W5-05-scenario-comparison-up-to-3-and-lazy-balance-ove",
+    "owns": [
+      "apps/web/src/app/features/scenarios/compare/",
+      "e2e/specs/scenario-compare.spec.ts"
+    ]
+  },
+  {
+    "id": "W5-06",
+    "wave": "W5",
+    "executor": "sonnet",
+    "branch": "card/W5-06-export-ui-lazy-excel-csv-pdf-menu-for-table-and",
+    "owns": [
+      "apps/web/src/app/features/export/"
+    ]
+  },
+  {
+    "id": "W5-07",
+    "wave": "W5",
+    "executor": "sonnet",
+    "branch": "card/W5-07-settings-backup-status-reminders-json-import-exp",
+    "owns": [
+      "apps/web/src/app/features/settings/backup/",
+      "e2e/specs/settings-backup.spec.ts",
+      "e2e/fixtures/backups/"
+    ]
+  },
+  {
+    "id": "W5-08",
+    "wave": "W5",
+    "executor": "sonnet",
+    "branch": "card/W5-08-settings-google-drive-connect-sync-disconnect-an",
+    "owns": [
+      "apps/web/src/app/features/settings/sync/",
+      "e2e/specs/settings-sync.spec.ts"
+    ]
+  },
+  {
+    "id": "W6-01",
+    "wave": "W6",
+    "executor": "sonnet",
+    "branch": "card/W6-01-cross-feature-e2e-journeys-including-exports-und",
+    "owns": [
+      "e2e/specs/journeys/"
+    ]
+  },
+  {
+    "id": "W6-02",
+    "wave": "W6",
+    "executor": "sonnet",
+    "branch": "card/W6-02-accessibility-csp-trusted-types-safari-banner-an",
+    "owns": [
+      "e2e/specs/sweeps/"
+    ]
+  },
+  {
+    "id": "W6-03",
+    "wave": "W6",
+    "executor": "sonnet",
+    "branch": "card/W6-03-bilingual-readme-and-threat-model",
+    "owns": [
+      "README.md",
+      "docs/security/threat-model.md"
+    ]
+  },
+  {
+    "id": "W6-04",
+    "wave": "W6",
+    "executor": "sonnet",
+    "branch": "card/W6-04-operator-guides-manual-drive-test-checklist-and",
+    "owns": [
+      "docs/guides/drive-sync-manual-checklist.md",
+      "docs/guides/cloudflare-deploy.md"
+    ]
+  },
+  {
+    "id": "W7-01",
+    "wave": "W7",
+    "executor": "opus",
+    "branch": "card/W7-01-security-and-release-review-manual-drive-verific",
+    "owns": [
+      "docs/adr/",
+      "docs/release/",
+      "tools/spikes/",
+      "CHANGELOG.md"
+    ]
+  }
+]

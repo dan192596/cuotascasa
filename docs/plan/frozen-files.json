@@ -1,0 +1,751 @@
+[
+  {
+    "path": ".gitignore",
+    "editableBy": [
+      "W0-01"
+    ]
+  },
+  {
+    "path": ".gitleaks.toml",
+    "editableBy": [
+      "W0-01"
+    ]
+  },
+  {
+    "path": ".npmrc",
+    "editableBy": [
+      "W0-01"
+    ]
+  },
+  {
+    "path": ".nvmrc",
+    "editableBy": [
+      "W0-01"
+    ]
+  },
+  {
+    "path": ".prettierignore",
+    "editableBy": [
+      "W0-01"
+    ]
+  },
+  {
+    "path": ".prettierrc.json",
+    "editableBy": [
+      "W0-01"
+    ]
+  },
+  {
+    "path": "eslint.config.mjs",
+    "editableBy": [
+      "W0-01"
+    ]
+  },
+  {
+    "path": "lefthook.yml",
+    "editableBy": [
+      "W0-01"
+    ]
+  },
+  {
+    "path": "package.json",
+    "editableBy": [
+      "W0-01",
+      "W3-16"
+    ]
+  },
+  {
+    "path": "pnpm-lock.yaml",
+    "editableBy": [
+      "W0-01"
+    ]
+  },
+  {
+    "path": "pnpm-workspace.yaml",
+    "editableBy": [
+      "W0-01"
+    ]
+  },
+  {
+    "path": "tsconfig.base.json",
+    "editableBy": [
+      "W0-01"
+    ]
+  },
+  {
+    "path": "tsconfig.json",
+    "editableBy": [
+      "W0-01"
+    ]
+  },
+  {
+    "path": "vitest.config.ts",
+    "editableBy": [
+      "W0-01"
+    ]
+  },
+  {
+    "path": "apps/web/package.json",
+    "editableBy": [
+      "W0-01"
+    ]
+  },
+  {
+    "path": "e2e/package.json",
+    "editableBy": [
+      "W0-01"
+    ]
+  },
+  {
+    "path": "packages/domain/package.json",
+    "editableBy": [
+      "W0-01"
+    ]
+  },
+  {
+    "path": "packages/export/package.json",
+    "editableBy": [
+      "W0-01"
+    ]
+  },
+  {
+    "path": "packages/persistence/package.json",
+    "editableBy": [
+      "W0-01"
+    ]
+  },
+  {
+    "path": "packages/schema/package.json",
+    "editableBy": [
+      "W0-01"
+    ]
+  },
+  {
+    "path": "packages/sync/package.json",
+    "editableBy": [
+      "W0-01"
+    ]
+  },
+  {
+    "path": "tools/conformance/package.json",
+    "editableBy": [
+      "W0-01"
+    ]
+  },
+  {
+    "path": "docs/algorithm.md",
+    "editableBy": [
+      "W0-02",
+      "W3-01"
+    ]
+  },
+  {
+    "path": "docs/glossary.md",
+    "editableBy": [
+      "W0-02"
+    ]
+  },
+  {
+    "path": "docs/specs/algorithm-examples/",
+    "editableBy": [
+      "W0-02",
+      "W3-01"
+    ]
+  },
+  {
+    "path": "packages/domain/src/dates/",
+    "editableBy": [
+      "W0-03"
+    ]
+  },
+  {
+    "path": "packages/domain/src/engine-context.ts",
+    "editableBy": [
+      "W0-03"
+    ]
+  },
+  {
+    "path": "packages/domain/src/events/registry.ts",
+    "editableBy": [
+      "W0-03"
+    ]
+  },
+  {
+    "path": "packages/domain/src/index.ts",
+    "editableBy": [
+      "W0-03"
+    ]
+  },
+  {
+    "path": "packages/domain/src/money/",
+    "editableBy": [
+      "W0-03"
+    ]
+  },
+  {
+    "path": "packages/domain/src/stub.ts",
+    "editableBy": [
+      "W0-03"
+    ]
+  },
+  {
+    "path": "packages/domain/src/types/",
+    "editableBy": [
+      "W0-03"
+    ]
+  },
+  {
+    "path": "packages/domain/test/contracts/",
+    "editableBy": [
+      "W0-03"
+    ]
+  },
+  {
+    "path": "packages/domain/tsconfig.json",
+    "editableBy": [
+      "W0-03"
+    ]
+  },
+  {
+    "path": "packages/domain/vitest.config.ts",
+    "editableBy": [
+      "W0-03"
+    ]
+  },
+  {
+    "path": "packages/export/src/index.ts",
+    "editableBy": [
+      "W0-03"
+    ]
+  },
+  {
+    "path": "packages/export/src/report-model.ts",
+    "editableBy": [
+      "W0-03"
+    ]
+  },
+  {
+    "path": "packages/export/tsconfig.json",
+    "editableBy": [
+      "W0-03"
+    ]
+  },
+  {
+    "path": "packages/export/vitest.config.ts",
+    "editableBy": [
+      "W0-03"
+    ]
+  },
+  {
+    "path": "docs/adr/0024-sync-merge-order.md",
+    "editableBy": [
+      "W0-04"
+    ]
+  },
+  {
+    "path": "docs/specs/drive-api-subset.md",
+    "editableBy": [
+      "W0-04"
+    ]
+  },
+  {
+    "path": "packages/persistence/src/contract/",
+    "editableBy": [
+      "W0-04"
+    ]
+  },
+  {
+    "path": "packages/persistence/src/ports.ts",
+    "editableBy": [
+      "W0-04"
+    ]
+  },
+  {
+    "path": "packages/persistence/tsconfig.json",
+    "editableBy": [
+      "W0-04"
+    ]
+  },
+  {
+    "path": "packages/persistence/vitest.config.ts",
+    "editableBy": [
+      "W0-04"
+    ]
+  },
+  {
+    "path": "packages/schema/src/backup/",
+    "editableBy": [
+      "W0-04"
+    ]
+  },
+  {
+    "path": "packages/schema/src/common.ts",
+    "editableBy": [
+      "W0-04"
+    ]
+  },
+  {
+    "path": "packages/schema/src/entities/",
+    "editableBy": [
+      "W0-04"
+    ]
+  },
+  {
+    "path": "packages/schema/src/errors.ts",
+    "editableBy": [
+      "W0-04"
+    ]
+  },
+  {
+    "path": "packages/schema/src/index.ts",
+    "editableBy": [
+      "W0-04"
+    ]
+  },
+  {
+    "path": "packages/schema/src/oracle/",
+    "editableBy": [
+      "W0-04"
+    ]
+  },
+  {
+    "path": "packages/schema/tsconfig.json",
+    "editableBy": [
+      "W0-04"
+    ]
+  },
+  {
+    "path": "packages/schema/vitest.config.ts",
+    "editableBy": [
+      "W0-04"
+    ]
+  },
+  {
+    "path": "packages/sync/src/ports.ts",
+    "editableBy": [
+      "W0-04"
+    ]
+  },
+  {
+    "path": "packages/sync/src/testing/",
+    "editableBy": [
+      "W0-04"
+    ]
+  },
+  {
+    "path": "packages/sync/tsconfig.json",
+    "editableBy": [
+      "W0-04"
+    ]
+  },
+  {
+    "path": "packages/sync/vitest.config.ts",
+    "editableBy": [
+      "W0-04"
+    ]
+  },
+  {
+    "path": "tools/oracle/.python-version",
+    "editableBy": [
+      "W0-04"
+    ]
+  },
+  {
+    "path": "tools/oracle/FORMAT.md",
+    "editableBy": [
+      "W0-04"
+    ]
+  },
+  {
+    "path": "tools/oracle/pyproject.toml",
+    "editableBy": [
+      "W0-04"
+    ]
+  },
+  {
+    "path": "tools/oracle/requirements-dev.txt",
+    "editableBy": [
+      "W0-04"
+    ]
+  },
+  {
+    "path": "angular.json",
+    "editableBy": [
+      "W0-05",
+      "W2-02"
+    ]
+  },
+  {
+    "path": "apps/web/.postcssrc.json",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/_patterns/",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/app-area.routes.ts",
+    "editableBy": [
+      "W0-05",
+      "W2-02"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/app.component.ts",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/app.config.server.ts",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/app.config.ts",
+    "editableBy": [
+      "W0-05",
+      "W2-02"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/app.routes.server.ts",
+    "editableBy": [
+      "W0-05",
+      "W2-02"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/app.routes.spec.ts",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/app.routes.ts",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/core/pwa/update-prompt.contract.spec.ts",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/core/storage-health/safari-banner.contract.spec.ts",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/core/theme/theme-toggle.contract.spec.ts",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/data/api.spec.ts",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/data/api.ts",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/data/data-boundary.spec.ts",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/data/data-layer.tokens.ts",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/data/provide-app-data.spec.ts",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/data/provide-app-data.ts",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/data/tokens.ts",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/features/dashboard/dashboard.routes.ts",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/features/export/export-menu.contract.spec.ts",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/features/loans/loans.routes.ts",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/features/real-data/forms/event-form.contract.spec.ts",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/features/real-data/real-data-page.component.ts",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/features/real-data/real-data.routes.ts",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/features/real-data/timeline/real-data-timeline.contract.spec.ts",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/features/scenarios/compare/scenario-compare.contract.spec.ts",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/features/scenarios/editor/scenario-editor.contract.spec.ts",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/features/scenarios/scenarios-page.component.ts",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/features/scenarios/scenarios.routes.ts",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/features/schedule/schedule.routes.ts",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/features/settings/backup/settings-backup.contract.spec.ts",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/features/settings/settings-page.component.ts",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/features/settings/settings.routes.ts",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/features/settings/sync/settings-sync.contract.spec.ts",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/public/public-clock.ts",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/app/public/simulator/quick-simulator.contract.spec.ts",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/design-contract/",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/environments/build-constants.ts",
+    "editableBy": [
+      "W0-05",
+      "W3-17"
+    ]
+  },
+  {
+    "path": "apps/web/src/index.html",
+    "editableBy": [
+      "W0-05",
+      "W2-02"
+    ]
+  },
+  {
+    "path": "apps/web/src/main.server.ts",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/main.ts",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/src/testing/build-output/",
+    "editableBy": [
+      "W0-05",
+      "W2-02"
+    ]
+  },
+  {
+    "path": "apps/web/src/testing/doc-checks/",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/tsconfig.app.json",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/tsconfig.spec.json",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "apps/web/vitest.config.ts",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "docs/specs/angular-patterns.md",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "docs/specs/component-contracts.md",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "docs/specs/design-palette.md",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "docs/specs/privacy-requirements.md",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": "e2e/tsconfig.json",
+    "editableBy": [
+      "W0-05"
+    ]
+  },
+  {
+    "path": ".github/",
+    "editableBy": [
+      "W0-06",
+      "W2-01",
+      "W3-16",
+      "W3-17"
+    ]
+  },
+  {
+    "path": "docs/plan/",
+    "editableBy": [
+      "W0-06"
+    ]
+  },
+  {
+    "path": "tools/conformance/src/",
+    "editableBy": [
+      "W0-06"
+    ]
+  },
+  {
+    "path": "tools/conformance/tsconfig.json",
+    "editableBy": [
+      "W0-06"
+    ]
+  },
+  {
+    "path": "tools/conformance/vitest.config.ts",
+    "editableBy": [
+      "W0-06"
+    ]
+  },
+  {
+    "path": "tools/lint-fixtures/tsconfig.json",
+    "editableBy": [
+      "W0-06"
+    ]
+  },
+  {
+    "path": "tools/lint-fixtures/vitest.config.ts",
+    "editableBy": [
+      "W0-06"
+    ]
+  },
+  {
+    "path": "tools/owns-check/",
+    "editableBy": [
+      "W0-06"
+    ]
+  },
+  {
+    "path": "CLAUDE.md",
+    "editableBy": []
+  }
+]
