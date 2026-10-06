@@ -2668,6 +2668,757 @@
   ],
   "wave0_contracts": "W0 freezes the files below. After W0 any card may read them but none may edit them: docs/plan/frozen-files.json lists them, each entry with editableBy: [card ids], and owns-check rejects an edit by any other card even when the file sits inside a directory the card owns. Changing one takes an Opus contract-change micro-card (registered in docs/plan/plan.json, with the views, cards.json and frozen-files.json regenerated on a branch opus/register-<ID> before the card branch is created), a broadcast to in-flight cards and a rebase.\n\nW0-01, toolchain:\n(1) pnpm-workspace.yaml catalogs pinning every planned dependency, including the test-only readers fflate and pdfjs-dist and @types/google.accounts; pnpm-lock.yaml; .npmrc (lifecycle scripts blocked except an allowlist).\n(2) Every package.json (root, packages/domain, schema, persistence, sync, export, apps/web, e2e, tools/conformance) with catalog: references, the root scripts and the final subpath exports (@cuotascasa/persistence/memory|dexie|contract, @cuotascasa/sync/crypto|session|google-drive|testing, @cuotascasa/export/model|csv|excel|pdf, @cuotascasa/schema/testing).\n(3) tsconfig.base.json path aliases, eslint.config.mjs (boundaries exactly as the ADR-0010 §5 matrix, Date ban in domain, ban on number arithmetic for money), lefthook.yml, .gitleaks.toml, .gitignore.\n\nW0-02, spec:\n(4) docs/algorithm.md with stable section ids. It fixes the decimal context [ALG.CONV] (precision 34, ROUND_HALF_EVEN, cents only via HALF_UP_2; r unrounded) and every event semantic, including the derived term [ALG.TERM], anchor re-base and the total order [ALG.EVENTS.ORDER]. It gives closed definitions of Real delta, interestSaved, monthsSaved, netSaving, endDate, totalPaid and yearly subtotals (calendar year of dueDate), plus goal-seek outcomes, the numeric traffic-light thresholds, the closed causes enum and the 'Hipotecario simple' values. Also docs/glossary.md.\n(5) docs/specs/algorithm-examples/*.json + INDEX.md: one synthetic worked example for every item of [ALG.PENDING] in docs/algorithm.md, all mapped by INDEX.md; examples with events go in separate JSON files from event-free ones. These are the shared ground truth for both the engine lineage and the oracle lineage.\n\nW0-03, domain and export:\n(6) packages/domain/src/types/primitives.ts: branded Money and Rate (decimal strings), LocalDate ('YYYY-MM-DD'), Currency 'GTQ'|'USD', DomainError hierarchy.\n(7) types/loan.ts: LoanTerms (principal, termMonths, disbursementDate, firstDueDate, paymentDay number|'END_OF_MONTH', currency, percentage components, fixed charges with effectiveFrom, RoundingProfile 'FHA_GT_V1'|'SIMPLE') and Template {id, version, values}.\n(8) types/events.ts: the DomainEvent union (RateChange with its 3 policies, FixedChargeChange, Prepayment with mode and commission, AdvanceInstallments, ReportedBalance, ActualPayment) and the frozen total order key [ALG.EVENTS.ORDER] (k, phase, date, typeRank, id).\n(9) types/schedule.ts: ScheduleRow (with a 'paid' flag), Schedule, PathKind, Paths (with cutoffK and realDelta per anchor and per component), ComparisonMetrics (incl. netSaving), YearlySubtotal, GoalSeekRequest, GoalSeekResult (ALREADY_MET | FOUND{amount, metrics, isPayoff} | INFEASIBLE{payoffAmount, reason}, [ALG.GOAL]), TemplateValidationResult.\n(10) types/engine.ts: PeriodState per [ALG.TERM] (state after paying installment k including phase 3: balance, i, insuranceRates[], level, roundingProfile, k, term mode and term), EventHandler<T>, EngineContext with an injectable registry and the shared helper signatures levelPayment(B, r, m), remainingTerm(state: PeriodState) and projectCapital(state, n).\n(11) events/registry.ts, mapping each event type to its card-owned dir; types not yet implemented map to stubs that throw NotImplementedError('<card id>').\n(12) index.ts, the public API: buildSchedule, buildPaths, compareSchedules, yearlySubtotals, goalSeek, listTemplates, instantiateTemplate, deriveFixedCharges, validateAgainstReportedBalance, levelPayment, percentToRate/rateToPercent, money/date helpers.\n(13) money/ (incl. decimal-config.ts) and dates/, implemented and tested by Opus.\n(14) packages/export/src/report-model.ts (ReportModel, ReportWriter, ExportFormat) and index.ts.\n\nW0-04, schema, persistence, sync and oracle format:\n(15) packages/schema/src/:\n- common.ts: BaseRecord with id, createdAt, updatedAt, updatedByDevice, deletedAt.\n- entities/{loan, loan-event, reported-balance, actual-payment, scenario, settings}.ts: the single source of field names (e.g. Loan.name, Loan.bank; LoanEvent.date, ReportedBalance.date, ActualPayment.paidDate; optional note on ReportedBalance, ActualPayment and LoanEvent), status active|paid|archived, required rateType 'FIXED'|'VARIABLE', templateRef plus copied values, currency locked while any non-deleted LoanEvent, ReportedBalance, ActualPayment or Scenario exists, synced vs device-local settings.\n- backup/v1.ts and backup/types.ts: BackupDocument v1 (root accepts synthetic: z.literal(true).optional()), LATEST_VERSION, ImportPreview, BackupError codes.\n- oracle/fixture.ts: fixture and manifest schema (synthetic: true literal, profile, seed, generatorVersion, feature tags vs trait tags, incl. lastRow, latePayment, explicitKAnchor, sameKAnchors, zeroRate and zeroInsurance).\n- index.ts.\n(16) packages/persistence/src/:\n- ports.ts: Repository<T>; DataStore with transaction, exportAll incl. tombstones, replaceAll, snapshots, async post-commit subscribe, pendingChanges/markSynced, changesSinceBackup/markBackedUp and meta; Clock with today(): LocalDate (device local time); IdGenerator.\n- contract/: the Opus-written runDataStoreContract suite, with list order (createdAt, id).\n(17) packages/sync/src/:\n- ports.ts: SyncProvider, RemoteFile, LocalDataset, KeyStore, EncryptedEnvelopeV1, SyncStatus, SyncError codes, MergeStats, RecordOrderKey (a tombstone wins a full tie), separate mergeDatasets and purgeTombstones signatures, typed Drive v3 subset.\n- testing/drive-fake.ts and testing/gis-fake.ts.\n(18) docs/specs/drive-api-subset.md and docs/adr/0024-sync-merge-order.md.\n(19) tools/oracle/FORMAT.md (incl. profile composition, trait tags, fixture file naming, the generate/regenerate CLI, the three-line compare output, the --log-line format and the private schema for compare and private-compare), pyproject.toml, .python-version, requirements-dev.txt.\n\nW0-05, Angular:\n(20) angular.json, apps/web/src/main*.ts, index.html, app.config.ts, app.config.server.ts, app.routes.ts, app.routes.server.ts and app-area.routes.ts. Of these, angular.json, app.config.ts, app.routes.server.ts and app-area.routes.ts are edited only by the Opus card W2-02.\n(21) Every features/*/*.routes.ts, plus the page shells of the split routes: scenarios-page, settings-page and real-data-page. loans.routes.ts maps nuevo to wizard/ and :id to detail/.\n(22) data/api.ts, data/tokens.ts, data/provide-app-data.ts. They define LoansStore with create (no anchor) and createWithAnchor, LoanEventsStore, ReportedBalancesStore, PaymentsStore, ScenariosStore with activeScenarioId, SettingsStore, LoanProjectionService with the spec §9 derived values plus cutoffK, per-row paid flags and realDelta per anchor and per component, BackupService with reminderDue, SyncService and StorageHealth with requestPersist. data/api.ts and data/tokens.ts use only import type from packages.\n(23) docs/specs/component-contracts.md and one *.contract.spec.ts per cc-* component: cc-quick-simulator, cc-theme-toggle, cc-safari-banner, cc-update-prompt, cc-export-menu, cc-scenario-editor, cc-scenario-compare, cc-settings-backup, cc-settings-sync, cc-real-data-timeline, cc-event-form. Also the rule that every page root keeps data-testid='page-<route-id>'.\n(24) apps/web/src/design-contract/: token-names.json and tokens.contract.spec.ts. The token values belong to W3-05.\n(25) apps/web/src/app/_patterns/ with docs/specs/angular-patterns.md, plus docs/specs/design-palette.md (frozen after the owner approves the docs/discovery/direccion-visual.md proposal; approval date recorded) and docs/specs/privacy-requirements.md.\n(26) apps/web/src/environments/build-constants.ts: the GOOGLE_CLIENT_ID define, changed only by W3-17.\n\nW0-06, process:\n(27) docs/plan/cards.json and docs/plan/frozen-files.json (each entry with editableBy: [card ids]), both generated by tools/plan/render_plan.py from docs/plan/plan.json (frozen-files.json from its structured top-level 'frozen_files' section).\n(28) tools/owns-check/ rules: frozen files, append-only files, exempt prefixes.\n(29) tools/conformance/src/: the harness, the fixture-id grep check and the private-compare CLI.\n(30) The initial .github/ workflows. After W0 they are edited only by the Opus cards W2-01, W3-16 and W3-17.\n\nStub semantics:\n- Package stubs throw NotImplementedError('<card id>'). Each stub dir holds a stub.spec.ts, which its owning card deletes when it implements the dir.\n- App-level provide* functions and cc-* components are inert: they return safe defaults, keep the page testid and export a CC_STUB marker. W6-02 proves no marker remains in the production build.",
   "shared_files_policy": "Opus-only shared files are everything W0 froze (listed in wave0_contracts and mirrored in docs/plan/frozen-files.json):\n- Root and package config: root and every package.json, pnpm-workspace.yaml, pnpm-lock.yaml, .npmrc, .nvmrc, every tsconfig*.json, eslint.config.mjs, the prettier config, the vitest configs, lefthook.yml, .gitleaks.toml, .gitignore.\n- Angular wiring: angular.json, apps/web/src/main*.ts, index.html, app.config*.ts, app.routes*.ts, app-area.routes.ts, every *.routes.ts and page shell.\n- App contracts: data/api.ts, data/tokens.ts, data/provide-app-data.ts, the component contract specs, design-contract/, _patterns/.\n- Engine and verification: packages/domain/src/money/ and dates/, tools/conformance/src/.\n- Process and spec: everything under .github/, docs/plan/, CLAUDE.md, docs/algorithm.md, docs/glossary.md, docs/specs/algorithm-examples/.\n\nRules:\n(1) Shared-file changes. A card that needs one stops and asks. Opus then lands a small integration card with its own id, registered in docs/plan/plan.json, with the views, cards.json and frozen-files.json regenerated on a branch opus/register-<ID> before the card branch is created, and merges it before the requesting card continues. The planned Opus gates and integrations are W2-01, W2-02, W3-01, W3-16, W3-17 and W4-01.\n(2) Dependencies. No card adds, upgrades or removes one: W0-01 pinned every planned dependency, including the test-only readers. Renovate PRs come from renovate/ branches, are exempt from owns-check, and are reviewed and merged by Opus.\n(3) owns-check. It fails a card PR that:\n- touches a path outside the card's owns;\n- touches any frozen file, even inside a directory the card owns, unless the card is listed in that entry's editableBy;\n- makes a non-append change to an append-only file (tools/conformance/enforced-features.json may only gain tags);\n- uses an unknown card id.\nEach docs/plan/frozen-files.json entry carries editableBy: [card ids]; owns-check allows an edit only by those cards (planned: W2-01, W2-02, W3-01, W3-16, W3-17 and any registered Opus micro-card).\nCards with no transitive dependency between them never share an owns path; this was checked mechanically on the whole plan. A later card takes over a path only when it transitively depends on every earlier owner: W2-13 and then W4-02 take over engine dirs, W2-06 and then W3-04 take over oracle code, and W2-01, W3-01 and W4-01 own the fixtures in turn, and W2-02 takes over ADR-0022 from W1-09.\n(4) Imports. A card imports another card's code only through that package's or directory's public exports, and read-only.\n(5) Same-wave dependencies. They are allowed only on the short Opus gate or integration cards that open a wave (W2-01, W2-02, W3-01, W4-01). W0 runs as a serial, Opus-only sequence.\n(6) Implicit definition of done for every card:\n- CI green: lint, typecheck, unit, build, owns-check, gitleaks and audit, plus the conformance, oracle-diff, e2e, edge and bundle gates as they land;\n- TDD for logic, and contract specs green;\n- only synthetic data, flagged synthetic: true;\n- conventional commits from a noreply email, on branch card/<id>-<slug> in worktree .worktrees/<id>;\n- Opus review, with merges in dependency order.\n(7) Docs. Cards edit only the docs in their owns. ADR numbers 0021–0024 are reserved (0021 and 0023 by W2-02, 0022 drafted by W1-09 and accepted/amended by W2-02, 0024 by W0-04); the next free number is 0025. algorithm.md changes only through Opus (in W3-01 or an on-demand docs micro-card) and is always followed by oracle regeneration.\n(8) Lineage isolation. Oracle cards (W1-02, W2-06, W3-04 and any oracle micro-card) run in a git sparse-checkout worktree limited to docs/algorithm.md, docs/glossary.md, docs/specs/algorithm-examples/, docs/specs/conformance-triage.md and tools/oracle/, plus the root loose files, docs/plan/README.md and the card's own docs/plan/cards/<ID>.md (exact command in docs/plan/README.md §3 step 3); they never run pnpm. Engine cards never read tools/oracle/ code; they see fixtures only through the Opus-frozen conformance harness. Opus triages each discrepancy before anyone edits code.\n(9) Real loan data. It never enters the repo, CI logs, PRs, issues, screenshots or artifacts. Only Opus touches the real bank table, outside the repo and only if the owner's explicit authorization (date and scope) is recorded in docs/specs/oracle-validation-log.md, using compare tools that print only all rows matched (yes/no), the mismatched-row count and the max diff, never the total row count or any term.\n(10) Throughput. Run at most about 6 Sonnet worktrees at once, picking the highest-risk ready cards first, so Opus review keeps up. Defects found late become small fix cards with explicit owns, registered in docs/plan/plan.json, with the views, cards.json and frozen-files.json regenerated on a branch opus/register-<ID> before the card branch is created.",
+  "frozen_files": [
+    {
+      "path": ".gitignore",
+      "editableBy": [
+        "W0-01"
+      ]
+    },
+    {
+      "path": ".gitleaks.toml",
+      "editableBy": [
+        "W0-01"
+      ]
+    },
+    {
+      "path": ".npmrc",
+      "editableBy": [
+        "W0-01"
+      ]
+    },
+    {
+      "path": ".nvmrc",
+      "editableBy": [
+        "W0-01"
+      ]
+    },
+    {
+      "path": ".prettierignore",
+      "editableBy": [
+        "W0-01"
+      ]
+    },
+    {
+      "path": ".prettierrc.json",
+      "editableBy": [
+        "W0-01"
+      ]
+    },
+    {
+      "path": "eslint.config.mjs",
+      "editableBy": [
+        "W0-01"
+      ]
+    },
+    {
+      "path": "lefthook.yml",
+      "editableBy": [
+        "W0-01"
+      ]
+    },
+    {
+      "path": "package.json",
+      "editableBy": [
+        "W0-01",
+        "W3-16"
+      ]
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "editableBy": [
+        "W0-01"
+      ]
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "editableBy": [
+        "W0-01"
+      ]
+    },
+    {
+      "path": "tsconfig.base.json",
+      "editableBy": [
+        "W0-01"
+      ]
+    },
+    {
+      "path": "tsconfig.json",
+      "editableBy": [
+        "W0-01"
+      ]
+    },
+    {
+      "path": "vitest.config.ts",
+      "editableBy": [
+        "W0-01"
+      ]
+    },
+    {
+      "path": "apps/web/package.json",
+      "editableBy": [
+        "W0-01"
+      ]
+    },
+    {
+      "path": "e2e/package.json",
+      "editableBy": [
+        "W0-01"
+      ]
+    },
+    {
+      "path": "packages/domain/package.json",
+      "editableBy": [
+        "W0-01"
+      ]
+    },
+    {
+      "path": "packages/export/package.json",
+      "editableBy": [
+        "W0-01"
+      ]
+    },
+    {
+      "path": "packages/persistence/package.json",
+      "editableBy": [
+        "W0-01"
+      ]
+    },
+    {
+      "path": "packages/schema/package.json",
+      "editableBy": [
+        "W0-01"
+      ]
+    },
+    {
+      "path": "packages/sync/package.json",
+      "editableBy": [
+        "W0-01"
+      ]
+    },
+    {
+      "path": "tools/conformance/package.json",
+      "editableBy": [
+        "W0-01"
+      ]
+    },
+    {
+      "path": "docs/algorithm.md",
+      "editableBy": [
+        "W0-02",
+        "W3-01"
+      ]
+    },
+    {
+      "path": "docs/glossary.md",
+      "editableBy": [
+        "W0-02"
+      ]
+    },
+    {
+      "path": "docs/specs/algorithm-examples/",
+      "editableBy": [
+        "W0-02",
+        "W3-01"
+      ]
+    },
+    {
+      "path": "packages/domain/src/dates/",
+      "editableBy": [
+        "W0-03"
+      ]
+    },
+    {
+      "path": "packages/domain/src/engine-context.ts",
+      "editableBy": [
+        "W0-03"
+      ]
+    },
+    {
+      "path": "packages/domain/src/events/registry.ts",
+      "editableBy": [
+        "W0-03"
+      ]
+    },
+    {
+      "path": "packages/domain/src/index.ts",
+      "editableBy": [
+        "W0-03"
+      ]
+    },
+    {
+      "path": "packages/domain/src/money/",
+      "editableBy": [
+        "W0-03"
+      ]
+    },
+    {
+      "path": "packages/domain/src/stub.ts",
+      "editableBy": [
+        "W0-03"
+      ]
+    },
+    {
+      "path": "packages/domain/src/types/",
+      "editableBy": [
+        "W0-03"
+      ]
+    },
+    {
+      "path": "packages/domain/test/contracts/",
+      "editableBy": [
+        "W0-03"
+      ]
+    },
+    {
+      "path": "packages/domain/tsconfig.json",
+      "editableBy": [
+        "W0-03"
+      ]
+    },
+    {
+      "path": "packages/domain/vitest.config.ts",
+      "editableBy": [
+        "W0-03"
+      ]
+    },
+    {
+      "path": "packages/export/src/index.ts",
+      "editableBy": [
+        "W0-03"
+      ]
+    },
+    {
+      "path": "packages/export/src/report-model.ts",
+      "editableBy": [
+        "W0-03"
+      ]
+    },
+    {
+      "path": "packages/export/tsconfig.json",
+      "editableBy": [
+        "W0-03"
+      ]
+    },
+    {
+      "path": "packages/export/vitest.config.ts",
+      "editableBy": [
+        "W0-03"
+      ]
+    },
+    {
+      "path": "docs/adr/0024-sync-merge-order.md",
+      "editableBy": [
+        "W0-04"
+      ]
+    },
+    {
+      "path": "docs/specs/drive-api-subset.md",
+      "editableBy": [
+        "W0-04"
+      ]
+    },
+    {
+      "path": "packages/persistence/src/contract/",
+      "editableBy": [
+        "W0-04"
+      ]
+    },
+    {
+      "path": "packages/persistence/src/ports.ts",
+      "editableBy": [
+        "W0-04"
+      ]
+    },
+    {
+      "path": "packages/persistence/tsconfig.json",
+      "editableBy": [
+        "W0-04"
+      ]
+    },
+    {
+      "path": "packages/persistence/vitest.config.ts",
+      "editableBy": [
+        "W0-04"
+      ]
+    },
+    {
+      "path": "packages/schema/src/backup/",
+      "editableBy": [
+        "W0-04"
+      ]
+    },
+    {
+      "path": "packages/schema/src/common.ts",
+      "editableBy": [
+        "W0-04"
+      ]
+    },
+    {
+      "path": "packages/schema/src/entities/",
+      "editableBy": [
+        "W0-04"
+      ]
+    },
+    {
+      "path": "packages/schema/src/errors.ts",
+      "editableBy": [
+        "W0-04"
+      ]
+    },
+    {
+      "path": "packages/schema/src/index.ts",
+      "editableBy": [
+        "W0-04"
+      ]
+    },
+    {
+      "path": "packages/schema/src/oracle/",
+      "editableBy": [
+        "W0-04"
+      ]
+    },
+    {
+      "path": "packages/schema/tsconfig.json",
+      "editableBy": [
+        "W0-04"
+      ]
+    },
+    {
+      "path": "packages/schema/vitest.config.ts",
+      "editableBy": [
+        "W0-04"
+      ]
+    },
+    {
+      "path": "packages/sync/src/ports.ts",
+      "editableBy": [
+        "W0-04"
+      ]
+    },
+    {
+      "path": "packages/sync/src/testing/",
+      "editableBy": [
+        "W0-04"
+      ]
+    },
+    {
+      "path": "packages/sync/tsconfig.json",
+      "editableBy": [
+        "W0-04"
+      ]
+    },
+    {
+      "path": "packages/sync/vitest.config.ts",
+      "editableBy": [
+        "W0-04"
+      ]
+    },
+    {
+      "path": "tools/oracle/.python-version",
+      "editableBy": [
+        "W0-04"
+      ]
+    },
+    {
+      "path": "tools/oracle/FORMAT.md",
+      "editableBy": [
+        "W0-04"
+      ]
+    },
+    {
+      "path": "tools/oracle/pyproject.toml",
+      "editableBy": [
+        "W0-04"
+      ]
+    },
+    {
+      "path": "tools/oracle/requirements-dev.txt",
+      "editableBy": [
+        "W0-04"
+      ]
+    },
+    {
+      "path": "angular.json",
+      "editableBy": [
+        "W0-05",
+        "W2-02"
+      ]
+    },
+    {
+      "path": "apps/web/.postcssrc.json",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/_patterns/",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/app-area.routes.ts",
+      "editableBy": [
+        "W0-05",
+        "W2-02"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/app.component.ts",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/app.config.server.ts",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/app.config.ts",
+      "editableBy": [
+        "W0-05",
+        "W2-02"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/app.routes.server.ts",
+      "editableBy": [
+        "W0-05",
+        "W2-02"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/app.routes.spec.ts",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/app.routes.ts",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/core/pwa/update-prompt.contract.spec.ts",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/core/storage-health/safari-banner.contract.spec.ts",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/core/theme/theme-toggle.contract.spec.ts",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/data/api.spec.ts",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/data/api.ts",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/data/data-boundary.spec.ts",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/data/data-layer.tokens.ts",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/data/provide-app-data.spec.ts",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/data/provide-app-data.ts",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/data/tokens.ts",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/features/dashboard/dashboard.routes.ts",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/features/export/export-menu.contract.spec.ts",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/features/loans/loans.routes.ts",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/features/real-data/forms/event-form.contract.spec.ts",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/features/real-data/real-data-page.component.ts",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/features/real-data/real-data.routes.ts",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/features/real-data/timeline/real-data-timeline.contract.spec.ts",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/features/scenarios/compare/scenario-compare.contract.spec.ts",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/features/scenarios/editor/scenario-editor.contract.spec.ts",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/features/scenarios/scenarios-page.component.ts",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/features/scenarios/scenarios.routes.ts",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/features/schedule/schedule.routes.ts",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/features/settings/backup/settings-backup.contract.spec.ts",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/features/settings/settings-page.component.ts",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/features/settings/settings.routes.ts",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/features/settings/sync/settings-sync.contract.spec.ts",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/public/public-clock.ts",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/app/public/simulator/quick-simulator.contract.spec.ts",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/design-contract/",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/environments/build-constants.ts",
+      "editableBy": [
+        "W0-05",
+        "W3-17"
+      ]
+    },
+    {
+      "path": "apps/web/src/index.html",
+      "editableBy": [
+        "W0-05",
+        "W2-02"
+      ]
+    },
+    {
+      "path": "apps/web/src/main.server.ts",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/main.ts",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/src/testing/build-output/",
+      "editableBy": [
+        "W0-05",
+        "W2-02"
+      ]
+    },
+    {
+      "path": "apps/web/src/testing/doc-checks/",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/tsconfig.app.json",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/tsconfig.spec.json",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "apps/web/vitest.config.ts",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "docs/specs/angular-patterns.md",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "docs/specs/component-contracts.md",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "docs/specs/design-palette.md",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "docs/specs/privacy-requirements.md",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": "e2e/tsconfig.json",
+      "editableBy": [
+        "W0-05"
+      ]
+    },
+    {
+      "path": ".github/",
+      "editableBy": [
+        "W0-06",
+        "W2-01",
+        "W3-16",
+        "W3-17"
+      ]
+    },
+    {
+      "path": "docs/plan/",
+      "editableBy": [
+        "W0-06"
+      ]
+    },
+    {
+      "path": "tools/conformance/src/",
+      "editableBy": [
+        "W0-06"
+      ]
+    },
+    {
+      "path": "tools/conformance/tsconfig.json",
+      "editableBy": [
+        "W0-06"
+      ]
+    },
+    {
+      "path": "tools/conformance/vitest.config.ts",
+      "editableBy": [
+        "W0-06"
+      ]
+    },
+    {
+      "path": "tools/lint-fixtures/tsconfig.json",
+      "editableBy": [
+        "W0-06"
+      ]
+    },
+    {
+      "path": "tools/lint-fixtures/vitest.config.ts",
+      "editableBy": [
+        "W0-06"
+      ]
+    },
+    {
+      "path": "tools/owns-check/",
+      "editableBy": [
+        "W0-06"
+      ]
+    },
+    {
+      "path": "CLAUDE.md",
+      "editableBy": []
+    }
+  ],
   "rationale": "**Base.** The final plan starts from 'riesgo', which all three reviewers rated best. It had the fewest owns collisions and was the only design that kept '/' storage-free: data providers live in a lazily loaded app-area route, and the service worker is scoped to /app. It also:\n- puts hygiene hooks before the first fixture;\n- runs the CSP/GIS and Cloudflare spikes before implementation;\n- injects the client ID with --define, so ngsw hashes stay valid;\n- gates conformance with enforced-features.\n\n**Grafts from 'paralelo':**\n- Opus implements money/ and dates/ in W0. The riskiest rounding code and the decimal context are not left to Sonnet, and the engine core card gets smaller.\n- Root provider calls go to stub functions in card-owned dirs (error handling, theme, PWA, storage health), so mid-build integration is rare.\n- The persistence contract suite is frozen in W0, which lets the Dexie adapter move to W1 alongside the memory adapter.\n- Feature dirs are split into subdirs.\n\n**Grafts from 'rebanada':**\n- owns-check rejects frozen files even inside owned dirs, and exempts non-card branches.\n- A traceability matrix gates the release.\n\n**Fixes for every high and medium review item:**\n- Oracle-diff deadlock: committed profiles are listed in manifest.json with per-loan sub-seeds. W2-06 must leave 'core' byte-identical. A generatorVersion rule turns a deliberate oracle change into 'regeneration pending' until the next Opus gate.\n- Property-test deadlock: W3-02 keeps a visible quarantine, which W4-02 empties because it owns that dir.\n- No owner for core fixes in W2-W3: W2-13 owns schedule/ and turns on 'core'.\n- No owner for oracle fixes after W2: W3-01 triages every discrepancy, W3-04 fixes the oracle-side items, and W4-01 regenerates.\n- Conflict of interest in conformance:\n  - Opus writes the comparator in W0 and it stays frozen.\n  - enforced-features is append-only.\n  - Fixture ids are banned from src.\n  - Every fix cites algorithm.md.\n  - W4-02 is split by family if needed.\n- Private validation against the real bank table is conditional: at W2-01, W3-01, W4-01 and before W4-02 merges it runs only if the owner's explicit authorization (date and scope) is recorded in docs/specs/oracle-validation-log.md; otherwise the gate logs 'validación privada: no autorizada' and records the residual risk (from W3-01 also in conformance-triage.md). Log lines never carry the total row count or any loan term.\n- Missing spec inputs: W0-02 adds a worked example per rule, the decimal context, and closed definitions (thresholds, causes, metrics, yearly subtotals).\n- Missing root integration, define default, manifest link and stats JSON: all handled in W0-05.\n- Stub tests breaking when stubs are replaced: the data-testid page contract.\n- Drive mock divergence: one Opus fake is shared by the provider tests and the e2e.\n- Export e2e without a host page: moved to the W6-01 journeys.\n- Spike decisions: Opus writes ADR-0021 and ADR-0023 in W2-02 from Sonnet's evidence.\n- Engine formulas: EngineContext helpers keep event cards from re-implementing them.\n- Merge semantics: ADR-0024 defines the total order, separates purge, and documents resurrection after purge.\n- Missing test readers: pinned in W0.\n- Angular 22 APIs: golden patterns are frozen in W0.\n- Oversized cards: the engine core, the data layer and the real-data screen are split.\n- Late protections: push protection plus the README/SECURITY stub move to W0, and the Google Cloud guide to W3.\n\n**Parallelism.** It comes from frozen contracts, inert stubs, per-feature route files and per-feature e2e specs. W1 has 10 cards ready at once; they run in batches of ≤ 6 Sonnet. W2-W5 each have 8-15 cards ready at once behind at most one or two short Opus gates, also run in batches of ≤ 6 Sonnet.\n\n**Validation.** A script confirmed:\n- every card id is unique;\n- none of the 1,606 parallel card pairs has overlapping owns;\n- R1-R28 are all covered;\n- the release card depends on every other card.",
   "risks": [
     "Common-mode error: engine and oracle misread algorithm.md the same way. Mitigation: W0-02 worked examples per rule, separate lineages with a sparse-checkout worktree for the oracle, Opus private validation against the real bank table at every gate (W2-01, W3-01, W4-01) and a private TS-engine run before W4-02 merges, both only with the owner's recorded authorization (otherwise the residual risk is logged).",
