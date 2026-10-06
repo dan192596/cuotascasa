@@ -98,6 +98,16 @@ El código usa **inglés**, la interfaz **español (Guatemala)** y la documentac
 | Diferencia real por ancla / por componente | `perAnchor` / `perComponent` | Listas de `RealDelta` ([ALG.ANCHOR], [ALG.ACTUAL]) |
 | Fin / total pagado de la base | `baseEndDate` / `baseTotalPaid` | Campos de `ComparisonMetrics` para la base ([ALG.METRICS]) |
 | Ejemplo resuelto | algorithm example (`docs/specs/algorithm-examples/`) | Copia JSON sintética de un ejemplo de `docs/algorithm.md` |
+| Fecha del pago real | `paidDate` | Fecha de un `ActualPayment` en el esquema y el respaldo; el dominio la llama `date` y la fachada de W3-12 hace la única conversión |
+| Plantilla de origen | `templateRef` | Referencia a la plantilla con que se creó el préstamo; el préstamo guarda una copia de sus valores, así que editar la plantilla no lo cambia |
+| Origen del saldo reportado | `source` (`BANK_EMAIL`, `ONLINE_BANKING`, `BANK_SCHEDULE`, `OTHER`) | De dónde salió un `ReportedBalance`: correo del banco, banca en línea, tabla del banco u otro (`REPORTED_BALANCE_SOURCES`) |
+| Escenario activo por préstamo | `activeScenarioByLoan` | Mapa préstamo → escenario activo, en los ajustes sincronizados |
+| Ajustes sincronizados / del dispositivo | `scope` (`synced`, `device`) | Los dos registros de ajustes, de id fijo; los del dispositivo nunca se combinan, importan ni suben (ADR-0024) |
+| Tema | `theme` (`system`, `light`, `dark`) | Preferencia de tema del dispositivo |
+| Sincronización con Drive activada | `driveSyncEnabled` | Ajuste del dispositivo |
+| Desglose de un pago real | `breakdown` (`PaymentBreakdown`; en el dominio, `ActualPaymentBreakdown`) | Capital, interés, seguros y cargos fijos de un pago real, siempre los cuatro ([ALG.ACTUAL]) |
+| Línea de cargo fijo | `ChargeItem` (esquema) / `FixedChargeLine` (dominio) | `label` y `amount` de un cargo fijo |
+| Copia remota ilegible | `InvalidRemote` | Estado de error de la sincronización: el archivo de Drive no es un sobre válido o su contenido no pasa `parseBackup`; no se guarda ni se sube nada |
 
 ## Identificadores de sección `[ALG.*]`
 

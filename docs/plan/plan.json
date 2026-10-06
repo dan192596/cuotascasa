@@ -172,7 +172,7 @@
             "docs/specs/",
             "docs/adr/"
           ],
-          "deliverables": "schema: common.ts (BaseRecord: id uuid, createdAt, updatedAt, updatedByDevice, deletedAt|null; decimal-string and LocalDate refinements), entities/{loan, loan-event, reported-balance, actual-payment, scenario, settings}.ts (their field names are the single source for the spec, the UI and the backup: Loan name, bank, currency, principal, termMonths, disbursementDate, firstDueDate, paymentDay, interestRate, rateType, insuranceRates, fixedCharges (each with effectiveFrom), roundingProfile, templateRef, status; date field names per entity: LoanEvent.date, ReportedBalance.date, ActualPayment.paidDate; optional 'note' on ReportedBalance, ActualPayment and LoanEvent; Loan with status active|paid|archived, a required rateType 'FIXED'|'VARIABLE' (informative only, [ALG.TERMS]), templateRef plus copied values and a currency locked while any non-deleted LoanEvent, ReportedBalance, ActualPayment or Scenario exists (same wording as W3-11); ActualPayment.installmentNumber required and ReportedBalance.installmentNumber optional per [ALG.EVENTS.ANCHOR]; Settings split into synced and device-local fields), backup/v1.ts and backup/types.ts (BackupDocument v1 whose root accepts synthetic: z.literal(true).optional(), LATEST_VERSION, ImportPreview, BackupError codes), oracle/fixture.ts (mirrors FORMAT.md: synthetic: true literal, profile, seed, generatorVersion, feature tags used for enforcement (core, rateChange:<policy>, fixedChargeChange, prepayment:<mode>, commission:<kind>, payoff, advance, anchor, actualPayment) and trait tags used for coverage (roundingProfile, paymentDay, currency, lastRow, latePayment, explicitKAnchor, sameKAnchors, zeroRate, zeroInsurance), inputs, expected rows and summary as decimal strings) and manifest schema (profiles with seed, count, generatorVersion), __examples__/ with one synthetic example per entity (the Loan example includes rateType); stubs codec/, migrations/, testing/. persistence: ports.ts (Repository<T>, per-entity repositories, DataStore with transaction, exportAll incl. tombstones, replaceAll, snapshot create/restore/discard, subscribe asynchronously after commit, pendingChanges/markSynced, changesSinceBackup/markBackedUp, meta deviceId/lastSyncAt/lastBackupAt; Clock with today(): LocalDate in device local time; IdGenerator) and contract/: the Opus-written runDataStoreContract(name, factory) suite with a covered-method registry and list order defined as (createdAt, id); stubs memory/ and dexie/. sync: ports.ts (SyncProvider, RemoteFile, LocalDataset, KeyStore, EncryptedEnvelopeV1, SyncStatus union, SyncError codes NetworkError|AuthError|KeyMismatch|WrongPassphraseOrTamper|UnsupportedVersion|WeakParams, MergeStats, RecordOrderKey = (updatedAt, updatedByDevice) with tombstone winning a full tie, separate mergeDatasets and purgeTombstones signatures, typed Drive v3 request/response subset); testing/drive-fake.ts (in-memory appDataFolder: files.list with spaces=appDataFolder and name query, media download, multipart create/update, files.copy, 401/403/5xx injection) and testing/gis-fake.ts (initTokenClient, requestAccessToken incl. prompt '', expiry, revoke); stubs merge/, crypto/, session/, google-drive/. docs/specs/drive-api-subset.md cites the official Drive v3 reference for each call. ADR-0024 cites ADR-0008 decision 4 (sync algorithm and purge rule) instead of restating it, and records the total order and the residual risks (resurrection after purge, clock skew). Oracle: FORMAT.md (fixture and manifest format, the fixture-id and file naming rule (DIR/<fixture-id>.json), the trait tag definitions (lastRow = the last row's total differs from level + fixed charges or the loan pays off before termMonths; latePayment = an ActualPayment whose paidDate is after the due date of its installmentNumber; explicitKAnchor = a ReportedBalance whose explicit installmentNumber differs from the installment its date would give; sameKAnchors = two ReportedBalance anchors in the same k; zeroRate = r = 0 (every rate 0); zeroInsurance = FHA_GT_V1 with f = 0), the CLI (python -m cuotascasa_oracle generate --profile P --seed S --out DIR, which merges its profile entry into DIR/manifest.json; regenerate --manifest DIR/manifest.json), the compare output contract (exactly three labeled lines 'allRowsMatched: yes|no', 'mismatchedRows: <int>', 'maxAbsDiff: <d.dd>', never the total row count) and the --log-line format ('AAAA-MM-DD · oráculo <sha> · préstamo <label> · todas las filas coinciden: sí/no · filas con diferencia <k> · dif. máx. <d>', with --sha and --label), Python decimal context equal to algorithm.md, profile composition with exact loan counts (core ~15 without events; full ~40 from per-loan sub-seeds), GTQ amount ranges plus one USD range and an event mix equal to the W2-06 coverage matrix, per-loan sub-seed derivation, generatorVersion rule, and the private schema read by compare and private-compare: a-terms.json with the shape of a fixture's 'inputs', a-expected.csv with an exact column list, no thousands separator, YYYY-MM-DD dates, UTF-8), pyproject (stdlib-only runtime; pytest and ruff as dev; package cuotascasa_oracle run as python -m cuotascasa_oracle, the entry point of the W0-01 root scripts oracle:gen and oracle:diff), .python-version 3.13, requirements-dev.txt with hashes.",
+          "deliverables": "schema: common.ts (BaseRecord: id uuid, createdAt, updatedAt, updatedByDevice, deletedAt|null; decimal-string and LocalDate refinements), entities/{loan, loan-event, reported-balance, actual-payment, scenario, settings}.ts (their field names are the single source for the spec, the UI and the backup: Loan name, bank, currency, principal, termMonths, disbursementDate, firstDueDate, paymentDay, interestRate, rateType, insuranceRates, fixedCharges (each with effectiveFrom), roundingProfile, templateRef, status; date field names per entity: LoanEvent.date, ReportedBalance.date, ActualPayment.paidDate; optional 'note' on ReportedBalance, ActualPayment and LoanEvent; Loan with status active|paid|archived, a required rateType 'FIXED'|'VARIABLE' (informative only, [ALG.TERMS]), templateRef plus copied values and a currency locked while any non-deleted LoanEvent, ReportedBalance, ActualPayment or Scenario exists (same wording as W3-11); ActualPayment.installmentNumber required and ReportedBalance.installmentNumber optional per [ALG.EVENTS.ANCHOR]; Settings split into synced and device-local fields), backup/v1.ts and backup/types.ts (BackupDocument v1 whose root accepts synthetic: z.literal(true).optional(), LATEST_VERSION, ImportPreview, BackupError codes), oracle/fixture.ts (mirrors FORMAT.md: synthetic: true literal, profile, seed, generatorVersion, feature tags used for enforcement (core, rateChange:<policy>, fixedChargeChange, prepayment:<mode>, commission:<kind>, payoff, advance, anchor, actualPayment) and trait tags used for coverage (roundingProfile, paymentDay, currency, lastRow, latePayment, explicitKAnchor, sameKAnchors, zeroRate, zeroInsurance), inputs, expected rows and summary as decimal strings) and manifest schema (profiles with seed, count, generatorVersion), __examples__/ with one synthetic example per entity (the Loan example includes rateType); stubs codec/, migrations/, testing/. persistence: ports.ts (Repository<T>, per-entity repositories, DataStore with transaction, exportAll incl. tombstones, replaceAll, snapshot create/restore/discard, subscribe asynchronously after commit, pendingChanges/markSynced, changesSinceBackup/markBackedUp, meta deviceId/lastSyncAt/lastBackupAt; Clock with today(): LocalDate in device local time; IdGenerator) and contract/: the Opus-written runDataStoreContract(name, factory) suite with a covered-method registry and list order defined as (createdAt, id); stubs memory/ and dexie/. sync: ports.ts (SyncProvider, RemoteFile, LocalDataset, KeyStore, EncryptedEnvelopeV1, SyncStatus union, SyncError codes NetworkError|AuthError|KeyMismatch|WrongPassphraseOrTamper|UnsupportedVersion|WeakParams|InvalidRemote, MergeStats, RecordOrderKey = (updatedAt, updatedByDevice) with tombstone winning a full tie, separate mergeDatasets and purgeTombstones signatures, typed Drive v3 request/response subset); testing/drive-fake.ts (in-memory appDataFolder: files.list with spaces=appDataFolder and name query, media download, multipart create/update, files.copy, 401/403/5xx injection) and testing/gis-fake.ts (initTokenClient, requestAccessToken incl. prompt '', expiry, revoke); stubs merge/, crypto/, session/, google-drive/. docs/specs/drive-api-subset.md cites the official Drive v3 reference for each call. ADR-0024 cites ADR-0008 decision 4 (sync algorithm and purge rule) instead of restating it, and records the total order and the residual risks (resurrection after purge, clock skew). Oracle: FORMAT.md (fixture and manifest format, the fixture-id and file naming rule (DIR/<fixture-id>.json), the trait tag definitions (lastRow = the last row's total differs from level + fixed charges or the loan pays off before termMonths; latePayment = an ActualPayment whose paidDate is after the due date of its installmentNumber; explicitKAnchor = a ReportedBalance whose explicit installmentNumber differs from the installment its date would give; sameKAnchors = two ReportedBalance anchors in the same k; zeroRate = r = 0 (every rate 0); zeroInsurance = FHA_GT_V1 with f = 0), the CLI (python -m cuotascasa_oracle generate --profile P --seed S --out DIR, which merges its profile entry into DIR/manifest.json; regenerate --manifest DIR/manifest.json), the compare output contract (exactly three labeled lines 'allRowsMatched: yes|no', 'mismatchedRows: <int>', 'maxAbsDiff: <d.dd>', never the total row count) and the --log-line format ('AAAA-MM-DD · oráculo <sha> · préstamo <label> · todas las filas coinciden: sí/no · filas con diferencia <k> · dif. máx. <d>', with --sha and --label), Python decimal context equal to algorithm.md, profile composition with exact loan counts (core ~15 without events; full ~40 from per-loan sub-seeds), GTQ amount ranges plus one USD range and an event mix equal to the W2-06 coverage matrix, per-loan sub-seed derivation, generatorVersion rule, and the private schema read by compare and private-compare: a-terms.json with the shape of a fixture's 'inputs', a-expected.csv with an exact column list, no thousands separator, YYYY-MM-DD dates, UTF-8), pyproject (stdlib-only runtime; pytest and ruff as dev; package cuotascasa_oracle run as python -m cuotascasa_oracle, the entry point of the W0-01 root scripts oracle:gen and oracle:diff), .python-version 3.13, requirements-dev.txt with hashes.",
           "acceptance_criteria": [
             "Every entity schema parses its synthetic example and rejects a number-typed money field and a Date-typed date field",
             "runDataStoreContract passes against a throwaway reference fake inside contract/, and a meta-test asserts the covered-method registry equals the method names in ports.ts",
@@ -396,7 +396,7 @@
             "R24"
           ],
           "size": "L",
-          "notes": "Oracle lineage: a separate agent spawned in a git sparse-checkout worktree created exactly as in docs/plan/README.md §3 step 3, with this list: `git -C .worktrees/<ID> sparse-checkout set --no-cone '/*' '!/*/' '/docs/algorithm.md' '/docs/glossary.md' '/docs/specs/algorithm-examples/' '/docs/specs/conformance-triage.md' '/docs/plan/README.md' '/docs/plan/cards/<ID>.md' '/tools/oracle/'` (<ID> = W1-02; the command is recorded in the PR). Do not run pnpm in this lineage. Create a venv with the Python in tools/oracle/.python-version, pip install --require-hashes -r tools/oracle/requirements-dev.txt, then python -m pytest and ruff check from tools/oracle; Opus re-runs hooks and full CI before merge. Never reads packages/ or tools/conformance/. Ambiguities go to Opus as questions and are never guessed."
+          "notes": "Oracle lineage: a separate agent spawned in a git sparse-checkout worktree created exactly as in docs/plan/README.md §3 step 3, with this list: `git -C .worktrees/<ID> sparse-checkout set --no-cone '/*' '!/*/' '/docs/algorithm.md' '/docs/glossary.md' '/docs/specs/algorithm-examples/' '/docs/specs/conformance-triage.md' '/docs/plan/README.md' '/docs/plan/cards/<ID>.md' '/tools/oracle/'` (<ID> = W1-02; the command is recorded in the PR). Do not run pnpm in this lineage. Create a venv with the Python in tools/oracle/.python-version, pip install --require-hashes -r tools/oracle/requirements-dev.txt, then python -m pytest and ruff check from tools/oracle; Opus re-runs hooks and full CI before merge. Never reads packages/ or tools/conformance/. Ambiguities go to Opus as questions and are never guessed. Launch context (D25): the controller confirms the owner's approval before the first `pip install --require-hashes -r tools/oracle/requirements-dev.txt` in the venv (W0-04 never ran it). The oracle covers schedule-shaped outputs only (FORMAT.md §11); goal seek ([ALG.GOAL]), [ALG.VALIDATE] and buildPaths stay out of its scope. The [ALG.DATES] firstDueDate/paymentDay check makes `compare` exit with `terms-invalid`; firstDueDate before disbursementDate is valid (disbursementDate is informative)."
         },
         {
           "id": "W1-03",
@@ -461,7 +461,7 @@
             "R24"
           ],
           "size": "S",
-          "notes": "If a contract case looks wrong, stop and escalate to Opus; the suite is never edited by this card."
+          "notes": "If a contract case looks wrong, stop and escalate to Opus; the suite is never edited by this card. Launch context (D25): writes and transactions run one at a time, and transaction-bound repositories follow every store rule and see their own writes (ports.ts, DataStore and DataStoreTransaction JSDoc). SettingsRepository follows the Repository copy rule. deviceId comes from IdGenerator.newId() when the store is created over an empty database."
         },
         {
           "id": "W1-05",
@@ -491,7 +491,7 @@
             "R10"
           ],
           "size": "M",
-          "notes": ""
+          "notes": "Launch context (D25): createDexieDataStore(deps) needs a fresh database per factory call so contract cases never share state; add an optional second argument (database name or IDBFactory) inside src/dexie/. Persist deviceId and the monotonic stamp floor across close and reopen (ADR-0005); the contract suite uses one store per context and does not cover reopening. SettingsRepository follows the Repository copy rule."
         },
         {
           "id": "W1-06",
@@ -536,7 +536,6 @@
           ],
           "contracts_used": [
             "packages/sync/src/ports.ts",
-            "packages/sync/src/index.ts",
             "docs/adr/0024-sync-merge-order.md"
           ],
           "deliverables": "WebCrypto only. deriveKey(passphrase, salt, iterations = 600000): PBKDF2-SHA256 to an AES-256-GCM CryptoKey with extractable false. encrypt uses a random 96-bit IV and binds the envelope header as AAD. decrypt returns typed errors WrongPassphraseOrTamper, UnsupportedVersion, WeakParams and KeyMismatch (salt differs). Envelope v1 {format: 'cuotascasa-enc', v: 1, kdf: {name, iterations, salt}, cipher: {name, iv}, ct} with base64url fields. IndexedDB KeyStore persists the CryptoKey plus a salt id, never the passphrase. changePassphrase uses a new salt, re-derives and re-encrypts. The same envelope serves encrypted JSON export. Encrypted envelopes are generated in tests and never versioned.",
@@ -555,7 +554,7 @@
             "R22"
           ],
           "size": "M",
-          "notes": "Opus implements this because an IV reuse, extractable key or KDF downgrade would expose financial data in a third-party cloud. A Sonnet reviewer cross-checks it against this list."
+          "notes": "Opus implements this because an IV reuse, extractable key or KDF downgrade would expose financial data in a third-party cloud. A Sonnet reviewer cross-checks it against this list. Launch context (D25): test seam `decrypt(key, envelope, options?: { readonly minIterations?: number })`, default PBKDF2_ITERATIONS; only tests pass a lower floor, WeakParams is checked before decrypting, and a test pins the default at 600000. Browser specs are named `*.browser.spec.ts` (Vitest project `sync-browser`, an Opus micro-card before this card)."
         },
         {
           "id": "W1-08",
@@ -866,7 +865,7 @@
             "R24"
           ],
           "size": "L",
-          "notes": "Oracle lineage: a separate agent spawned in a git sparse-checkout worktree created exactly as in docs/plan/README.md §3 step 3, with this list: `git -C .worktrees/<ID> sparse-checkout set --no-cone '/*' '!/*/' '/docs/algorithm.md' '/docs/glossary.md' '/docs/specs/algorithm-examples/' '/docs/specs/conformance-triage.md' '/docs/plan/README.md' '/docs/plan/cards/<ID>.md' '/tools/oracle/'` (<ID> = W2-06; the command is recorded in the PR). Do not run pnpm in this lineage. Create a venv with the Python in tools/oracle/.python-version, pip install --require-hashes -r tools/oracle/requirements-dev.txt, then python -m pytest and ruff check from tools/oracle; Opus re-runs hooks and full CI before merge. Never reads packages/. If the core profile would have to change, stop and escalate to Opus."
+          "notes": "Oracle lineage: a separate agent spawned in a git sparse-checkout worktree created exactly as in docs/plan/README.md §3 step 3, with this list: `git -C .worktrees/<ID> sparse-checkout set --no-cone '/*' '!/*/' '/docs/algorithm.md' '/docs/glossary.md' '/docs/specs/algorithm-examples/' '/docs/specs/conformance-triage.md' '/docs/plan/README.md' '/docs/plan/cards/<ID>.md' '/tools/oracle/'` (<ID> = W2-06; the command is recorded in the PR). Do not run pnpm in this lineage. Create a venv with the Python in tools/oracle/.python-version, pip install --require-hashes -r tools/oracle/requirements-dev.txt, then python -m pytest and ruff check from tools/oracle; Opus re-runs hooks and full CI before merge. Never reads packages/. If the core profile would have to change, stop and escalate to Opus. Launch context (D25): «every event example» means the examples of the events this card implements, on the real path. Goal-seek ([ALG.GOAL]), [ALG.VALIDATE] and buildPaths/metrics examples are out of the oracle's scope (W0-02 verified them with two independent engines). FORMAT.md §11 converts only schedule-shaped outputs; yearly subtotals and comparedToNoEvents are checked in the oracle's own tests, not converted into fixtures."
         },
         {
           "id": "W2-07",
@@ -909,12 +908,14 @@
           ],
           "depends_on": [
             "W1-06",
-            "W1-07"
+            "W1-07",
+            "W1-03"
           ],
           "contracts_used": [
             "packages/sync/src/ports.ts",
             "packages/sync/src/testing/",
-            "packages/schema/src/backup/"
+            "packages/schema/src/backup/",
+            "packages/schema/src/codec/"
           ],
           "deliverables": "SyncSession over the SyncProvider, LocalDataset and KeyStore ports: full pipeline in the order merge -> purgeTombstones over the merged dataset and local with the previous lastSyncAt -> save -> encrypt -> upload -> markSynced (ADR-0008 decision 4, ADR-0024), cuotascasa.prev.json handling, status machine, single-flight guard within a tab and across tabs (Web Locks API lock 'cuotascasa-sync').",
           "acceptance_criteria": [
@@ -923,13 +924,16 @@
             "NetworkError -> 'offline' with pendingChanges kept; AuthError -> 'needs-auth'; KeyMismatch or WrongPassphraseOrTamper -> 'needs-passphrase' with no upload and the local dataset untouched (spy)",
             "Call order is merge -> purgeTombstones (merged dataset and local, previous lastSyncAt) -> save -> encrypt -> upload -> markSynced; markSynced runs only after a successful upload (call-order spy)",
             "Concurrent sync() calls coalesce into one run, including across two tabs (fake LockManager)",
-            "A tombstone purged in a run is not re-uploaded: the uploaded envelope decrypts to a dataset without it (test)"
+            "A tombstone purged in a run is not re-uploaded: the uploaded envelope decrypts to a dataset without it (test)",
+            "The uploaded plaintext is serializeBackup(BackupDocument) whose data is the merged, purged dataset; a download goes through parseBackup: FUTURE_VERSION gives { state: 'error', code: 'UnsupportedVersion' }, and a remote that is not an envelope or any other parse failure gives { state: 'error', code: 'InvalidRemote' }; in both cases nothing is saved or uploaded (spy)",
+            "sync() resolves with the outcome on every failure; with no remote file the remote side is the empty dataset, so the device settings record is never uploaded (test)",
+            "If the remote file's version changed between download and upload, the run starts over from the download once and then uploads (fake provider)"
           ],
           "requirements": [
             "R12"
           ],
           "size": "M",
-          "notes": ""
+          "notes": "Launch context (D25): `createSyncSession(deps, options: { readonly appVersion: string; readonly minIterations?: number })`; appVersion goes into the uploaded BackupDocument and minIterations is W1-07's test seam. The frozen SyncSession JSDoc in ports.ts is the contract."
         },
         {
           "id": "W2-09",
@@ -2045,13 +2049,14 @@
             "Offline status reads 'cambios sin sincronizar (n)' with n = pendingChanges",
             "The Drive module loads only after connect() (import spy) and bundle:check stays green",
             "Storage inspection test: no token or passphrase persisted",
-            "An empty client ID gives 'no configurado' and connect() disabled"
+            "An empty client ID gives 'no configurado' and connect() disabled",
+            "{ state: 'error', code: 'InvalidRemote' } shows a Spanish message saying that the Drive copy cannot be read and that local data did not change (test)"
           ],
           "requirements": [
             "R12"
           ],
           "size": "M",
-          "notes": ""
+          "notes": "Launch context (D25): change the passphrase under SYNC_LOCK_NAME: decrypt the remote with the old key, re-encrypt with the new one, upload (keeping cuotascasa.prev.json), and only then KeyStore.save; otherwise the next sync on this device gets KeyMismatch."
         },
         {
           "id": "W4-10",

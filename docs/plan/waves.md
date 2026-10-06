@@ -47,7 +47,7 @@ Two short Opus gates open the wave (oracle validation plus core fixtures; spike 
 | [W2-05](cards/W2-05.md) | sonnet | L | W1-01 | Engine: reported-balance anchors, actual payments, three paths, comparison metrics |
 | [W2-06](cards/W2-06.md) | sonnet | L | W1-02, W2-01 | Oracle: every event type and the 'full' (~40 loans) profile, core profile untouched |
 | [W2-07](cards/W2-07.md) | sonnet | M | W1-01 | Templates (FHA Guatemala v1, Hipotecario simple) and validation against a real balance |
-| [W2-08](cards/W2-08.md) | sonnet | M | W1-06, W1-07 | Sync session orchestrator (download -> decrypt -> merge -> purge -> save -> encrypt -> upload) |
+| [W2-08](cards/W2-08.md) | sonnet | M | W1-06, W1-07, W1-03 | Sync session orchestrator (download -> decrypt -> merge -> purge -> save -> encrypt -> upload) |
 | [W2-09](cards/W2-09.md) | sonnet | M | W2-02 | Google Drive SyncProvider (GIS token model, appDataFolder) |
 | [W2-10](cards/W2-10.md) | sonnet | M | W2-02 | Final per-route security headers (CSP, Trusted Types, HSTS) |
 | [W2-11](cards/W2-11.md) | sonnet | M | W2-02, W1-05 | E2E infrastructure: production build behind wrangler, Chromium + WebKit, axe, probes, Google mock, seeding |
