@@ -703,7 +703,9 @@
             "apps/web/src/app/app-area.routes.ts",
             "docs/adr/0021-csp-trusted-types-gis.md",
             "docs/adr/0023-pwa-registration-scope.md",
-            "docs/adr/0022-cloudflare-static-routing.md"
+            "docs/adr/0022-cloudflare-static-routing.md",
+            "apps/web/src/index.html",
+            "apps/web/src/testing/build-output/"
           ],
           "depends_on": [
             "W1-08",
@@ -2659,7 +2661,7 @@
             "R26"
           ],
           "size": "M",
-          "notes": "Any defect found becomes its own small fix card, registered in docs/plan/plan.json, with the views, cards.json and frozen-files.json regenerated on a branch opus/register-<ID> before the card branch is created, with explicit owns, merged before the tag."
+          "notes": "Any defect found becomes its own small fix card, registered in docs/plan/plan.json, with the views, cards.json and frozen-files.json regenerated on a branch opus/register-<ID> before the card branch is created, with explicit owns, merged before the tag. Launch context (D28): docs/plan/cards.json only feeds owns-check and has no requirements; build the R1–R28 traceability from docs/plan/plan.json or docs/plan/traceability.md."
         }
       ]
     }
