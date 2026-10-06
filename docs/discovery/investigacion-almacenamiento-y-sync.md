@@ -1,6 +1,6 @@
 # Investigación: almacenamiento y sincronización sin backend
 
-Fecha: 2026-10-04 · Alimenta: ADR-0006, ADR-0007, ADR-0008, ADR-0009, ADR-0017, ADR-0024 (reservado)
+Fecha: 2026-10-04 · Alimenta: ADR-0006, ADR-0007, ADR-0008, ADR-0009, ADR-0017, ADR-0024
 
 ## 1. La pregunta
 

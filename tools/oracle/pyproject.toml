@@ -1,0 +1,22 @@
+[project]
+name = "cuotascasa-oracle"
+version = "0.0.0"
+description = "Oráculo de referencia de CuotasCasa: implementación independiente de docs/algorithm.md, solo con la biblioteca estándar."
+requires-python = ">=3.13,<3.14"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest==9.1.1", "ruff==0.16.10"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = ["-ra", "--strict-markers", "--strict-config"]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+src = ["."]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]

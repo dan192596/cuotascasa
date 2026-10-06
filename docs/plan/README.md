@@ -38,7 +38,7 @@ Se definió todo antes de escribir código. La spec de diseño es `docs/specs/20
 | Fase | Entregable | Dónde | Estado |
 |---|---|---|---|
 | 0 · Descubrimiento | Investigación pública del dominio (primas FHA, desgravamen, IUSI, tasa líder), stack de frontend, backends y hosting comparados, y la ingeniería inversa del algoritmo (hecha en privado y sin números en el repo) | `docs/discovery/` | Completa |
-| 1 · Arquitectura | ADR-0001 a ADR-0019 aceptados, ADR-0020 diferido (diseño Supabase archivado), ADR-0021 a ADR-0024 reservados | `docs/adr/` (índice en `docs/adr/README.md`) | Completa |
+| 1 · Arquitectura | ADR-0001 a ADR-0019 aceptados, ADR-0020 diferido (diseño Supabase archivado), ADR-0021 a ADR-0023 reservados, ADR-0024 aceptado (W0-04) | `docs/adr/` (índice en `docs/adr/README.md`) | Completa |
 | 2 · UX | Flujos, pantallas, sistema de diseño ("libreta bancaria" + "tu casa se va llenando" + edición en celda), bocetos ASCII de las pantallas clave y paleta propuesta | Spec, sección 9; ADR-0012; `docs/discovery/direccion-visual.md`; comportamiento por pantalla en `docs/discovery/historias-de-usuario.md` | Completa salvo la paleta: es una **propuesta**. W0-05 la presenta al dueño y la congela en `docs/specs/design-palette.md` solo cuando él la aprueba |
 | 3 · Datos y motor | Algoritmo con reglas `[ALG.*]` y ejemplo sintético resuelto, glosario y modelo de datos | `docs/algorithm.md`, `docs/glossary.md`, spec sección 7 | Completa. W0-02 agrega un ejemplo por regla y cierra las definiciones |
 | 4 · Plan | Tarjetas, olas, contratos congelados, trazabilidad R1–R28 | `docs/plan/` | Completa y aprobada |

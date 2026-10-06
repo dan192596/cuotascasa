@@ -31,7 +31,7 @@ Cada ADR documenta una decisión importante: su contexto, la decisión, las alte
 | 0021 | `0021-csp-trusted-types-gis.md`: CSP por ruta, Trusted Types y carga de GIS | Reservado (lo escribe W2-02) | — |
 | 0022 | `0022-cloudflare-static-routing.md`: enrutamiento estático en Cloudflare | Reservado (lo redacta W1-09; W2-02 lo acepta o enmienda) | — |
 | 0023 | `0023-pwa-registration-scope.md`: alcance de registro del service worker | Reservado (lo escribe W2-02) | — |
-| 0024 | `0024-sync-merge-order.md`: orden total de la combinación en la sincronización; cita la regla de purga de ADR-0008 (decisión 4) sin redefinirla | Reservado (lo escribe W0-04) | — |
+| [0024](0024-sync-merge-order.md) | Orden total de la combinación en la sincronización | Aceptado | 2026-10-05 |
 
 El siguiente número libre es el **0025**.
 

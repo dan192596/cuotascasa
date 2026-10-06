@@ -522,7 +522,7 @@ El índice está en [`docs/adr/README.md`](../adr/README.md) y los archivos sigu
 | [0021](../adr/0021-csp-trusted-types-gis.md) | CSP, Trusted Types y GIS | Reservado (W2-02) |
 | [0022](../adr/0022-cloudflare-static-routing.md) | Enrutamiento estático en Cloudflare | Reservado (W1-09) |
 | [0023](../adr/0023-pwa-registration-scope.md) | Alcance de registro de la PWA | Reservado (W2-02) |
-| [0024](../adr/0024-sync-merge-order.md) | Orden del merge de sincronización | Reservado (W0-04) |
+| [0024](../adr/0024-sync-merge-order.md) | Orden del merge de sincronización | Aceptado |
 
 ## 15. Bitácora de decisiones del brainstorming
 
@@ -556,7 +556,7 @@ Todas las decisiones son del 2026-10-04, en orden cronológico.
 
 - **Carpeta privada:** falta autorizar `~/.cuotascasa-private/`, que se necesita en W2-01. Sin ella, los gates W2-01, W3-01 y W4-01 siguen el único plan alternativo (ADR-0014 y `docs/plan/README.md`, sección 6): validan solo con ejemplos sintéticos, la bitácora dice «validación privada: no autorizada» y el riesgo residual queda anotado. Solo cuenta una autorización explícita del dueño que nombre la carpeta o la validación privada.
 - **Spike W1-08:** su resultado decide ADR-0021 (en W2-02). Queda pendiente probar el popup real de consentimiento en localhost.
-- **ADRs por escribir:** ADR-0022 (W1-09), ADR-0023 (W2-02) y ADR-0024 (W0-04).
+- **ADRs por escribir:** ADR-0022 (W1-09) y ADR-0023 (W2-02).
 - **Pendientes de W0-02:** los valores de «Hipotecario simple». Los umbrales del semáforo y las causas que emite v1 ya están en `[ALG.VALIDATE]`.
 - **Pendiente de W0-05:** la aprobación del dueño de la paleta propuesta en `docs/discovery/direccion-visual.md`.
 - **Pendiente de W3-05:** la elección final de fuentes.

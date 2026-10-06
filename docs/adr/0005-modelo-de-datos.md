@@ -75,6 +75,6 @@ El motor (ADR-0003, ADR-0004) calcula tablas a partir de las condiciones de un p
 
 ## Referencias
 
-- ADR-0003, ADR-0004, ADR-0006, ADR-0007, ADR-0008, ADR-0024 (reservado).
+- ADR-0003, ADR-0004, ADR-0006, ADR-0007, ADR-0008, ADR-0024.
 - `docs/glossary.md`, `docs/algorithm.md` (`[ALG.TERMS]`, `[ALG.TERM]`, `[ALG.EVENTS]`, `[ALG.EVENTS.ANCHOR]`, `[ALG.EVENTS.ORDER]`, `[ALG.FIXEDCHANGE]`, `[ALG.PATHS.CUTOFF]`, `[ALG.TEMPLATES]`).
 - Tarjetas W0-04, W1-03 y W1-06.

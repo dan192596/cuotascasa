@@ -30,11 +30,11 @@ Con datos solo en el navegador (ADR-0001), un borrado o un cambio de equipo pier
    - «Desconectar Drive» revoca el token.
 4. **Algoritmo de sincronización:**
    1. Descargar `cuotascasa.json`.
-   2. Descifrarlo.
+   2. Descifrarlo y leerlo como un respaldo de ADR-0007 (`parseBackup`: validación y migraciones). Una versión futura o un contenido ilegible detienen la sesión sin guardar ni subir nada (`SyncSession`).
    3. Combinar por registro: gana el `updatedAt` mayor, con desempate por `updatedByDevice`. Las marcas de borrado se respetan y ganan un empate total.
    4. Purgar del conjunto combinado las marcas de borrado vencidas (regla de purga, abajo).
    5. Guardar el resultado localmente. Así la purga es local **y** del conjunto que se sube.
-   6. Cifrar.
+   6. Cifrar el resultado como documento de respaldo (`serializeBackup`, ADR-0007), con el mismo sobre del respaldo cifrado (ADR-0009, decisión 8).
    7. Subir, guardando antes la versión remota anterior como `cuotascasa.prev.json`.
    8. `markSynced`, **solo tras una subida exitosa**.
 
@@ -52,8 +52,8 @@ Con datos solo en el navegador (ADR-0001), un borrado o un cambio de equipo pier
    - **90 días** son 90 × 86 400 000 ms entre instantes UTC, no días calendario.
    - **Bordes:** con `lastSyncAt − deletedAt` de 89 días o de exactamente 90 días, la marca no se purga; con 90 días + 1 ms o con 91 días, sí. Con `lastSyncAt` nulo (primera sincronización), no se purga nada.
    - **Subida fallida:** los datos locales ya quedaron purgados y `markSynced` no corre. Si la marca sigue en la copia remota, vuelve con el siguiente merge y se purga otra vez. La purga es idempotente y no revive el registro.
-   - **Riesgo residual:** un dispositivo sin sincronizar durante más de 90 días puede resucitar un registro purgado, porque su copia viva gana el merge al no encontrar la marca. Lo mismo pasa con una marca antigua importada de un respaldo (ADR-0007 conserva los sellos) que nunca se subió. Queda documentado y diferido a ADR-0024.
-5. **Una sincronización a la vez**, también entre pestañas (Web Locks, candado `cuotascasa-sync`). Drive no ofrece una escritura atómica condicionada confirmada, así que antes de subir se vuelve a verificar el estado remoto («mejor esfuerzo»).
+   - **Riesgo residual:** un dispositivo sin sincronizar durante más de 90 días puede resucitar un registro purgado, porque su copia viva gana el merge al no encontrar la marca. Lo mismo pasa con una marca antigua importada de un respaldo (ADR-0007 conserva los sellos) que nunca se subió. Lo documenta ADR-0024 («Riesgos residuales»).
+5. **Una sincronización a la vez**, también entre pestañas (Web Locks, candado `cuotascasa-sync`). Drive no ofrece una escritura atómica condicionada confirmada, así que antes de subir se vuelve a verificar el estado remoto («mejor esfuerzo»): si cambió desde la descarga, la sesión vuelve a empezar desde la descarga una sola vez (`SyncSession`).
 6. **Estados visibles:** «cambios sin sincronizar (n)», necesita autorización, necesita la frase y «no configurado» si el build no trae ID de cliente.
 7. **Configuración:** el ID de cliente se inyecta al compilar (W3-17). El dueño configura Google Cloud una vez, con costo cero (W3-18).
 8. **Borrar los datos:** la política de privacidad explica cómo hacerlo desde Drive: Administrar apps → Borrar datos ocultos de la app.
@@ -82,7 +82,7 @@ Con datos solo en el navegador (ADR-0001), un borrado o un cambio de equipo pier
 - **Subidas simultáneas** desde dos equipos pueden pisarse. Mitigación: verificación previa y `cuotascasa.prev.json`.
 - **El script de GIS es código de terceros.** Mitigación: carga diferida, CSP limitada a los orígenes de Google y Trusted Types si es compatible (ADR-0021).
 - **Robo del token.** Mitigación: solo en memoria, alcance mínimo y revocación.
-- **Resurrección tras la purga:** un dispositivo sin sincronizar durante más de 90 días puede revivir registros purgados. Riesgo residual aceptado; su tratamiento queda diferido a ADR-0024.
+- **Resurrección tras la purga:** un dispositivo sin sincronizar durante más de 90 días puede revivir registros purgados. Riesgo residual aceptado; lo documenta ADR-0024 («Riesgos residuales»).
 
 ## Verificación
 
@@ -104,7 +104,7 @@ Con datos solo en el navegador (ADR-0001), un borrado o un cambio de equipo pier
 
 ## Referencias
 
-- ADR-0001, ADR-0002, ADR-0005, ADR-0009, ADR-0016, ADR-0020, ADR-0021 (reservado), ADR-0024 (reservado).
+- ADR-0001, ADR-0002, ADR-0005, ADR-0009, ADR-0016, ADR-0020, ADR-0021 (reservado), ADR-0024.
 - `docs/specs/drive-api-subset.md`; tarjetas W1-06, W2-08, W2-09, W3-18, W4-09 y W5-08.
 - https://developers.google.com/workspace/drive/api/guides/appdata
 - https://developers.google.com/identity/oauth2/web/guides/use-token-model
