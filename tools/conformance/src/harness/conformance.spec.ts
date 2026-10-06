@@ -11,7 +11,13 @@ import { DOMAIN_SRC_DIR, ENFORCED_FEATURES_FILE, FIXTURES_DIR } from '../paths.t
 import { parseEnforcedFeatures } from './enforced-features.ts';
 import { findFixtureIdLeaks, formatFixtureIdLeak } from './fixture-id.ts';
 import { loadFixtureSet } from './fixture-set.ts';
-import { checkFixture, formatConformanceSummary, limitReport, partitionFixtures } from './run-conformance.ts';
+import {
+  checkFixture,
+  enforcedTagsWithoutFixtures,
+  formatConformanceSummary,
+  limitReport,
+  partitionFixtures,
+} from './run-conformance.ts';
 
 const enforcedTags = parseEnforcedFeatures(readFileSync(ENFORCED_FEATURES_FILE, 'utf8'));
 const fixtureSet = loadFixtureSet(FIXTURES_DIR);
@@ -19,13 +25,17 @@ const partition = partitionFixtures(fixtureSet.fixtures, enforcedTags);
 const engine = createPublicEngine();
 
 describe('conformance gate', () => {
-  it('loads every fixture listed in tools/oracle/fixtures/manifest.json and validates it with fixtureSchema', () => {
+  it('loads every fixture listed in tools/oracle/fixtures/manifest.json, validates it with fixtureSchema and finds a fixture for every enforced tag', () => {
     console.info(
       fixtureSet.manifest === null
         ? 'conformance: no tools/oracle/fixtures/manifest.json yet (W2-01 commits the first profile)'
         : formatConformanceSummary(partition),
     );
     expect(fixtureSet.problems).toEqual([]);
+    expect(
+      enforcedTagsWithoutFixtures(fixtureSet.fixtures, enforcedTags),
+      'enforced tags that no fixture carries',
+    ).toEqual([]);
   });
 
   it('finds no fixture id under packages/domain/src', () => {

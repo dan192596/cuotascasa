@@ -1,9 +1,11 @@
-/** Two-decimal money strings as exact integer cents (bigint): the harness compares to the cent, never via `number`. */
-const MONEY = /^-?\d+\.\d{2}$/;
+// Two-decimal money strings as exact integer cents (bigint): the harness compares to the cent, never via `number`.
 
-/** Cents of a two-decimal string ('1234.56' → 123456n); null when the value is not in that format. */
+/** Canonical two-decimal money (FORMAT.md §1): no leading zeros, never '-0.00'. */
+const MONEY = /^-?(?:0|[1-9]\d*)\.\d{2}$/;
+
+/** Cents of a canonical two-decimal string ('1234.56' → 123456n); null when the value is not in that format. */
 export function moneyToCents(value: string): bigint | null {
-  if (!MONEY.test(value)) return null;
+  if (!MONEY.test(value) || value === '-0.00') return null;
   const cents = BigInt(value.replace('-', '').replace('.', ''));
   return value.startsWith('-') ? -cents : cents;
 }

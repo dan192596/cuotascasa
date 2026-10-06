@@ -8,8 +8,8 @@ describe('money helpers (exact cents, never a JS number)', () => {
     expect(moneyToCents('0.00')).toBe(0n);
   });
 
-  it('rejects anything that is not a two-decimal string', () => {
-    for (const value of ['1234.5', '1,234.56', '1e3', ' 1.00', '1.000', '']) {
+  it('rejects anything that is not a canonical two-decimal string', () => {
+    for (const value of ['1234.5', '1,234.56', '1e3', ' 1.00', '1.000', '', '-0.00', '0100.00', '00.00', '-01.00']) {
       expect(moneyToCents(value), value).toBeNull();
     }
   });

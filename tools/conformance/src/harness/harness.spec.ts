@@ -1,15 +1,17 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { Fixture } from '@cuotascasa/schema';
+import { EXPECTED_ROW_COLUMNS, type Fixture } from '@cuotascasa/schema';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { ComputedFixtureResult, FixtureEngine } from '../engine-adapter.ts';
+import { centsToMoney, moneyToCents } from '../money.ts';
 import { compareFixture } from './compare-fixture.ts';
 import { missingFeatures, parseEnforcedFeatures } from './enforced-features.ts';
 import { findFixtureIdLeaks, formatFixtureIdLeak } from './fixture-id.ts';
 import { loadFixtureSet } from './fixture-set.ts';
 import {
   checkFixture,
+  enforcedTagsWithoutFixtures,
   formatConformanceSummary,
   limitReport,
   partitionFixtures,
@@ -107,6 +109,36 @@ describe('compareFixture', () => {
       'core-0001 row 1 insuranceComponents: expected 0 items, actual 1 items',
       'core-0001 row 1 paid: expected false, actual true',
     ]);
+    // A non-canonical amount differs even when the cents agree (tools/oracle/FORMAT.md §1: no leading zeros, never '-0.00').
+    const nonCanonical = withRow(structuredClone(fixture.expected), 0, { level: '0100.00', prepayment: '-0.00' });
+    expect(compareFixture(fixture, nonCanonical)).toEqual([
+      'core-0001 row 1 level: expected 100.00, actual 0100.00',
+      'core-0001 row 1 prepayment: expected 0.00, actual -0.00',
+    ]);
+    // Every row column and every summary field is compared: one perturbation gives exactly one line naming it.
+    const bump = (value: string | number | boolean): string | number | boolean => {
+      if (typeof value === 'number') return value + 1;
+      if (typeof value === 'boolean') return !value;
+      const cents = moneyToCents(value);
+      return cents === null ? '2099-12-31' : centsToMoney(cents + 1n);
+    };
+    for (const column of EXPECTED_ROW_COLUMNS) {
+      if (column === 'insuranceComponents') continue; // length and elements: covered above
+      const before = fixture.expected.rows[1]![column];
+      const after = bump(before);
+      const changed = withRow(structuredClone(fixture.expected), 1, { [column]: after });
+      expect(compareFixture(fixture, changed), column).toEqual([
+        `core-0001 row 2 ${column}: expected ${String(before)}, actual ${String(after)}`,
+      ]);
+    }
+    for (const [field, before] of Object.entries(fixture.expected.summary)) {
+      const after = bump(before);
+      const expected = structuredClone(fixture.expected);
+      const changed = { ...expected, summary: { ...expected.summary, [field]: after } };
+      expect(compareFixture(fixture, changed), field).toEqual([
+        `core-0001 summary ${field}: expected ${String(before)}, actual ${String(after)}`,
+      ]);
+    }
   });
 
   it('reports missing and extra rows', () => {
@@ -180,10 +212,15 @@ describe('enforced features', () => {
     );
   });
 
-  it('lists the feature tags of a fixture that are not enforced yet', () => {
+  it('lists the tags a fixture still needs, and the enforced tags that no fixture carries', () => {
     expect(missingFeatures(miniFixture({ features: ['core', 'anchor', 'advance'] }), ['core', 'advance'])).toEqual([
       'anchor',
     ]);
+    expect(
+      enforcedTagsWithoutFixtures([miniFixture({ features: ['core', 'anchor'] })], ['core', 'anchor', 'advance']),
+    ).toEqual(['advance']);
+    expect(enforcedTagsWithoutFixtures([], ['core'])).toEqual(['core']);
+    expect(enforcedTagsWithoutFixtures([], [])).toEqual([]);
   });
 });
 

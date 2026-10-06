@@ -36,6 +36,14 @@ export function partitionFixtures(fixtures: readonly Fixture[], enforced: readon
   return result;
 }
 
+/** Enforced tags that no loaded fixture carries: with one of them the gate would pass with nothing to check. */
+export function enforcedTagsWithoutFixtures(
+  fixtures: readonly Fixture[],
+  enforced: readonly FeatureTag[],
+): FeatureTag[] {
+  return enforced.filter((tag) => !fixtures.some((fixture) => fixture.features.includes(tag)));
+}
+
 /** Runs one fixture through the engine; an engine error becomes a single report line. */
 export function checkFixture(fixture: Fixture, engine: FixtureEngine): string[] {
   try {
