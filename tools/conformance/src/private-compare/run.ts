@@ -1,4 +1,4 @@
-import { isAbsolute, relative, resolve } from 'node:path';
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { InvalidInputError } from '@cuotascasa/domain';
 import { fixtureInputsSchema, type ExpectedRow, type FixtureInputs } from '@cuotascasa/schema';
 import type { FixtureEngine } from '../engine-adapter.ts';
@@ -9,8 +9,13 @@ import { PrivateCompareError, parseExpectedCsv } from './private-csv.ts';
 export interface PrivateCompareDeps {
   /** Reads a UTF-8 file; throws when it cannot. */
   readonly readFile: (path: string) => string;
-  /** Canonical absolute path (symlinks resolved); throws when the path does not exist. */
+  /**
+   * Canonical absolute path: symlinks resolved and on-disk letter case (`realpathSync.native`); throws when the path
+   * does not exist.
+   */
   readonly realPath: (path: string) => string;
+  /** True when the path exists (file or directory). */
+  readonly exists: (path: string) => boolean;
   readonly engine: FixtureEngine;
   /** Local date of the run, 'YYYY-MM-DD'. */
   readonly today: () => string;
@@ -65,13 +70,38 @@ export function parseArgs(argv: readonly string[]): PrivateCompareArgs {
   return { terms, expected, logLine: { sha, label } };
 }
 
-/** Reads a private file; it must exist and live outside the repository (docs/plan/README.md §6). */
+/** True when `path` is `root` or lies below it ('..notes/x' is below root; only '..' or '../x' is above). */
+function isWithin(root: string, path: string): boolean {
+  const fromRoot = relative(root, path);
+  return !(fromRoot === '..' || fromRoot.startsWith(`..${sep}`) || isAbsolute(fromRoot));
+}
+
+/** True when a directory above `path` holds a `.git` entry: the file sits in a git checkout (main or worktree). */
+function insideCheckout(path: string, exists: (path: string) => boolean): boolean {
+  let dir = dirname(path);
+  while (!exists(join(dir, '.git'))) {
+    const parent = dirname(dir);
+    if (parent === dir) return false;
+    dir = parent;
+  }
+  return true;
+}
+
+/**
+ * Reads a private file; it must exist outside the repository and outside every other git checkout
+ * (docs/plan/README.md §6).
+ */
 function readPrivateFile(path: string, deps: PrivateCompareDeps): string {
   try {
-    const real = deps.realPath(resolve(path));
-    const fromRoot = relative(deps.realPath(deps.repoRoot), real);
-    if (fromRoot === '' || (!fromRoot.startsWith('..') && !isAbsolute(fromRoot)))
+    const given = resolve(path);
+    const real = deps.realPath(given);
+    const inside =
+      isWithin(deps.realPath(deps.repoRoot), real) ||
+      insideCheckout(given, deps.exists) ||
+      insideCheckout(real, deps.exists);
+    if (inside) {
       throw new PrivateCompareError('usage');
+    }
     return deps.readFile(real);
   } catch {
     throw new PrivateCompareError('usage');

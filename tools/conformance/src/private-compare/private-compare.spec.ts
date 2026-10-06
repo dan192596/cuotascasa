@@ -1,4 +1,13 @@
-import { mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { InvalidInputError } from '@cuotascasa/domain';
@@ -54,7 +63,8 @@ function engineFrom(rows: readonly ExpectedRow[]): FixtureEngine {
 function deps(engine: FixtureEngine): PrivateCompareDeps {
   return {
     readFile: (path) => readFileSync(path, 'utf8'),
-    realPath: (path) => realpathSync(path),
+    realPath: (path) => realpathSync.native(path),
+    exists: (path) => existsSync(path),
     engine,
     today: () => '2026-10-04',
     repoRoot: REPO_ROOT,
@@ -282,6 +292,36 @@ describe('runPrivateCompare', () => {
     for (const [args, engine, stderr] of cases) {
       expect(runPrivateCompare(args, deps(engine)), args.join(' ')).toEqual({ exitCode: 2, stdout: '', stderr });
     }
+  });
+
+  it('refuses private files inside a checkout: a ..-prefixed directory, another letter case, a sibling checkout or a symlink', () => {
+    const loan = syntheticLoan(3);
+    const outside = privateFiles(JSON.stringify(loan.inputs), toExpectedCsv(loan.rows));
+    const base = mkdtempSync(join(tmpdir(), 'private-compare-checkouts-'));
+    scratchDirs.push(base);
+    const root = join(base, 'Checkout'); // the repository root of this run (repoRoot below)
+    const sibling = join(base, 'sibling'); // another checkout, like the main checkout seen from a worktree
+    mkdirSync(join(root, '..notes'), { recursive: true });
+    mkdirSync(join(root, 'notes'));
+    mkdirSync(join(sibling, '.git'), { recursive: true });
+    for (const dir of [join(root, '..notes'), join(root, 'notes'), sibling]) {
+      writeFileSync(join(dir, 'a-terms.json'), JSON.stringify(loan.inputs));
+    }
+    symlinkSync(outside.terms, join(sibling, 'linked-a-terms.json'));
+    const run = (terms: string) =>
+      runPrivateCompare(['--terms', terms, '--expected', outside.expected], {
+        ...deps(engineFrom(loan.rows)),
+        repoRoot: root,
+      });
+    for (const terms of [
+      join(root, '..notes', 'a-terms.json'),
+      join(base, 'checkout', 'notes', 'a-terms.json'), // the same file on a case-insensitive file system (macOS)
+      join(sibling, 'a-terms.json'),
+      join(sibling, 'linked-a-terms.json'),
+    ]) {
+      expect(run(terms), terms).toEqual({ exitCode: 2, stdout: '', stderr: 'error: usage\n' });
+    }
+    expect(run(outside.terms).exitCode).toBe(0);
   });
 
   it("reports the engine's [ALG.DATES] InvalidInputError as terms-invalid, like the oracle's compare", () => {

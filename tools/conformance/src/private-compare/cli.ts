@@ -1,4 +1,4 @@
-// private-compare (W0-06, Opus-frozen): the TypeScript engine against a private bank table, outside the repo.
+// private-compare (W0-06, Opus-frozen): the TypeScript engine against a private bank table, outside every git checkout.
 // Usage (Node 24 strips the types; no build step and no resolve hook: the workspace sources import with .ts extensions):
 //   node tools/conformance/src/private-compare/cli.ts --terms <dir>/a-terms.json --expected <dir>/a-expected.csv
 //   node tools/conformance/src/private-compare/cli.ts … --log-line --sha <git sha> --label <a|b…>
