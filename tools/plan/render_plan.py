@@ -1,13 +1,19 @@
 #!/usr/bin/env python3
 """Genera las vistas del plan desde docs/plan/plan.json (fuente única).
 
-Salidas: docs/plan/cards/<ID>.md, docs/plan/traceability.md y docs/plan/waves.md.
+Salidas: docs/plan/cards/<ID>.md, docs/plan/traceability.md, docs/plan/waves.md,
+docs/plan/cards.json (id, ola, ejecutor, rama y owns de cada tarjeta) y
+docs/plan/frozen-files.json (copia exacta de la sección 'frozen_files'); owns-check
+(tools/owns-check, W0-06) lee solo esos dos JSON.
 Además valida el plan: ids únicos, dependencias existentes y sin ciclos, sin
-dependencias hacia olas posteriores, W0 solo Opus, requisitos R1–R28 cubiertos y
-ningún traslape de `owns` entre tarjetas que pueden correr en paralelo.
+dependencias hacia olas posteriores, W0 solo Opus, requisitos R1–R28 cubiertos,
+ningún traslape de `owns` entre tarjetas que pueden correr en paralelo y la sección
+'frozen_files': cada entrada con `path` y `editableBy` (ids existentes), rutas únicas,
+y ninguna tarjeta con un `owns` dentro de una ruta congelada sin figurar en su `editableBy`.
 
 Uso:  python3 tools/plan/render_plan.py [--check]
-      --check  solo valida, sin escribir archivos (código de salida 1 si hay problemas)
+      --check  valida y comprueba que las vistas escritas estén al día, sin escribir
+               (código de salida 1 si hay problemas o vistas desactualizadas)
 Lo ejecuta Opus después de cambiar plan.json (ADR-0019).
 """
 import collections, json, re, sys, unicodedata
@@ -15,7 +21,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 PLAN = ROOT / "docs/plan/plan.json"
-OUT = ROOT / "docs/plan"
+OUT_DIR = "docs/plan"
 
 REQ = {
  "R1": "Landing prerenderizada + simulador público (cero red y cero almacenamiento)",
@@ -102,26 +108,79 @@ def validate(plan):
     problems += [f"{c['id']} está en {w0['id']} y no es de Opus" for c in w0["cards"] if c["executor"] != "opus"]
     covered = {r for c in cards for r in c["requirements"]}
     problems += [f"requisito sin cubrir: {r}" for r in REQ if r not in covered]
+    problems += validate_frozen_files(plan.get("frozen_files"), cards)
     return cards, problems
+
+
+SAFE_PATH = re.compile(r"^(?!\./)(?!/)(?!.*(?:^|/)\.\.(?:/|$))[^*?\[\]]+$")
+
+
+def frozen_covers(frozen_path, owned_path):
+    """True si el owns `owned_path` queda entero dentro de la ruta congelada (igual, o dentro de un directorio)."""
+    return owned_path == frozen_path or (frozen_path.endswith("/") and owned_path.startswith(frozen_path))
+
+
+def validate_frozen_files(frozen, cards):
+    """Valida la sección 'frozen_files' de plan.json: [{path, editableBy: [ids de tarjeta]}]."""
+    if not isinstance(frozen, list):
+        return ["plan.json no tiene la sección 'frozen_files' (lista de {path, editableBy})"]
+    ids = {c["id"] for c in cards}
+    problems, seen = [], set()
+    for i, entry in enumerate(frozen):
+        path = entry.get("path") if isinstance(entry, dict) else None
+        if not isinstance(path, str) or not path:
+            problems.append(f"frozen_files[{i}]: falta path")
+            continue
+        where = f"frozen_files[{i}] ({path})"
+        if not SAFE_PATH.match(path):
+            problems.append(f"{where}: la ruta debe ser relativa a la raíz, sin './', '..' ni comodines")
+        if path in seen:
+            problems.append(f"frozen_files: ruta repetida {path}")
+        seen.add(path)
+        if set(entry) - {"path", "editableBy"}:
+            problems.append(f"{where}: solo admite las claves path y editableBy")
+        editable = entry.get("editableBy")
+        if not isinstance(editable, list) or not all(isinstance(x, str) for x in editable):
+            problems.append(f"{where}: falta editableBy")
+            continue
+        problems += [f"{where}: editableBy nombra {x}, que no existe" for x in editable if x not in ids]
+        if len(set(editable)) != len(editable):
+            problems.append(f"{where}: editableBy repite una tarjeta")
+    for c in cards:
+        for owned in c["owns"]:
+            for entry in frozen:
+                if not isinstance(entry, dict) or not isinstance(entry.get("path"), str):
+                    continue
+                editable = entry.get("editableBy") if isinstance(entry.get("editableBy"), list) else []
+                if frozen_covers(entry["path"], owned) and c["id"] not in editable:
+                    problems.append(
+                        f"{c['id']} posee {owned}, congelado por {entry['path']} sin figurar en su editableBy"
+                    )
+    return problems
 
 
 def bullets(xs):
     return "\n".join(f"- `{x}`" for x in xs) if xs else "- (ninguna)"
 
 
-def render(plan, cards):
+def branch_name(c):
+    return f"card/{c['id']}-{slug(c['title'])}"
+
+
+def build_outputs(plan, cards):
+    """Devuelve {ruta relativa a la raíz: contenido} de todas las vistas generadas."""
+    outputs = {}
     dependents = collections.defaultdict(list)
     for c in cards:
         for d in c["depends_on"]:
             dependents[d].append(c["id"])
     wave_name = {w["id"]: w["name"] for w in plan["waves"]}
-    (OUT / "cards").mkdir(parents=True, exist_ok=True)
     for c in cards:
         oracle = all(p.startswith("tools/oracle/") for p in c["owns"])  # linaje aislado del oráculo (ADR-0014)
         install = ("No uses pnpm en este linaje: crea un venv con el Python de tools/oracle/.python-version, "
                    "`pip install --require-hashes -r tools/oracle/requirements-dev.txt`, y verifica con `python -m pytest` y `ruff check` desde tools/oracle.") if oracle else "Instala con `pnpm install --frozen-lockfile`."
         verify = ("`python -m pytest` y `ruff check` en verde desde tools/oracle (Opus vuelve a correr hooks y CI completo antes del merge)") if oracle else "`pnpm lint && pnpm typecheck && pnpm test` en verde, más los checks de CI de esta tarjeta"
-        branch = f"card/{c['id']}-{slug(c['title'])}"
+        branch = branch_name(c)
         who = "Opus (agente principal)" if c["executor"] == "opus" else "Sonnet (subagente en worktree)"
         reqs = "\n".join(f"- **{r}**: {REQ.get(r, '?')}" for r in c["requirements"])
         ac = "\n".join(f"- [ ] {a}" for a in c["acceptance_criteria"])
@@ -190,7 +249,7 @@ Eres un agente {"Opus" if c['executor'] == 'opus' else "Sonnet"} ejecutando la t
 7. Al terminar, abre un PR hacia main con: resumen, criterios cumplidos (checklist), comandos de verificación y su salida.
 ```
 """
-        (OUT / "cards" / f"{c['id']}.md").write_text(md)
+        outputs[f"{OUT_DIR}/cards/{c['id']}.md"] = md
 
     cov = collections.defaultdict(list)
     for c in cards:
@@ -201,7 +260,7 @@ Eres un agente {"Opus" if c['executor'] == 'opus' else "Sonnet"} ejecutando la t
           "Cada requisito tiene al menos una tarjeta.", "", "| Requisito | Descripción | Tarjetas |", "|---|---|---|"]
     for r in sorted(REQ, key=lambda x: int(x[1:])):
         tl.append(f"| {r} | {REQ[r]} | {', '.join(f'[{i}](cards/{i}.md)' for i in cov[r])} |")
-    (OUT / "traceability.md").write_text("\n".join(tl) + "\n")
+    outputs[f"{OUT_DIR}/traceability.md"] = "\n".join(tl) + "\n"
 
     wl = ["# Olas y tarjetas", "", "<!-- Generado por tools/plan/render_plan.py desde docs/plan/plan.json. No editar a mano. -->", "",
           "Detalle de cada tarjeta en `cards/`. Cada ola se ejecuta en lotes de ≤ 6 tarjetas Sonnet en paralelo.", ""]
@@ -214,23 +273,68 @@ Eres un agente {"Opus" if c['executor'] == 'opus' else "Sonnet"} ejecutando la t
     wl += ["## Contratos congelados en W0", "", plan["wave0_contracts"], "",
            "## Política de archivos compartidos", "", plan["shared_files_policy"], "",
            "## Riesgos del plan", ""] + [f"- {r}" for r in plan["risks"]] + ["", "## Fundamento", "", plan["rationale"], ""]
-    (OUT / "waves.md").write_text("\n".join(wl))
+    outputs[f"{OUT_DIR}/waves.md"] = "\n".join(wl)
+
+    cards_json = [
+        {"id": c["id"], "wave": c["wave"], "executor": c["executor"], "branch": branch_name(c), "owns": c["owns"]}
+        for c in cards
+    ]
+    outputs[f"{OUT_DIR}/cards.json"] = json.dumps(cards_json, ensure_ascii=False, indent=2) + "\n"
+    outputs[f"{OUT_DIR}/frozen-files.json"] = json.dumps(plan["frozen_files"], ensure_ascii=False, indent=2) + "\n"
+    return outputs
 
 
-def main():
-    plan = json.loads(PLAN.read_text())
+def write_outputs(outputs, root):
+    for rel, content in outputs.items():
+        target = root / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content, encoding="utf-8")
+
+
+def stale_outputs(outputs, root):
+    """Vistas que faltan en disco o cuyo contenido difiere del generado."""
+    stale = []
+    for rel, content in outputs.items():
+        target = root / rel
+        if not target.is_file() or target.read_text(encoding="utf-8") != content:
+            stale.append(rel)
+    return stale
+
+
+def leftover_views(outputs, root):
+    """Fichas de docs/plan/cards/ que ya no corresponden a ninguna tarjeta del plan."""
+    cards_dir = root / OUT_DIR / "cards"
+    if not cards_dir.is_dir():
+        return []
+    return sorted(
+        f"{OUT_DIR}/cards/{p.name}" for p in cards_dir.glob("*.md") if f"{OUT_DIR}/cards/{p.name}" not in outputs
+    )
+
+
+def main(argv=None, root=ROOT):
+    argv = sys.argv[1:] if argv is None else argv
+    plan = json.loads((root / "docs/plan/plan.json").read_text(encoding="utf-8"))
     cards, problems = validate(plan)
     if problems:
         print("PROBLEMAS:\n- " + "\n- ".join(problems))
-    else:
-        print(f"Plan válido: {len(cards)} tarjetas, {len(plan['waves'])} olas, R1–R28 cubiertos, sin traslapes.")
-    if "--check" in sys.argv:
-        sys.exit(1 if problems else 0)
-    if problems:
-        sys.exit(1)
-    render(plan, cards)
-    print("Vistas regeneradas: cards/, traceability.md, waves.md")
+        return 1
+    print(f"Plan válido: {len(cards)} tarjetas, {len(plan['waves'])} olas, R1–R28 cubiertos, sin traslapes, "
+          f"{len(plan['frozen_files'])} rutas congeladas con editableBy.")
+    outputs = build_outputs(plan, cards)
+    if "--check" in argv:
+        stale = [f"vista desactualizada: {rel} (regenera con python3 tools/plan/render_plan.py)"
+                 for rel in stale_outputs(outputs, root)]
+        stale += [f"vista sobrante: {rel} (ninguna tarjeta del plan la genera; bórrala)"
+                  for rel in leftover_views(outputs, root)]
+        if stale:
+            print("PROBLEMAS:\n- " + "\n- ".join(stale))
+            return 1
+        print("Vistas al día: cards/, traceability.md, waves.md, cards.json, frozen-files.json")
+        return 0
+    write_outputs(outputs, root)
+    print("Vistas regeneradas: cards/, traceability.md, waves.md, cards.json, frozen-files.json")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
