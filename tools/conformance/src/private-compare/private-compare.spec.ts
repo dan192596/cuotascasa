@@ -24,7 +24,7 @@ import { syntheticLoan, toExpectedCsv } from './testing/synthetic-loan.ts';
 const DISTINCTIVE_ROW_COUNT = 137;
 const THREE_LINES = /^allRowsMatched: (yes|no)\nmismatchedRows: \d+\nmaxAbsDiff: \d+\.\d{2}\n$/;
 const LOG_LINE =
-  /^\d{4}-\d{2}-\d{2} · motor [0-9a-f]{7,40} · préstamo [a-z]{1,8} · todas las filas coinciden: (sí|no) · filas con diferencia \d+ · dif\. máx\. \d+\.\d{2}\n$/;
+  /^\d{4}-\d{2}-\d{2} · motor [0-9a-f]{7,40} · préstamo [a-z]{1,8} · todas las filas coinciden: (sí|no)\n$/;
 
 const scratchDirs: string[] = [];
 
@@ -147,16 +147,14 @@ describe('output', () => {
     );
   });
 
-  it('prints the validation-log line of tools/oracle/FORMAT.md §8.4 with motor <sha>', () => {
-    expect(
-      formatLogLine({
-        date: '2026-10-04',
-        sha: '0123abc',
-        label: 'a',
-        result: { mismatchedRows: 0, maxAbsDiffCents: 0n },
-      }),
-    ).toBe(
-      '2026-10-04 · motor 0123abc · préstamo a · todas las filas coinciden: sí · filas con diferencia 0 · dif. máx. 0.00\n',
+  it('prints the validation-log line of tools/oracle/FORMAT.md §8.4 with motor <sha>: only sí or no', () => {
+    const line = (result: { mismatchedRows: number; maxAbsDiffCents: bigint }) =>
+      formatLogLine({ date: '2026-10-04', sha: '0123abc', label: 'a', result });
+    expect(line({ mismatchedRows: 0, maxAbsDiffCents: 0n })).toBe(
+      '2026-10-04 · motor 0123abc · préstamo a · todas las filas coinciden: sí\n',
+    );
+    expect(line({ mismatchedRows: 2, maxAbsDiffCents: 1234n })).toBe(
+      '2026-10-04 · motor 0123abc · préstamo a · todas las filas coinciden: no\n',
     );
   });
 });
@@ -193,7 +191,7 @@ describe('runPrivateCompare', () => {
     });
   });
 
-  it('--log-line prints only the log line, without the row count or any loan term', () => {
+  it('--log-line prints only the log line, without the row count, the mismatch count, the max diff or any loan term', () => {
     const { loan, computed, files } = scenario();
     const args = [
       '--terms',
@@ -209,8 +207,7 @@ describe('runPrivateCompare', () => {
     const run = runPrivateCompare(args, deps(engineFrom(computed)));
     expect(run).toEqual({
       exitCode: 1,
-      stdout:
-        '2026-10-04 · motor 0123abc · préstamo a · todas las filas coinciden: no · filas con diferencia 2 · dif. máx. 0.01\n',
+      stdout: '2026-10-04 · motor 0123abc · préstamo a · todas las filas coinciden: no\n',
       stderr: '',
     });
     expect(run.stdout).toMatch(LOG_LINE);
@@ -223,6 +220,9 @@ describe('runPrivateCompare', () => {
       terms.firstDueDate,
       loan.rows.at(-1)?.dueDate ?? '',
       '200.00',
+      '0.01',
+      'filas con diferencia',
+      'dif. máx.',
     ]) {
       expect(run.stdout).not.toContain(forbidden);
     }
