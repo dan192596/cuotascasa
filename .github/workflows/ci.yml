@@ -46,6 +46,8 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium webkit
       - name: Unit tests with coverage
         run: pnpm test:coverage
+      - name: Browser unit tests (Chromium and WebKit)
+        run: pnpm test:browser
       - name: Angular unit tests
         run: pnpm run test:web
       - name: Lint-boundary proofs (ADR-0010 §5)
