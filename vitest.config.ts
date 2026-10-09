@@ -1,3 +1,4 @@
+import { playwright } from '@vitest/browser-playwright';
 import { defineConfig } from 'vitest/config';
 
 const STRICT = { lines: 95, branches: 95, functions: 95, statements: 95 };
@@ -28,6 +29,19 @@ export default defineConfig({
           environment: 'node',
           include: ['tools/**/*.spec.{ts,mts,mjs}'],
           exclude: ['**/node_modules/**', 'tools/conformance/**', 'tools/lint-fixtures/**', 'tools/oracle/**'],
+        },
+      },
+      {
+        // Run only by `pnpm test:browser`; `test` and `test:coverage` exclude it (v8 covers only Chromium).
+        test: {
+          name: 'sync-browser',
+          include: ['packages/sync/src/**/*.browser.spec.ts'],
+          browser: {
+            enabled: true,
+            provider: playwright(),
+            headless: true,
+            instances: [{ browser: 'chromium' }, { browser: 'webkit' }],
+          },
         },
       },
     ],
