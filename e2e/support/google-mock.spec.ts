@@ -88,11 +88,18 @@ test.describe('Google mock', () => {
     await expect(listFiles(page, approved.token)).rejects.toThrow();
   });
 
-  test('a mocked page still reaches no real host', async ({ page, googleMock }) => {
+  test('a Google URL the mock does not serve is blocked, not sent', async ({ page, googleMock }) => {
     await page.goto('/privacidad');
     await requestToken(page);
     expect(googleMock.gis.requests).toHaveLength(1);
-    // Google hosts are the only external origins, and both are answered by the mock (never the network).
+    const failures: string[] = [];
+    page
+      .context()
+      .on('requestfailed', (request) => failures.push(`${request.url()} ${request.failure()?.errorText ?? ''}`));
+    await expect(page.evaluate(() => fetch('https://oauth2.googleapis.com/x'))).rejects.toThrow();
+    await expect.poll(() => failures.length).toBeGreaterThan(0);
+    expect(failures.join('\n')).toMatch(/oauth2\.googleapis\.com\/x .*(BLOCKED_BY_CLIENT|blocked)/i);
+    // Served-by-mock hosts are still flagged as external, which is what tests of the real app must never see.
     expect(() => expectNoExternalRequests(page)).toThrow(/accounts\.google\.com/);
   });
 });

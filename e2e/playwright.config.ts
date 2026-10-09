@@ -31,11 +31,13 @@ export default defineConfig({
     { name: 'webkit', use: { ...devices['Desktop Safari'] } },
   ],
   webServer: {
+    // Always starts a fresh build and server, so a stale or foreign server on the port can never be tested by accident.
+    // Set E2E_REUSE=1 to reuse a server you started yourself (e.g. `node tools/edge/serve.mjs` after `pnpm build`).
     // Build first (the edge serves dist/apps/web/browser), then serve it. Stopping this process stops wrangler.
     command: `pnpm build && node tools/edge/serve.mjs --port ${String(PORT)}`,
     cwd: '..',
     url: `${BASE_URL}/`,
-    reuseExistingServer: process.env['CI'] === undefined,
+    reuseExistingServer: process.env['E2E_REUSE'] === '1',
     timeout: 240_000,
     gracefulShutdown: { signal: 'SIGTERM', timeout: 10_000 },
     env: { WRANGLER_SEND_METRICS: 'false', DO_NOT_TRACK: '1' },

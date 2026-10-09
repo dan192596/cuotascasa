@@ -10,6 +10,7 @@ export function expectNoExternalRequests(page: Page): void {
 }
 
 /** Browser notices about a report-only CSP: they are CSP findings (expectNoCspViolations), not script errors. */
+// TODO(W2 close): remove this filter once W2-10's strict CSP lands (no report-only header remains).
 const REPORT_ONLY_NOTICE = /^\[Report Only\]|delivered in report-only mode/;
 
 /**
@@ -33,7 +34,8 @@ export function collectCspViolations(page: Page): readonly CspViolation[] {
 /**
  * Fails on enforced CSP violations. Report-only ones are ignored unless `includeReportOnly` is set: until W2-10 wires
  * the final headers, the provisional W1-09 report-only baseline (`default-src 'self'`) flags Angular's own inline
- * bootstrap, and ADR-0021 removes that header. collectCspViolations() always returns both kinds.
+ * bootstrap, and ADR-0021 removes that header.
+ * TODO(W2 close): when W2-10's strict CSP lands, flip this default to count report-only violations too. collectCspViolations() always returns both kinds.
  */
 export function expectNoCspViolations(page: Page, options: { readonly includeReportOnly?: boolean } = {}): void {
   const counted = collectCspViolations(page).filter(

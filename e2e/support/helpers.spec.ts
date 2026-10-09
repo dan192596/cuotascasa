@@ -68,6 +68,67 @@ test.describe('expectNoExternalRequests', () => {
   });
 });
 
+test.describe('expectNoExternalRequests blind spots', () => {
+  test('fails when the page opens an external websocket', async ({ page }) => {
+    await page.goto('/privacidad');
+    await page.evaluate(() => {
+      const socket = new WebSocket('wss://example.invalid/socket');
+      socket.onerror = () => undefined;
+    });
+    await expect
+      .poll(() => {
+        try {
+          expectNoExternalRequests(page);
+          return 'clean';
+        } catch (error) {
+          return String(error);
+        }
+      })
+      .toMatch(/example\.invalid/);
+  });
+
+  test('passes for a same-origin websocket URL', async ({ page, baseURL }) => {
+    await page.goto('/privacidad');
+    const target = `ws://${new URL(baseURL ?? '').host}/socket`;
+    await page.evaluate((url) => {
+      const socket = new WebSocket(url);
+      socket.onerror = () => undefined;
+    }, target);
+    expectNoExternalRequests(page);
+  });
+
+  test('fails when a popup in the same context requests an external URL', async ({ page, context }) => {
+    await page.goto('/privacidad');
+    const popup = context.waitForEvent('page');
+    await page.evaluate(() => window.open('/privacidad'));
+    const opened = await popup;
+    await opened.evaluate(() => fetch('https://example.invalid/popup').catch(() => undefined));
+    expect(() => expectNoExternalRequests(page)).toThrow(/example\.invalid\/popup/);
+  });
+
+  test('fails when a service worker requests an external URL', async ({ page, context, browserName }) => {
+    test.skip(browserName === 'webkit', 'WebKit does not report service worker network events to Playwright');
+    await context.route('**/e2e-sw.js', (route) =>
+      route.fulfill({
+        contentType: 'text/javascript',
+        body: "self.addEventListener('activate', () => fetch('https://example.invalid/from-sw').catch(() => undefined));",
+      }),
+    );
+    await page.goto('/privacidad');
+    await page.evaluate(() => navigator.serviceWorker.register('/e2e-sw.js', { scope: '/' }));
+    await expect
+      .poll(() => {
+        try {
+          expectNoExternalRequests(page);
+          return 'clean';
+        } catch (error) {
+          return String(error);
+        }
+      })
+      .toMatch(/from-sw/);
+  });
+});
+
 test.describe('collectCspViolations', () => {
   test('is empty on a clean page and sees a violation of the report-only policy', async ({ page }) => {
     await page.goto('/privacidad');

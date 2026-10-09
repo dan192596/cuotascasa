@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import type { BrowserContext, Page } from '@playwright/test';
 
 export interface CspViolation {
   readonly directive: string;
@@ -22,12 +22,34 @@ interface Recorder {
 
 const recorders = new WeakMap<Page, Recorder>();
 
+/** Requests of a whole context: every page, popup, service worker and websocket. */
+const contextRequests = new WeakMap<BrowserContext, string[]>();
+
 /** Requests that never leave the browser. */
 const LOCAL_SCHEMES = new Set(['data:', 'blob:', 'about:']);
 
 export function isExternal(url: string, origin: string): boolean {
   const parsed = new URL(url);
-  return !LOCAL_SCHEMES.has(parsed.protocol) && parsed.origin !== origin;
+  if (LOCAL_SCHEMES.has(parsed.protocol)) return false;
+  // A websocket to the app host is same-origin traffic: compare it as its http(s) twin.
+  if (parsed.protocol === 'ws:') parsed.protocol = 'http:';
+  else if (parsed.protocol === 'wss:') parsed.protocol = 'https:';
+  return parsed.origin !== origin;
+}
+
+function watchContext(context: BrowserContext): string[] {
+  const existing = contextRequests.get(context);
+  if (existing !== undefined) return existing;
+  const urls: string[] = [];
+  contextRequests.set(context, urls);
+  // context 'request' also reports popups and, in Chromium, service worker requests (request.serviceWorker()).
+  context.on('request', (request) => urls.push(request.url()));
+  const watchPage = (page: Page): void => {
+    page.on('websocket', (socket) => urls.push(socket.url()));
+  };
+  context.pages().forEach(watchPage);
+  context.on('page', watchPage);
+  return urls;
 }
 
 /**
@@ -37,9 +59,8 @@ export function isExternal(url: string, origin: string): boolean {
  */
 export async function startRecording(page: Page, origin: string): Promise<void> {
   if (recorders.has(page)) return;
-  const recorder: Recorder = { origin, requests: [], consoleErrors: [], csp: [] };
+  const recorder: Recorder = { origin, requests: watchContext(page.context()), consoleErrors: [], csp: [] };
   recorders.set(page, recorder);
-  page.on('request', (request) => recorder.requests.push(request.url()));
   page.on('console', (message) => {
     if (message.type() === 'error') recorder.consoleErrors.push({ text: message.text(), url: message.location().url });
   });
