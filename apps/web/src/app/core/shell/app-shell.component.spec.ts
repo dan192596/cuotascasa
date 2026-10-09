@@ -99,6 +99,21 @@ describe('AppShellComponent', () => {
     expect(document.activeElement).toBe(root.querySelector('main'));
   });
 
+  it('does not move focus on a query-only or fragment-only navigation', async () => {
+    const { harness, root } = await mount();
+    await harness.navigateByUrl('/app/prestamos');
+    await harness.fixture.whenStable();
+    const button = document.createElement('button');
+    root.append(button);
+    button.focus();
+    await harness.navigateByUrl('/app/prestamos?orden=fecha');
+    await harness.fixture.whenStable();
+    expect(document.activeElement).toBe(button);
+    await harness.navigateByUrl('/app/prestamos?orden=fecha#fin');
+    await harness.fixture.whenStable();
+    expect(document.activeElement).toBe(button);
+  });
+
   it('has a responsive layout: wraps at 375px and is capped and centred from 1280px', () => {
     const styles = (AppShellComponent as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles.join('');
     expect(styles).toMatch(/flex-wrap:\s*wrap/);

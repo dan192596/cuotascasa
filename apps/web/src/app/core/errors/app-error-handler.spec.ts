@@ -7,11 +7,11 @@ import { CC_ERROR_LOG_VERBOSE, provideAppErrorHandling } from './provide-app-err
 /** A synthetic loan that must never reach a production log. */
 const SYNTHETIC_LOAN = { id: 'loan-synthetic-1', principal: '123456.78', rate: '7.25', synthetic: true };
 
-class LoanFailure extends Error {
+class LoanError extends Error {
   readonly code = 'E_LOAN';
   constructor() {
     super(`Cannot project ${JSON.stringify(SYNTHETIC_LOAN)}`);
-    this.name = 'LoanFailure';
+    this.name = 'LoanError';
   }
 }
 
@@ -36,7 +36,7 @@ describe('provideAppErrorHandling', () => {
 
   it('shows a Spanish toast without leaking the error text', () => {
     const { handler, toast } = setup(false);
-    handler.handleError(new LoanFailure());
+    handler.handleError(new LoanError());
     expect(toast.message()).toBe(
       'Algo salió mal. Tus datos siguen guardados en este dispositivo. Recarga la página e inténtalo de nuevo.',
     );
@@ -45,13 +45,30 @@ describe('provideAppErrorHandling', () => {
 
   it('logs no entity data, message or stack in production', () => {
     const { handler, logged } = setup(false);
-    handler.handleError(new LoanFailure());
+    handler.handleError(new LoanError());
     const output = logged();
-    expect(output).toContain('LoanFailure');
+    expect(output).toContain('LoanError');
     expect(output).toContain('E_LOAN');
     for (const secret of ['loan-synthetic-1', '123456.78', '7.25', 'Cannot project', 'at ']) {
       expect(output).not.toContain(secret);
     }
+  });
+
+  it('does not log a code or name that is not a domain code or an Error class name', () => {
+    const { handler, logged } = setup(false);
+    const uuidLike = new Error('x') as Error & { code: string };
+    uuidLike.code = '3f2b8c1e-9a4d-4e7b-8c55-0d1e2f3a4b5c';
+    handler.handleError(uuidLike);
+    const loanIdLike = new Error('x') as Error & { code: string };
+    loanIdLike.code = 'loan-synthetic-1';
+    handler.handleError(loanIdLike);
+    const renamed = new Error('x');
+    renamed.name = 'loan-synthetic-1';
+    handler.handleError(renamed);
+    const output = logged();
+    expect(output).not.toContain('3f2b8c1e');
+    expect(output).not.toContain('loan-synthetic-1');
+    expect(output).toContain('UnknownError');
   });
 
   it('logs a generic entry for non-Error values (strings, entities)', () => {
@@ -64,7 +81,7 @@ describe('provideAppErrorHandling', () => {
 
   it('keeps the full error only in verbose (development) mode', () => {
     const { handler, logged } = setup(true);
-    handler.handleError(new LoanFailure());
+    handler.handleError(new LoanError());
     expect(logged()).toContain('Cannot project');
   });
 

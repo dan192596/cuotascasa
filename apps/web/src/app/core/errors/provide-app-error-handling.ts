@@ -18,17 +18,19 @@ export const CC_ERROR_LOG_VERBOSE = new InjectionToken<boolean>('CC_ERROR_LOG_VE
 export const GENERIC_ERROR_MESSAGE =
   'Algo salió mal. Tus datos siguen guardados en este dispositivo. Recarga la página e inténtalo de nuevo.';
 
-const SAFE_TOKEN = /^[A-Za-z][A-Za-z0-9_.-]{0,63}$/;
+/** Domain error codes (e.g. E_LOAN) and Error class names (e.g. LoanError); anything else may carry data. */
+const SAFE_CODE = /^[A-Z][A-Z0-9_]{1,40}$/;
+const SAFE_NAME = /^[A-Z][A-Za-z]{0,63}Error$/;
 
-function safeToken(value: unknown): string | undefined {
-  return typeof value === 'string' && SAFE_TOKEN.test(value) ? value : undefined;
+function safeToken(value: unknown, pattern: RegExp): string | undefined {
+  return typeof value === 'string' && pattern.test(value) ? value : undefined;
 }
 
 /** Only the error class name and an optional machine code survive; messages, stacks and payloads are dropped. */
 function sanitize(error: unknown): { name: string; code?: string } {
   if (error instanceof Error) {
-    const code = safeToken((error as { code?: unknown }).code);
-    return { name: safeToken(error.name) ?? 'Error', ...(code ? { code } : {}) };
+    const code = safeToken((error as { code?: unknown }).code, SAFE_CODE);
+    return { name: safeToken(error.name, SAFE_NAME) ?? 'UnknownError', ...(code ? { code } : {}) };
   }
   return { name: 'UnknownError' };
 }

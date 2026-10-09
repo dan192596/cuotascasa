@@ -147,12 +147,20 @@ export class AppShellComponent {
     const router = inject(Router);
     // WCAG 2.4.3: after every navigation except the first, move focus to the page heading (or main).
     let isFirst = true;
+    let lastPath = '';
+    const pathOf = (url: string) => url.split(/[?#]/, 1)[0] ?? '';
     const subscription = router.events.subscribe((event) => {
       if (!(event instanceof NavigationEnd)) {
         return;
       }
+      const path = pathOf(event.urlAfterRedirects);
+      const previous = lastPath;
+      lastPath = path;
       if (isFirst) {
         isFirst = false;
+        return;
+      }
+      if (path === previous) {
         return;
       }
       afterNextRender(
