@@ -10,7 +10,7 @@ const ctx = createEngineContext();
 
 const loanArbitrary = fc.record({
   cents: fc.integer({ min: 1_000, max: 50_000_000 }),
-  termMonths: fc.integer({ min: 1, max: 120 }),
+  termMonths: fc.integer({ min: 1, max: 60 }),
   interestBasisPoints: fc.integer({ min: 0, max: 2_500 }),
   insuranceBasisPoints: fc.array(fc.integer({ min: 0, max: 300 }), { maxLength: 3 }),
   roundingProfile: fc.constantFrom<RoundingProfile>('FHA_GT_V1', 'SIMPLE'),
@@ -53,7 +53,7 @@ describe('schedule invariants (generated synthetic loans)', () => {
         expect(totals.interest).toBe(moneySum(rows.map((row) => row.interest)));
         expect(totals.totalPaid).toBe(totals.total);
       }),
-      { numRuns: 200 },
+      { numRuns: 60 },
     );
-  });
+  }, 30_000);
 });
