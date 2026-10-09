@@ -1,5 +1,6 @@
-// Global stylesheet entry (angular.json "styles"). W3-05 owns styles/ after W0-05.
+// Global stylesheet entry (angular.json "styles"). Order: tokens, fonts, Material theme, Tailwind, base rules.
 @use './tokens';
+@use './fonts';
 @use './material-theme';
 @use './tailwind';
 
@@ -8,4 +9,47 @@ body {
   background-color: var(--cc-color-paper);
   color: var(--cc-color-ink);
   font-family: var(--cc-font-body);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--cc-font-heading);
+}
+
+// Figures: JetBrains Mono with tabular digits so columns align.
+.cc-numeric {
+  font-family: var(--cc-font-numeric);
+  font-variant-numeric: tabular-nums;
+}
+
+// Inline links are underlined: accent against body ink is only 1.80:1 (WCAG 1.4.1).
+a {
+  color: var(--cc-color-accent);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+// The ring uses the control border colour but is 3px thick and offset, so it differs from the 1px resting border
+// by thickness and offset, not only by colour.
+:focus-visible {
+  outline: 3px solid var(--cc-color-control-border);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--cc-color-accent);
+  color: var(--cc-color-paper);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
