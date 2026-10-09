@@ -9,10 +9,6 @@ export function expectNoExternalRequests(page: Page): void {
   expect(external, `external requests: ${external.join(', ')}`).toEqual([]);
 }
 
-/** Browser notices about a report-only CSP: they are CSP findings (expectNoCspViolations), not script errors. */
-// TODO(W2 close): remove this filter once W2-10's strict CSP lands (no report-only header remains).
-const REPORT_ONLY_NOTICE = /^\[Report Only\]|delivered in report-only mode/;
-
 /**
  * Console errors and uncaught page errors seen since the page was created. `expectFailedDocument: true` tolerates the
  * browser's own "Failed to load resource" line for the page URL itself, for pages that must answer 404.
@@ -20,8 +16,7 @@ const REPORT_ONLY_NOTICE = /^\[Report Only\]|delivered in report-only mode/;
 export function expectNoConsoleErrors(page: Page, options: { readonly expectFailedDocument?: boolean } = {}): void {
   const documentUrl = page.url();
   const errors = recorderOf(page)
-    .consoleErrors.filter((error) => !REPORT_ONLY_NOTICE.test(error.text))
-    .filter((error) => !(options.expectFailedDocument === true && error.url === documentUrl))
+    .consoleErrors.filter((error) => !(options.expectFailedDocument === true && error.url === documentUrl))
     .map((error) => error.text);
   expect(errors).toEqual([]);
 }
@@ -32,14 +27,12 @@ export function collectCspViolations(page: Page): readonly CspViolation[] {
 }
 
 /**
- * Fails on enforced CSP violations. Report-only ones are ignored unless `includeReportOnly` is set: until W2-10 wires
- * the final headers, the provisional W1-09 report-only baseline (`default-src 'self'`) flags Angular's own inline
- * bootstrap, and ADR-0021 removes that header.
- * TODO(W2 close): when W2-10's strict CSP lands, flip this default to count report-only violations too. collectCspViolations() always returns both kinds.
+ * Fails on any CSP violation, enforced or report-only (ADR-0021 removed the provisional report-only header).
+ * `includeReportOnly: false` counts only enforced ones.
  */
 export function expectNoCspViolations(page: Page, options: { readonly includeReportOnly?: boolean } = {}): void {
   const counted = collectCspViolations(page).filter(
-    (violation) => options.includeReportOnly === true || violation.disposition === 'enforce',
+    (violation) => options.includeReportOnly !== false || violation.disposition === 'enforce',
   );
   expect(counted).toEqual([]);
 }

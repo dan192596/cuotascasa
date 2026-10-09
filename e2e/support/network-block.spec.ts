@@ -1,4 +1,5 @@
 import { expect, test } from './test.ts';
+import { openHarness } from './harness.ts';
 
 /** Every external http(s) request is aborted by the shared fixture before it can leave the machine. */
 for (const url of ['https://example.com/', 'https://oauth2.googleapis.com/x']) {
@@ -7,7 +8,7 @@ for (const url of ['https://example.com/', 'https://oauth2.googleapis.com/x']) {
     page.context().on('requestfailed', (request) => {
       if (request.url() === url) failures.push(request.failure()?.errorText ?? '');
     });
-    await page.goto('/privacidad');
+    await openHarness(page);
     await expect(page.evaluate((target) => fetch(target), url)).rejects.toThrow();
     await expect.poll(() => failures.length).toBe(1);
     expect(failures[0]).toMatch(/blocked/i);
@@ -15,7 +16,7 @@ for (const url of ['https://example.com/', 'https://oauth2.googleapis.com/x']) {
 }
 
 test('same-origin, data: and blob: requests are not blocked', async ({ page }) => {
-  await page.goto('/privacidad');
+  await openHarness(page);
   const statuses = await page.evaluate(async () => [
     (await fetch('/manifest.webmanifest')).status,
     (await fetch('data:text/plain,hola')).status,

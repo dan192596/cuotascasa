@@ -333,7 +333,8 @@ describe('round trip properties', () => {
       }),
       { numRuns: 1000 },
     );
-  });
+    // 1000 runs can pass 5 s under coverage instrumentation on a loaded machine.
+  }, 30_000);
 
   it('parseBackup never throws on arbitrary JSON values or text (500 runs)', () => {
     fc.assert(

@@ -26,7 +26,7 @@ Sin backend (ADR-0001), la superficie de ataque está en el navegador. Cualquier
 
 ### CSP por ruta
 
-- **`/`, `/privacidad` y la 404:** `default-src 'self'`, `connect-src 'self'`, **ningún origen externo** en ninguna directiva, `object-src 'none'`, `base-uri 'none'` y `frame-ancestors 'none'`.
+- **`/`, `/privacidad` y la 404:** `default-src 'self'`, `connect-src 'self'`, **ningún origen externo** en ninguna directiva, `object-src 'none'`, `base-uri 'none'` y `frame-ancestors 'none'`. **Enmienda (2026-10-09, ADR-0021):** `base-uri` pasa a `'self'`, porque `'none'` choca con `<base href="/">`; las políticas exactas por ruta las fija ADR-0021.
 - **`/app/*`:** agrega **solo** los orígenes de Google necesarios para cargar GIS, abrir el popup de consentimiento, llamar a Drive v3 y revocar el token. La lista exacta la fija ADR-0021.
 - **Ningún `script-src`** contiene `'unsafe-inline'` ni `'unsafe-eval'`. Los scripts inline del prerender se cubren con `autoCsp` de Angular o con hashes generados después del build y escritos solo en `_headers`; la elección es de ADR-0021.
 - **Toda ruta HTML** lleva HSTS, `nosniff`, `Referrer-Policy` y `Permissions-Policy`, definidas en `_headers` de Cloudflare (ADR-0022).

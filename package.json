@@ -10,7 +10,7 @@
     "pnpm": ">=10.33.0 <10.34.0"
   },
   "scripts": {
-    "build": "ng build",
+    "build": "ng build && node tools/edge/headers/generate.mjs",
     "bundle:check": "node tools/bundle-check/check.mjs",
     "catalog:check": "node tools/catalog-check/check.mjs",
     "conformance": "vitest run --project conformance",

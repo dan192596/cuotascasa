@@ -63,6 +63,20 @@ jobs:
         run: pnpm build
       - name: Build output tests
         run: pnpm exec ng test --configuration=dist --no-watch
+      - name: Bundle composition and landing budget (W2-12)
+        run: pnpm bundle:check
+      - name: Edge routing and per-route headers behind wrangler (W1-09, W2-10)
+        env:
+          WRANGLER_SEND_METRICS: 'false'
+        run: pnpm edge:check
+      - name: CSP and Trusted Types smoke (W2-10)
+        env:
+          WRANGLER_SEND_METRICS: 'false'
+        run: node tools/edge/headers/smoke-csp.mjs
+      - name: E2E on Chromium and WebKit (W2-11)
+        env:
+          WRANGLER_SEND_METRICS: 'false'
+        run: pnpm e2e
       - name: owns-check
         if: github.event_name == 'pull_request'
         env:
