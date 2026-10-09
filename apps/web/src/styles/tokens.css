@@ -1,26 +1,26 @@
 /*
- * Design tokens. Names are frozen in apps/web/src/design-contract/token-names.json (W0-05); W3-05 replaces these
- * placeholder values with the approved palette of docs/specs/design-palette.md. Themed tokens use light-dark():
- * the page follows the system, and ThemeService (W3-05) forces a theme with <html data-theme="light|dark">.
+ * Design tokens. Names are frozen in apps/web/src/design-contract/token-names.json. Values are the palette approved on
+ * 2026-10-06 (docs/specs/design-palette.md, ADR-0012 §1): ink on paper. Themed tokens use light-dark(): the page follows
+ * the system, and ThemeService forces a theme with <html data-theme="light|dark">.
  */
 :root {
   color-scheme: light dark;
-  --cc-color-paper: light-dark(#ffffff, #121212);
-  --cc-color-surface: light-dark(#ffffff, #1e1e1e);
-  --cc-color-band: light-dark(#f2f2f2, #1a1a1a);
-  --cc-color-current-month: light-dark(#ececec, #2a2a2a);
-  --cc-color-rule: light-dark(#d9d9d9, #3a3a3a);
-  --cc-color-control-border: light-dark(#767676, #8c8c8c);
-  --cc-color-ink: light-dark(#1a1a1a, #f2f2f2);
-  --cc-color-ink-muted: light-dark(#4d4d4d, #bfbfbf);
-  --cc-color-accent: light-dark(#1a1a1a, #f2f2f2);
-  --cc-color-positive: light-dark(#1a1a1a, #f2f2f2);
-  --cc-color-positive-fill: light-dark(#767676, #8c8c8c);
-  --cc-color-warning: light-dark(#1a1a1a, #f2f2f2);
-  --cc-color-danger: light-dark(#1a1a1a, #f2f2f2);
-  --cc-font-heading: serif;
-  --cc-font-body: system-ui, sans-serif;
-  --cc-font-numeric: ui-monospace, monospace;
+  --cc-color-paper: light-dark(#fbf8f1, #1a1814);
+  --cc-color-surface: light-dark(#fffdf8, #24211c);
+  --cc-color-band: light-dark(#f3eee3, #201d18);
+  --cc-color-current-month: light-dark(#fcefc7, #3a3221);
+  --cc-color-rule: light-dark(#ddd5c4, #3b362e);
+  --cc-color-control-border: light-dark(#8c8270, #8a8272);
+  --cc-color-ink: light-dark(#1e2733, #ece6da);
+  --cc-color-ink-muted: light-dark(#555e6b, #aba496);
+  --cc-color-accent: light-dark(#1d4e89, #8fb6ea);
+  --cc-color-positive: light-dark(#2d6a3e, #82c796);
+  --cc-color-positive-fill: light-dark(#4e8b5f, #5fa874);
+  --cc-color-warning: light-dark(#875a00, #e6b85c);
+  --cc-color-danger: light-dark(#a12830, #f28c8c);
+  --cc-font-heading: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --cc-font-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --cc-font-numeric: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
 }
 
 :root[data-theme='light'] {

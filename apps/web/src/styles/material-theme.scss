@@ -1,6 +1,11 @@
-// Placeholder Material 3 theme (W0-05). W3-05 maps it to the design tokens at compact density (ADR-0012 decision 7).
+// Angular Material 22 (M3) at compact density, mapped onto the design tokens (ADR-0012 decision 7).
+// mat.theme() emits the --mat-sys-* system tokens; the block below points the colour roles at --cc-color-* so Material
+// follows light-dark() and data-theme with no second palette. mat.$azure-palette only fills the roles left unmapped.
 @use '@angular/material' as mat;
 
+// TODO(W3-05 follow-up): still on the mat.$azure-palette defaults (unmapped): tertiary-container, on-tertiary-container,
+// the *-fixed / *-fixed-dim / on-*-fixed / on-*-fixed-variant roles of primary, secondary and tertiary. No component of
+// the app uses them yet; map them to tokens when one does.
 html {
   @include mat.theme(
     (
@@ -15,4 +20,47 @@ html {
       density: -2,
     )
   );
+
+  --mat-sys-background: var(--cc-color-paper);
+  --mat-sys-on-background: var(--cc-color-ink);
+  --mat-sys-surface: var(--cc-color-surface);
+  --mat-sys-surface-dim: var(--cc-color-paper);
+  --mat-sys-surface-bright: var(--cc-color-surface);
+  --mat-sys-surface-container-lowest: var(--cc-color-surface);
+  --mat-sys-surface-container-low: var(--cc-color-surface);
+  --mat-sys-surface-container: var(--cc-color-surface);
+  --mat-sys-surface-container-high: var(--cc-color-band);
+  --mat-sys-surface-container-highest: var(--cc-color-band);
+  --mat-sys-surface-variant: var(--cc-color-band);
+  --mat-sys-on-surface: var(--cc-color-ink);
+  --mat-sys-on-surface-variant: var(--cc-color-ink-muted);
+  --mat-sys-outline: var(--cc-color-control-border);
+  --mat-sys-outline-variant: var(--cc-color-rule);
+  --mat-sys-surface-tint: var(--cc-color-accent);
+  --mat-sys-primary: var(--cc-color-accent);
+  --mat-sys-on-primary: var(--cc-color-paper);
+  --mat-sys-primary-container: var(--cc-color-current-month);
+  --mat-sys-on-primary-container: var(--cc-color-ink);
+  --mat-sys-secondary: var(--cc-color-accent);
+  --mat-sys-on-secondary: var(--cc-color-paper);
+  --mat-sys-secondary-container: var(--cc-color-band);
+  --mat-sys-on-secondary-container: var(--cc-color-ink);
+  --mat-sys-tertiary: var(--cc-color-positive);
+  --mat-sys-on-tertiary: var(--cc-color-paper);
+  --mat-sys-error: var(--cc-color-danger);
+  --mat-sys-on-error: var(--cc-color-paper);
+  --mat-sys-error-container: var(--cc-color-band);
+  --mat-sys-on-error-container: var(--cc-color-danger);
+  --mat-sys-inverse-surface: var(--cc-color-ink);
+  --mat-sys-inverse-on-surface: var(--cc-color-paper);
+  --mat-sys-inverse-primary: var(--cc-color-accent);
+  --mat-sys-scrim: var(--cc-color-ink);
+  --mat-sys-shadow: var(--cc-color-ink);
+  // No marked shadows (design-palette.md): cards separate by border and surface.
+  --mat-sys-level0: none;
+  --mat-sys-level1: none;
+  --mat-sys-level2: none;
+  --mat-sys-level3: none;
+  --mat-sys-level4: none;
+  --mat-sys-level5: none;
 }
