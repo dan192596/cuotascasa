@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { checkCommitMessage } from './commit-msg.mjs';
+import { checkCommitMessage, COMMIT_TYPES } from './commit-msg.mjs';
 
 describe('checkCommitMessage', () => {
   it.each([
@@ -17,6 +17,10 @@ describe('checkCommitMessage', () => {
     'Revert "feat(domain): núcleo del calendario"',
     "Merge branch 'main' into card/W1-01-x",
     'fixup! feat(domain): núcleo del calendario',
+    'squash! feat(domain): núcleo del calendario',
+    'amend! feat(domain): núcleo del calendario',
+    'Reapply "feat(domain): núcleo del calendario"',
+    `feat(domain): ${'x'.repeat(86)}`, // header of exactly 100 characters
   ])('accepts %j', (message) => {
     expect(checkCommitMessage(message)).toBeNull();
   });
@@ -29,8 +33,28 @@ describe('checkCommitMessage', () => {
     'Feat(domain): mayúscula',
     '',
     `feat(domain): ${'x'.repeat(100)}`,
+    `feat(domain): ${'x'.repeat(87)}`, // header of exactly 101 characters
   ])('rejects %j', (message) => {
     expect(checkCommitMessage(message)).toMatch(/^commit-msg: /);
+  });
+});
+
+describe('COMMIT_TYPES', () => {
+  it('lists exactly the types ADR-0018 allows', () => {
+    expect([...COMMIT_TYPES]).toEqual([
+      'build',
+      'chore',
+      'ci',
+      'docs',
+      'feat',
+      'fix',
+      'perf',
+      'refactor',
+      'revert',
+      'style',
+      'test',
+      'wip',
+    ]);
   });
 });
 
@@ -46,6 +70,12 @@ describe('commit-msg.mjs CLI', () => {
 
   it('exits 0 for a conventional message', () => {
     expect(runWith('test(hygiene): cubre el hook commit-msg\n').status).toBe(0);
+  });
+
+  it('exits 2 with usage when no file is given', () => {
+    const result = spawnSync(process.execPath, ['tools/hygiene/commit-msg.mjs'], { encoding: 'utf8' });
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain('usage:');
   });
 
   it('exits 1 and explains the format for a non-conventional message', () => {

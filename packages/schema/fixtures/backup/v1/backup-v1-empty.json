@@ -1,0 +1,16 @@
+{
+  "synthetic": true,
+  "format": "cuotascasa",
+  "version": 1,
+  "exportedAt": "2026-10-04T16:00:00.000Z",
+  "deviceId": "d0000000-0000-4000-8000-000000000001",
+  "appVersion": "1.0.0",
+  "data": {
+    "loans": [],
+    "events": [],
+    "reportedBalances": [],
+    "payments": [],
+    "scenarios": [],
+    "settings": []
+  }
+}
