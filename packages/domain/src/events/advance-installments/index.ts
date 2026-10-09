@@ -1,6 +1,34 @@
-import { stubHandler } from '../../stub.ts';
-import type { EventHandler } from '../../types/engine.ts';
+import { compareMoney, moneySub, minMoney, ZERO_MONEY } from '../../money/index.ts';
+import type { EventHandler, PeriodState } from '../../types/engine.ts';
+import { InvalidInputError } from '../../types/primitives.ts';
 
-/** Stub de W2-04 ([ALG.ADVANCE]). W2-04 reemplaza este archivo con el handler real y borra stub.spec.ts. */
-export const advanceInstallmentsHandler: EventHandler<'AdvanceInstallments'> =
-  stubHandler<'AdvanceInstallments'>('W2-04');
+/**
+ * [ALG.ADVANCE] Adelantar N cuotas. Monto = `ctx.projectCapital(state, N)` (capital de las cuotas k+1 … k+N del
+ * calendario vigente justo antes del evento), recortado como [ALG.PREPAY.CAP]. `level` y el modo del plazo no cambian:
+ * con plazo fijo, `term` baja en N; con plazo derivado, `term = k + remainingTerm` del nuevo estado. Sin comisión.
+ */
+export const advanceInstallmentsHandler: EventHandler<'AdvanceInstallments'> = ({ ctx, event, state }) => {
+  const { count } = event;
+  if (!Number.isSafeInteger(count) || count < 1) {
+    throw new InvalidInputError('INVALID_EVENT', 'AdvanceInstallments needs an integer count >= 1', {
+      eventId: event.id,
+    });
+  }
+  // [ALG.PREPAY.CAP] closing_k − abonos ya aplicados en k = state.balance.
+  const applied = minMoney(ctx.projectCapital(state, count), state.balance);
+  if (compareMoney(applied, ZERO_MONEY) <= 0) {
+    return { state, rowEffect: { prepayment: ZERO_MONEY, commission: ZERO_MONEY, payoff: false } };
+  }
+  const balance = moneySub(state.balance, applied);
+  const payoff = compareMoney(balance, ZERO_MONEY) <= 0;
+  const reduced: PeriodState = { ...state, balance };
+  const term = payoff
+    ? state.term
+    : state.termMode === 'FIXED'
+      ? state.term - count
+      : state.k + ctx.remainingTerm(reduced);
+  return {
+    state: { ...reduced, term },
+    rowEffect: { prepayment: applied, commission: ZERO_MONEY, payoff },
+  };
+};
