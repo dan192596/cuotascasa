@@ -115,3 +115,69 @@ jobs:
         run: python .github/scripts/check_algorithm_examples.py . all
       - name: Algorithm examples checker tests and CODEOWNERS coverage
         run: python -m unittest discover -s .github/scripts -p 'test_*.py' -v
+
+  # Oracle gate (W2-01, docs/plan/README.md §6): the committed fixtures must be exactly what the oracle produces.
+  oracle-diff:
+    name: oracle-diff
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+        working-directory: tools/oracle
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python (tools/oracle/.python-version)
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version-file: tools/oracle/.python-version
+      - name: Install dev dependencies (hash-pinned)
+        run: python -m pip install --require-hashes -r requirements-dev.txt
+      - name: Oracle tests
+        run: python -m pytest
+      - name: Oracle lint
+        run: python -m ruff check
+      - name: Regenerate the profiles listed in fixtures/manifest.json
+        # FORMAT.md §8.2: only manifest profiles are regenerated; a profile whose generatorVersion is behind the code
+        # prints "regeneration pending: <profile>" and is left untouched (the next Opus gate regenerates it).
+        run: |
+          output="$(python -m cuotascasa_oracle regenerate --manifest fixtures/manifest.json)"
+          if [ -n "$output" ]; then printf '%s\n' "$output"; fi
+          while IFS= read -r line; do
+            case "$line" in
+              'regeneration pending: '*) echo "::warning title=oracle-diff::$line" ;;
+            esac
+          done <<< "$output"
+      - name: Committed fixtures match the oracle (no diff, no untracked files)
+        run: |
+          git diff --exit-code -- fixtures
+          untracked="$(git status --porcelain --untracked-files=all -- fixtures)"
+          if [ -n "$untracked" ]; then
+            printf '%s\n' "$untracked"
+            echo "::error title=oracle-diff::regenerate produced files that are not committed"
+            exit 1
+          fi
+
+  conformance:
+    name: conformance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up pnpm (version from packageManager)
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - name: Set up Node 24 with the pnpm store cache
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+      - name: Conformance gate (fixtures outside enforced-features.json are reported as pending)
+        run: pnpm conformance

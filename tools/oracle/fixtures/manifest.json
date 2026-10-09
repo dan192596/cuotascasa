@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "core": {
+      "count": 15,
+      "generatorVersion": 1,
+      "seed": 20261119
+    }
+  },
+  "synthetic": true
+}
