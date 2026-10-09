@@ -1,0 +1,18 @@
+{
+  "entries": [
+    {
+      "property": "prepayment-never-increases-interest-reduce-term",
+      "seed": 20,
+      "rule": "ALG.PREPAY.REDUCE_TERM",
+      "counterexample": "FHA_GT_V1, principal 5000.00 GTQ, 4 installments, i = 0.06, insuranceRates = [0.01], paymentDay END_OF_MONTH, firstDueDate 2026-01-31, no events; add Prepayment { amount: 0.01, mode: REDUCE_TERM } at k = 1: monthsSaved = -1 and interestSaved = -0.01 (total interest + insurance goes up by one cent). fast-check (seed 20) also reports larger cases with events.",
+      "reasoning": "Matches the documented -1 month case of [ALG.PREPAY.REDUCE_TERM] (fixed term whose last installment is larger than a normal one), whose text does not say what happens to interest. The engine follows the rule to the letter, so this looks like a gap in the rule, not an engine bug. Opus to rule: (a) keep the engine and narrow the invariant to 'monthsSaved >= 0 implies interestSaved >= 0' (already tested as prepayment-reduce-term-saves-interest-if-no-month-lost), or (b) change the rule."
+    },
+    {
+      "property": "prepayment-never-increases-interest-reduce-installment",
+      "seed": 20261009,
+      "rule": "ALG.PREPAY.REDUCE_INSTALLMENT",
+      "counterexample": "(1) Rounding: FHA_GT_V1 or SIMPLE, principal 12000.00 GTQ, 12 installments, i = 0.12, insuranceRates = [], paymentDay END_OF_MONTH, firstDueDate 2026-01-31; Prepayment { amount: 0.01, mode: REDUCE_INSTALLMENT } at k = 1: monthsSaved = 0, interestSaved = -0.01. (2) Derived term: FHA_GT_V1, principal 1200.00 GTQ, 2 installments, i = 0.12, insuranceRates = [0.01], firstDueDate 2026-01-31; RateChange { interestRate: 0.24, policy: KEEP_INSTALLMENT_ADJUST_TERM } at k = 1 (the term becomes derived: 3 installments, last one small) and then Prepayment { amount: 100.00, mode: REDUCE_INSTALLMENT } at k = 1: monthsSaved = 0 and interestSaved = -2.95.",
+      "reasoning": "(1) level is rounded to cents at every recalculation, so a one-cent prepayment can move total interest by a cent in either direction; no exact monotone invariant holds. (2) With a derived term, [ALG.TERM] and [ALG.PREPAY.REDUCE_INSTALLMENT] recompute level over m = term - k and spread the payment over the whole derived term, including the stub installment that the base paid almost entirely in installment 2, so later balances are larger and interest grows. Both follow the written rules, so they look like rule semantics, not engine bugs. Opus to rule whether the invariant should be restricted to REDUCE_TERM, to fixed-term bases, or given a rounding tolerance (see prepayment-reduce-installment-interest-within-rounding, which allows one cent per installment on a plan without events)."
+    }
+  ]
+}
