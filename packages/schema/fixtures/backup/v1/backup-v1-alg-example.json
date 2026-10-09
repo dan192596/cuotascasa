@@ -1,0 +1,142 @@
+{
+  "synthetic": true,
+  "format": "cuotascasa",
+  "version": 1,
+  "exportedAt": "2026-10-04T16:00:00.000Z",
+  "deviceId": "d0000000-0000-4000-8000-000000000001",
+  "appVersion": "1.0.0",
+  "data": {
+    "loans": [
+      {
+        "bank": "Banco Ficticio",
+        "createdAt": "2026-10-04T15:00:00.000Z",
+        "currency": "GTQ",
+        "deletedAt": null,
+        "disbursementDate": "2025-01-31",
+        "firstDueDate": "2025-02-28",
+        "fixedCharges": [
+          {
+            "amount": "350.00",
+            "effectiveFrom": "2025-02-28",
+            "label": "IUSI"
+          },
+          {
+            "amount": "45.00",
+            "effectiveFrom": "2025-02-28",
+            "label": "Seguro de daños"
+          }
+        ],
+        "id": "a0000000-0000-4000-8000-000000000001",
+        "insuranceRates": ["0.01", "0.0026"],
+        "interestRate": "0.07",
+        "name": "Casa A",
+        "paymentDay": "END_OF_MONTH",
+        "principal": "500000.00",
+        "rateType": "VARIABLE",
+        "roundingProfile": "FHA_GT_V1",
+        "status": "active",
+        "templateRef": {
+          "id": "fha-gt",
+          "version": 1
+        },
+        "termMonths": 240,
+        "updatedAt": "2026-10-04T15:00:00.000Z",
+        "updatedByDevice": "d0000000-0000-4000-8000-000000000001"
+      }
+    ],
+    "events": [
+      {
+        "amount": "20000.00",
+        "createdAt": "2026-10-04T15:00:00.000Z",
+        "date": "2026-01-15",
+        "deletedAt": null,
+        "id": "b0000000-0000-4000-8000-000000000001",
+        "loanId": "a0000000-0000-4000-8000-000000000001",
+        "mode": "REDUCE_TERM",
+        "note": "Abono de ejemplo",
+        "type": "Prepayment",
+        "updatedAt": "2026-10-04T15:00:00.000Z",
+        "updatedByDevice": "d0000000-0000-4000-8000-000000000001"
+      }
+    ],
+    "reportedBalances": [
+      {
+        "balance": "499178.20",
+        "createdAt": "2026-10-04T15:00:00.000Z",
+        "date": "2025-03-05",
+        "deletedAt": null,
+        "id": "c0000000-0000-4000-8000-000000000001",
+        "installmentNumber": 2,
+        "loanId": "a0000000-0000-4000-8000-000000000001",
+        "note": "Saldo antes de pagar la cuota 2",
+        "source": "BANK_EMAIL",
+        "updatedAt": "2026-10-04T15:00:00.000Z",
+        "updatedByDevice": "d0000000-0000-4000-8000-000000000001"
+      }
+    ],
+    "payments": [
+      {
+        "breakdown": {
+          "capital": "821.80",
+          "fixedCharges": "395.00",
+          "insurance": "525.00",
+          "interest": "2916.67"
+        },
+        "createdAt": "2026-10-04T15:00:00.000Z",
+        "deletedAt": null,
+        "id": "e0000000-0000-4000-8000-000000000001",
+        "installmentNumber": 1,
+        "loanId": "a0000000-0000-4000-8000-000000000001",
+        "note": "Cuota 1",
+        "paidDate": "2025-02-27",
+        "total": "4658.47",
+        "updatedAt": "2026-10-04T15:00:00.000Z",
+        "updatedByDevice": "d0000000-0000-4000-8000-000000000001"
+      }
+    ],
+    "scenarios": [
+      {
+        "createdAt": "2026-10-04T15:00:00.000Z",
+        "deletedAt": null,
+        "events": [
+          {
+            "amount": "20000.00",
+            "date": "2026-01-31",
+            "deletedAt": null,
+            "id": "f1000000-0000-4000-8000-000000000001",
+            "mode": "REDUCE_INSTALLMENT",
+            "type": "Prepayment"
+          }
+        ],
+        "id": "f0000000-0000-4000-8000-000000000001",
+        "loanId": "a0000000-0000-4000-8000-000000000001",
+        "name": "Abono de enero",
+        "updatedAt": "2026-10-04T15:00:00.000Z",
+        "updatedByDevice": "d0000000-0000-4000-8000-000000000001"
+      }
+    ],
+    "settings": [
+      {
+        "activeScenarioByLoan": {
+          "a0000000-0000-4000-8000-000000000001": "f0000000-0000-4000-8000-000000000001"
+        },
+        "createdAt": "2026-10-04T15:00:00.000Z",
+        "deletedAt": null,
+        "id": "00000000-0000-4000-8000-000000000001",
+        "scope": "synced",
+        "updatedAt": "2026-10-04T15:00:00.000Z",
+        "updatedByDevice": "d0000000-0000-4000-8000-000000000001"
+      },
+      {
+        "createdAt": "2026-10-04T15:00:00.000Z",
+        "deletedAt": null,
+        "driveSyncEnabled": false,
+        "id": "00000000-0000-4000-8000-000000000002",
+        "scope": "device",
+        "theme": "system",
+        "updatedAt": "2026-10-04T15:00:00.000Z",
+        "updatedByDevice": "d0000000-0000-4000-8000-000000000001"
+      }
+    ]
+  }
+}

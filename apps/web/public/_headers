@@ -1,0 +1,50 @@
+# Baseline headers for every response (ADR-0002 §4, ADR-0016, ADR-0022).
+# Per-area CSP and Trusted Types are decided by ADR-0021 (W2-02); this file is the W1-09 baseline.
+# Cloudflare merges all matching rules: a header set in two rules gets both values joined by a comma,
+# so Cache-Control is never set on /* (see the explicit sections below).
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), microphone=(), payment=(), usb=()
+  Strict-Transport-Security: max-age=31536000
+  X-Frame-Options: DENY
+  Content-Security-Policy: frame-ancestors 'none'
+  Content-Security-Policy-Report-Only: default-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'
+
+# Hashed build output (outputHashing: all): the name changes when the content changes.
+/main-*
+  Cache-Control: public, max-age=31536000, immutable
+/chunk-*
+  Cache-Control: public, max-age=31536000, immutable
+/styles-*
+  Cache-Control: public, max-age=31536000, immutable
+/polyfills-*
+  Cache-Control: public, max-age=31536000, immutable
+/media/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# HTML documents and files the service worker or the browser must always revalidate.
+/
+  Cache-Control: no-cache
+/privacidad
+  Cache-Control: no-cache
+/privacidad/
+  Cache-Control: no-cache
+/app
+  Cache-Control: no-cache
+/app/*
+  Cache-Control: no-cache
+/index.csr
+  Cache-Control: no-cache
+/index.csr.html
+  Cache-Control: no-cache
+/ngsw.json
+  Cache-Control: no-cache
+/ngsw-worker.js
+  Cache-Control: no-cache
+/safety-worker.js
+  Cache-Control: no-cache
+/worker-basic.min.js
+  Cache-Control: no-cache
+/manifest.webmanifest
+  Cache-Control: no-cache

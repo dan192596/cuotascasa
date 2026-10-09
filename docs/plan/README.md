@@ -396,12 +396,12 @@ Para comparar contra la tabla real del banco hace falta crear `~/.cuotascasa-pri
   Con `--log-line --sha <git sha> --label <a|b…>` imprimen, en lugar de eso, solo la línea para la bitácora:
 
   ```text
-  AAAA-MM-DD · oráculo <sha> · préstamo <label> · todas las filas coinciden: sí/no · filas con diferencia <k> · dif. máx. <d>
+  AAAA-MM-DD · oráculo <sha> · préstamo <label> · todas las filas coinciden: sí|no
   ```
 
-  `<sha>` es el commit de la herramienta que se validó y `<label>` el nombre genérico del par de archivos (`a` para `a-terms.json` y `a-expected.csv`). En la corrida del motor previa a W4-02, `private-compare` escribe `motor <sha>` en lugar de `oráculo <sha>`, con el mismo formato.
+  La línea dice solo sí o no: no lleva el número de filas con diferencia ni la diferencia máxima, porque en una corrida que falla podrían revelar el plazo real o un monto real (decisión del dueño, 2026-10-09). `<sha>` es el commit de la herramienta que se validó y `<label>` el nombre genérico del par de archivos (`a` para `a-terms.json` y `a-expected.csv`). En la corrida del motor previa a W4-02, `private-compare` escribe `motor <sha>` en lugar de `oráculo <sha>`, con el mismo formato.
 - **La salida de terminal no sale de la terminal.** Aunque no trae el total de filas, Opus nunca copia esa salida, ni valores de los archivos privados, al chat, a un PR, a un issue, a un commit ni a la bitácora. Solo copia la línea de `--log-line`.
-- **Registro:** cada corrida queda en `docs/specs/oracle-validation-log.md` con la línea de `--log-line`, sin montos, condiciones ni total de filas. Una corrida que pasa dice `todas las filas coinciden: sí · filas con diferencia 0 · dif. máx. 0.00`.
+- **Registro:** cada corrida queda en `docs/specs/oracle-validation-log.md` con la línea de `--log-line`, sin montos, condiciones ni total de filas. Una corrida que pasa dice `todas las filas coinciden: sí`.
 
 ### Formato y perfiles: `tools/oracle/FORMAT.md`
 

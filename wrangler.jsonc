@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // Assets-only Worker (ADR-0002, ADR-0022). No account id, zone, routes or custom domain:
+  // those are set at deploy time (W3-17). Placeholders only.
+  "name": "cuotascasa",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist/apps/web/browser",
+    "html_handling": "drop-trailing-slash",
+    "not_found_handling": "404-page",
+  },
+}

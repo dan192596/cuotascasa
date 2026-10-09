@@ -1,0 +1,42 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":dependencyDashboard"],
+  "description": "Weekly, exact pins, 7-day cooldown (ADR-0015, ADR-0019). Majors wait for approval on the Dependency Dashboard.",
+  "timezone": "America/Guatemala",
+  "schedule": ["before 6am on monday"],
+  "minimumReleaseAge": "7 days",
+  "rangeStrategy": "pin",
+  "prConcurrentLimit": 5,
+  "branchPrefix": "renovate/",
+  "enabledManagers": ["npm", "pip_requirements", "github-actions"],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on monday"]
+  },
+  "pip_requirements": {
+    "managerFilePatterns": ["/(^|/)tools/oracle/requirements[^/]*\\.txt$/"]
+  },
+  "packageRules": [
+    {
+      "description": "Angular, Material and CDK move together",
+      "groupName": "angular",
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["@angular/**", "@angular-devkit/**", "@schematics/**", "angular-eslint"]
+    },
+    {
+      "description": "Majors are proposed only after approval on the Dependency Dashboard",
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "description": "GitHub Actions stay pinned to full commit SHAs",
+      "matchManagers": ["github-actions"],
+      "pinDigests": true
+    },
+    {
+      "description": "Oracle dev tools (pytest, ruff) are pinned with hashes",
+      "matchManagers": ["pip_requirements"],
+      "groupName": "oracle-python-dev"
+    }
+  ]
+}

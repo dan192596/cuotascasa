@@ -1,0 +1,4 @@
+# Scoped rewrites only (ADR-0002 §3, ADR-0022). Never add a /* rule: unknown routes must return 404.
+# The target is /index.csr, not /index.csr.html: html_handling would redirect the .html form (ADR-0022).
+/app /index.csr 200
+/app/* /index.csr 200
