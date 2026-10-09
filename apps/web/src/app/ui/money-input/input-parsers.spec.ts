@@ -51,7 +51,6 @@ describe('parseMoneyText', () => {
 describe('parseDateText', () => {
   it.each([
     ['05/03/2027', '2027-03-05'],
-    ['5/3/2027', '2027-03-05'],
     ['29/02/2028', '2028-02-29'],
     [' 31/12/2027 ', '2027-12-31'],
     ['', ''],
@@ -67,15 +66,22 @@ describe('parseDateText', () => {
     expect(parseDateText('01/01/0000')).toEqual(error(DATE_INVALID_MESSAGE));
   });
 
-  it.each(['2027-03-05', '05-03-2027', '05/03/27', 'hoy', '05/03', '05/03/2027 10:00'])(
-    'rejects %j as a wrong format',
-    (text) => {
-      expect(parseDateText(text)).toEqual(error(DATE_FORMAT_MESSAGE));
-    },
-  );
+  it.each([
+    '1/2/2027',
+    '5/03/2027',
+    '05/3/2027',
+    '2027-03-05',
+    '05-03-2027',
+    '05/03/27',
+    'hoy',
+    '05/03',
+    '05/03/2027 10:00',
+  ])('rejects %j as a wrong format', (text) => {
+    expect(parseDateText(text)).toEqual(error(DATE_FORMAT_MESSAGE));
+  });
 
   it('uses exact Spanish messages', () => {
-    expect(DATE_FORMAT_MESSAGE).toBe('Escribe la fecha como dd/mm/aaaa.');
+    expect(DATE_FORMAT_MESSAGE).toBe('Escribe la fecha como dd/mm/aaaa, con dos dígitos para el día y el mes.');
     expect(DATE_INVALID_MESSAGE).toBe('Esa fecha no existe en el calendario.');
   });
 });

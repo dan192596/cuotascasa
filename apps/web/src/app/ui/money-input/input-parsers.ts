@@ -5,7 +5,7 @@ export type TextParseResult = { readonly value: string } | { readonly error: { k
 
 export const MONEY_NOT_NUMBER_MESSAGE = 'Escribe solo números y punto decimal, sin letras. Ejemplo: 1,234.56.';
 export const MONEY_DECIMALS_MESSAGE = 'Usa como máximo 2 decimales.';
-export const DATE_FORMAT_MESSAGE = 'Escribe la fecha como dd/mm/aaaa.';
+export const DATE_FORMAT_MESSAGE = 'Escribe la fecha como dd/mm/aaaa, con dos dígitos para el día y el mes.';
 export const DATE_INVALID_MESSAGE = 'Esa fecha no existe en el calendario.';
 export const RATE_NOT_NUMBER_MESSAGE = 'Escribe la tasa solo con números y punto decimal, sin letras. Ejemplo: 7.25.';
 export const RATE_DECIMALS_MESSAGE = 'Usa como máximo 4 decimales.';
@@ -44,7 +44,7 @@ export function parseMoneyText(text: string): TextParseResult {
   return { value: moneyIsZero(amount) ? ZERO_MONEY : amount };
 }
 
-const DATE_TEXT = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
+const DATE_TEXT = /^(\d{2})\/(\d{2})\/(\d{4})$/;
 
 /** 'dd/mm/aaaa' typed by the user → `LocalDate` ('AAAA-MM-DD'), validated against the real calendar by the domain. */
 export function parseDateText(text: string): TextParseResult {
@@ -57,7 +57,7 @@ export function parseDateText(text: string): TextParseResult {
     return fail('date-format', DATE_FORMAT_MESSAGE);
   }
   const [, day = '', month = '', year = ''] = match;
-  const candidate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  const candidate = `${year}-${month}-${day}`;
   return isLocalDate(candidate) ? { value: parseLocalDate(candidate) } : fail('date-invalid', DATE_INVALID_MESSAGE);
 }
 

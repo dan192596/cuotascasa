@@ -170,4 +170,37 @@ describe('RateInput', () => {
     expect(field('rate').value).toBe('1.26');
     expect(element.querySelector('cc-rate-input .affix')?.textContent?.trim()).toBe('%');
   });
+
+  it('shows a derived rate with more than 4 percent decimals as an exact shift, never 100 times too large', async () => {
+    const { fixture, host, field } = await setup();
+    host.model.update((model) => ({ ...model, rate: '0.00583333' }));
+    await fixture.whenStable();
+    expect(field('rate').value).toBe('0.583333');
+  });
+});
+
+describe('shared control behavior', () => {
+  it('binds disabled and readonly to the inner input', async () => {
+    const fixture = TestBed.createComponent(MoneyInputComponent);
+    fixture.componentRef.setInput('inputId', 'x');
+    fixture.componentRef.setInput('value', '');
+    fixture.componentRef.setInput('disabled', true);
+    fixture.componentRef.setInput('readonly', true);
+    await fixture.whenStable();
+    const input = (fixture.nativeElement as HTMLElement).querySelector('input') as HTMLInputElement;
+    expect(input.disabled).toBe(true);
+    expect(input.readOnly).toBe(true);
+    fixture.componentRef.setInput('disabled', false);
+    fixture.componentRef.setInput('readonly', false);
+    await fixture.whenStable();
+    expect(input.disabled).toBe(false);
+    expect(input.readOnly).toBe(false);
+  });
+
+  it('announces errors with role="alert" when they appear', async () => {
+    const { element, type } = await setup();
+    expect(element.querySelector('[role="alert"]')).toBeNull();
+    await type('amount', '12a');
+    expect(element.querySelector('#amount-errors')?.getAttribute('role')).toBe('alert');
+  });
 });

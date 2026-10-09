@@ -69,6 +69,12 @@ describe('RatePipe', () => {
     expect(rate.transform('0' as Rate)).toBe('0.00 %');
   });
 
+  it('shifts rates with more than 4 percent decimals exactly instead of throwing', () => {
+    expect(rate.transform('0.00583333' as Rate)).toBe('0.583333 %');
+    expect(rate.transform('0.000001234' as Rate)).toBe('0.0001234 %');
+    expect(rate.transform('1.5' as Rate)).toBe('150.00 %');
+  });
+
   it('returns an empty string for empty values', () => {
     expect(rate.transform(null)).toBe('');
     expect(rate.transform('')).toBe('');

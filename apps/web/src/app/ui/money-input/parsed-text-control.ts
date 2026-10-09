@@ -19,6 +19,8 @@ export const PARSED_TEXT_TEMPLATE = `
       [attr.inputmode]="inputMode"
       [attr.placeholder]="placeholder() || null"
       [value]="raw()"
+      [disabled]="disabled()"
+      [readOnly]="readonly()"
       [attr.aria-required]="required() || null"
       [attr.aria-invalid]="touched() && shownErrors().length > 0"
       [attr.aria-describedby]="touched() && shownErrors().length > 0 ? inputId() + '-errors' : null"
@@ -30,7 +32,7 @@ export const PARSED_TEXT_TEMPLATE = `
     }
   </span>
   @if (touched() && shownErrors().length > 0) {
-    <ul [id]="inputId() + '-errors'" class="errors">
+    <ul [id]="inputId() + '-errors'" class="errors" role="alert">
       @for (error of shownErrors(); track $index) {
         <li>{{ error.message }}</li>
       }
@@ -61,6 +63,8 @@ export abstract class ParsedTextControl implements FormValueControl<string> {
   readonly placeholder = input('');
   /** Bound by [formField] from the field's required() rule; announced with aria-required, never native validation. */
   readonly required = input(false);
+  readonly disabled = input(false);
+  readonly readonly = input(false);
 
   /** Text shown in the <input>; its parse errors reach the bound field. */
   protected abstract readonly raw: TransformedValueSignal<string>;

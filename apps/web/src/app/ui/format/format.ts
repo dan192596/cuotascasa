@@ -8,8 +8,8 @@ import {
   moneyIsNegative,
   parseLocalDate,
   parseMoney,
+  parseRate,
   type Rate,
-  rateToPercent,
 } from '@cuotascasa/domain';
 
 const SYMBOLS: Readonly<Record<Currency, string>> = { GTQ: 'Q', USD: 'US$' };
@@ -48,9 +48,20 @@ export function formatLocalDate(value: string): string {
   return `${pad(day, 2)}/${pad(month, 2)}/${pad(year, 4)}`;
 }
 
+/**
+ * Exact decimal-point shift of a rate string by two places, by digit manipulation only ('0.0126' → '1.26',
+ * '0.00583333' → '0.583333'). Trailing zeros of the fraction are dropped. Never routes through a JS number.
+ */
+export function shiftRateToPercent(rate: string): string {
+  const [whole = '0', fraction = ''] = parseRate(rate as Rate).split('.');
+  const digits = fraction.padEnd(2, '0');
+  const integer = `${whole}${digits.slice(0, 2)}`.replace(/^0+(?=\d)/, '');
+  const decimals = digits.slice(2).replace(/0+$/, '');
+  return decimals === '' ? integer : `${integer}.${decimals}`;
+}
+
 /** Stored fraction → percent text with at least 2 decimals and no symbol ('0.0126' → '1.26', '0.07' → '7.00'). */
 export function formatPercent(rate: string): string {
-  const percent = rateToPercent(rate as Rate);
-  const [whole = '0', fraction = ''] = percent.split('.');
+  const [whole = '0', fraction = ''] = shiftRateToPercent(rate).split('.');
   return `${whole}.${fraction.padEnd(2, '0')}`;
 }
