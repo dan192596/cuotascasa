@@ -1,0 +1,4860 @@
+{
+  "expected": {
+    "anchors": [],
+    "payments": [],
+    "rows": [
+      {
+        "capital": "2525.08",
+        "closing": "2049517.96",
+        "commission": "0.00",
+        "dueDate": "2028-10-31",
+        "fixedCharges": "536.99",
+        "insurance": "2154.65",
+        "insuranceComponents": [
+          "1710.04",
+          "444.61"
+        ],
+        "interest": "14364.30",
+        "k": 1,
+        "level": "19044.03",
+        "opening": "2052043.04",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "2545.41",
+        "closing": "2046972.55",
+        "commission": "0.00",
+        "dueDate": "2028-11-30",
+        "fixedCharges": "536.99",
+        "insurance": "2151.99",
+        "insuranceComponents": [
+          "1707.93",
+          "444.06"
+        ],
+        "interest": "14346.63",
+        "k": 2,
+        "level": "19044.03",
+        "opening": "2049517.96",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "2565.90",
+        "closing": "2044406.65",
+        "commission": "0.00",
+        "dueDate": "2028-12-31",
+        "fixedCharges": "536.99",
+        "insurance": "2149.32",
+        "insuranceComponents": [
+          "1705.81",
+          "443.51"
+        ],
+        "interest": "14328.81",
+        "k": 3,
+        "level": "19044.03",
+        "opening": "2046972.55",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "2586.56",
+        "closing": "2041820.09",
+        "commission": "0.00",
+        "dueDate": "2029-01-31",
+        "fixedCharges": "536.99",
+        "insurance": "2146.63",
+        "insuranceComponents": [
+          "1703.67",
+          "442.96"
+        ],
+        "interest": "14310.84",
+        "k": 4,
+        "level": "19044.03",
+        "opening": "2044406.65",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "2607.38",
+        "closing": "2039212.71",
+        "commission": "0.00",
+        "dueDate": "2029-02-28",
+        "fixedCharges": "536.99",
+        "insurance": "2143.91",
+        "insuranceComponents": [
+          "1701.52",
+          "442.39"
+        ],
+        "interest": "14292.74",
+        "k": 5,
+        "level": "19044.03",
+        "opening": "2041820.09",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "2628.37",
+        "closing": "2036584.34",
+        "commission": "0.00",
+        "dueDate": "2029-03-31",
+        "fixedCharges": "536.99",
+        "insurance": "2141.17",
+        "insuranceComponents": [
+          "1699.34",
+          "441.83"
+        ],
+        "interest": "14274.49",
+        "k": 6,
+        "level": "19044.03",
+        "opening": "2039212.71",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "2649.53",
+        "closing": "2033934.81",
+        "commission": "0.00",
+        "dueDate": "2029-04-30",
+        "fixedCharges": "536.99",
+        "insurance": "2138.41",
+        "insuranceComponents": [
+          "1697.15",
+          "441.26"
+        ],
+        "interest": "14256.09",
+        "k": 7,
+        "level": "19044.03",
+        "opening": "2036584.34",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "2670.85",
+        "closing": "2031263.96",
+        "commission": "0.00",
+        "dueDate": "2029-05-31",
+        "fixedCharges": "536.99",
+        "insurance": "2135.63",
+        "insuranceComponents": [
+          "1694.94",
+          "440.69"
+        ],
+        "interest": "14237.55",
+        "k": 8,
+        "level": "19044.03",
+        "opening": "2033934.81",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "2692.36",
+        "closing": "2028571.60",
+        "commission": "0.00",
+        "dueDate": "2029-06-30",
+        "fixedCharges": "536.99",
+        "insurance": "2132.83",
+        "insuranceComponents": [
+          "1692.72",
+          "440.11"
+        ],
+        "interest": "14218.84",
+        "k": 9,
+        "level": "19044.03",
+        "opening": "2031263.96",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "2714.03",
+        "closing": "2025857.57",
+        "commission": "0.00",
+        "dueDate": "2029-07-31",
+        "fixedCharges": "536.99",
+        "insurance": "2130.00",
+        "insuranceComponents": [
+          "1690.48",
+          "439.52"
+        ],
+        "interest": "14200.00",
+        "k": 10,
+        "level": "19044.03",
+        "opening": "2028571.60",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "2735.88",
+        "closing": "2023121.69",
+        "commission": "0.00",
+        "dueDate": "2029-08-31",
+        "fixedCharges": "536.99",
+        "insurance": "2127.15",
+        "insuranceComponents": [
+          "1688.21",
+          "438.94"
+        ],
+        "interest": "14181.00",
+        "k": 11,
+        "level": "19044.03",
+        "opening": "2025857.57",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "2757.90",
+        "closing": "2020363.79",
+        "commission": "0.00",
+        "dueDate": "2029-09-30",
+        "fixedCharges": "536.99",
+        "insurance": "2124.28",
+        "insuranceComponents": [
+          "1685.94",
+          "438.34"
+        ],
+        "interest": "14161.85",
+        "k": 12,
+        "level": "19044.03",
+        "opening": "2023121.69",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "2780.10",
+        "closing": "2017583.69",
+        "commission": "0.00",
+        "dueDate": "2029-10-31",
+        "fixedCharges": "536.99",
+        "insurance": "2121.38",
+        "insuranceComponents": [
+          "1683.63",
+          "437.75"
+        ],
+        "interest": "14142.55",
+        "k": 13,
+        "level": "19044.03",
+        "opening": "2020363.79",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "2802.48",
+        "closing": "2014781.21",
+        "commission": "0.00",
+        "dueDate": "2029-11-30",
+        "fixedCharges": "536.99",
+        "insurance": "2118.46",
+        "insuranceComponents": [
+          "1681.32",
+          "437.14"
+        ],
+        "interest": "14123.09",
+        "k": 14,
+        "level": "19044.03",
+        "opening": "2017583.69",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "2825.04",
+        "closing": "2011956.17",
+        "commission": "0.00",
+        "dueDate": "2029-12-31",
+        "fixedCharges": "536.99",
+        "insurance": "2115.52",
+        "insuranceComponents": [
+          "1678.98",
+          "436.54"
+        ],
+        "interest": "14103.47",
+        "k": 15,
+        "level": "19044.03",
+        "opening": "2014781.21",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "2847.78",
+        "closing": "2009108.39",
+        "commission": "0.00",
+        "dueDate": "2030-01-31",
+        "fixedCharges": "536.99",
+        "insurance": "2112.55",
+        "insuranceComponents": [
+          "1676.63",
+          "435.92"
+        ],
+        "interest": "14083.70",
+        "k": 16,
+        "level": "19044.03",
+        "opening": "2011956.17",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "2870.71",
+        "closing": "2006237.68",
+        "commission": "0.00",
+        "dueDate": "2030-02-28",
+        "fixedCharges": "536.99",
+        "insurance": "2109.56",
+        "insuranceComponents": [
+          "1674.25",
+          "435.31"
+        ],
+        "interest": "14063.76",
+        "k": 17,
+        "level": "19044.03",
+        "opening": "2009108.39",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "2893.82",
+        "closing": "2003343.86",
+        "commission": "0.00",
+        "dueDate": "2030-03-31",
+        "fixedCharges": "536.99",
+        "insurance": "2106.55",
+        "insuranceComponents": [
+          "1671.87",
+          "434.68"
+        ],
+        "interest": "14043.66",
+        "k": 18,
+        "level": "19044.03",
+        "opening": "2006237.68",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "2917.11",
+        "closing": "2000426.75",
+        "commission": "0.00",
+        "dueDate": "2030-04-30",
+        "fixedCharges": "536.99",
+        "insurance": "2103.51",
+        "insuranceComponents": [
+          "1669.45",
+          "434.06"
+        ],
+        "interest": "14023.41",
+        "k": 19,
+        "level": "19044.03",
+        "opening": "2003343.86",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "2940.59",
+        "closing": "1997486.16",
+        "commission": "0.00",
+        "dueDate": "2030-05-31",
+        "fixedCharges": "536.99",
+        "insurance": "2100.45",
+        "insuranceComponents": [
+          "1667.02",
+          "433.43"
+        ],
+        "interest": "14002.99",
+        "k": 20,
+        "level": "19044.03",
+        "opening": "2000426.75",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "2964.27",
+        "closing": "1994521.89",
+        "commission": "0.00",
+        "dueDate": "2030-06-30",
+        "fixedCharges": "536.99",
+        "insurance": "2097.36",
+        "insuranceComponents": [
+          "1664.57",
+          "432.79"
+        ],
+        "interest": "13982.40",
+        "k": 21,
+        "level": "19044.03",
+        "opening": "1997486.16",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "2988.13",
+        "closing": "1991533.76",
+        "commission": "0.00",
+        "dueDate": "2030-07-31",
+        "fixedCharges": "536.99",
+        "insurance": "2094.25",
+        "insuranceComponents": [
+          "1662.10",
+          "432.15"
+        ],
+        "interest": "13961.65",
+        "k": 22,
+        "level": "19044.03",
+        "opening": "1994521.89",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "3012.18",
+        "closing": "1988521.58",
+        "commission": "0.00",
+        "dueDate": "2030-08-31",
+        "fixedCharges": "536.99",
+        "insurance": "2091.11",
+        "insuranceComponents": [
+          "1659.61",
+          "431.50"
+        ],
+        "interest": "13940.74",
+        "k": 23,
+        "level": "19044.03",
+        "opening": "1991533.76",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "3036.43",
+        "closing": "1985485.15",
+        "commission": "0.00",
+        "dueDate": "2030-09-30",
+        "fixedCharges": "536.99",
+        "insurance": "2087.95",
+        "insuranceComponents": [
+          "1657.10",
+          "430.85"
+        ],
+        "interest": "13919.65",
+        "k": 24,
+        "level": "19044.03",
+        "opening": "1988521.58",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "3060.87",
+        "closing": "1982424.28",
+        "commission": "0.00",
+        "dueDate": "2030-10-31",
+        "fixedCharges": "536.99",
+        "insurance": "2084.76",
+        "insuranceComponents": [
+          "1654.57",
+          "430.19"
+        ],
+        "interest": "13898.40",
+        "k": 25,
+        "level": "19044.03",
+        "opening": "1985485.15",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "3085.51",
+        "closing": "1979338.77",
+        "commission": "0.00",
+        "dueDate": "2030-11-30",
+        "fixedCharges": "536.99",
+        "insurance": "2081.55",
+        "insuranceComponents": [
+          "1652.02",
+          "429.53"
+        ],
+        "interest": "13876.97",
+        "k": 26,
+        "level": "19044.03",
+        "opening": "1982424.28",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "3110.35",
+        "closing": "1976228.42",
+        "commission": "0.00",
+        "dueDate": "2030-12-31",
+        "fixedCharges": "536.99",
+        "insurance": "2078.31",
+        "insuranceComponents": [
+          "1649.45",
+          "428.86"
+        ],
+        "interest": "13855.37",
+        "k": 27,
+        "level": "19044.03",
+        "opening": "1979338.77",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "3135.39",
+        "closing": "1973093.03",
+        "commission": "0.00",
+        "dueDate": "2031-01-31",
+        "fixedCharges": "536.99",
+        "insurance": "2075.04",
+        "insuranceComponents": [
+          "1646.86",
+          "428.18"
+        ],
+        "interest": "13833.60",
+        "k": 28,
+        "level": "19044.03",
+        "opening": "1976228.42",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "3160.63",
+        "closing": "1969932.40",
+        "commission": "0.00",
+        "dueDate": "2031-02-28",
+        "fixedCharges": "536.99",
+        "insurance": "2071.75",
+        "insuranceComponents": [
+          "1644.25",
+          "427.50"
+        ],
+        "interest": "13811.65",
+        "k": 29,
+        "level": "19044.03",
+        "opening": "1973093.03",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "3186.07",
+        "closing": "1966746.33",
+        "commission": "0.00",
+        "dueDate": "2031-03-31",
+        "fixedCharges": "536.99",
+        "insurance": "2068.43",
+        "insuranceComponents": [
+          "1641.61",
+          "426.82"
+        ],
+        "interest": "13789.53",
+        "k": 30,
+        "level": "19044.03",
+        "opening": "1969932.40",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "3211.72",
+        "closing": "1963534.61",
+        "commission": "0.00",
+        "dueDate": "2031-04-30",
+        "fixedCharges": "536.99",
+        "insurance": "2065.08",
+        "insuranceComponents": [
+          "1638.95",
+          "426.13"
+        ],
+        "interest": "13767.23",
+        "k": 31,
+        "level": "19044.03",
+        "opening": "1966746.33",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "3237.58",
+        "closing": "1960297.03",
+        "commission": "0.00",
+        "dueDate": "2031-05-31",
+        "fixedCharges": "536.99",
+        "insurance": "2061.71",
+        "insuranceComponents": [
+          "1636.28",
+          "425.43"
+        ],
+        "interest": "13744.74",
+        "k": 32,
+        "level": "19044.03",
+        "opening": "1963534.61",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "3263.64",
+        "closing": "1957033.39",
+        "commission": "0.00",
+        "dueDate": "2031-06-30",
+        "fixedCharges": "536.99",
+        "insurance": "2058.31",
+        "insuranceComponents": [
+          "1633.58",
+          "424.73"
+        ],
+        "interest": "13722.08",
+        "k": 33,
+        "level": "19044.03",
+        "opening": "1960297.03",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "3289.91",
+        "closing": "1953743.48",
+        "commission": "0.00",
+        "dueDate": "2031-07-31",
+        "fixedCharges": "536.99",
+        "insurance": "2054.89",
+        "insuranceComponents": [
+          "1630.87",
+          "424.02"
+        ],
+        "interest": "13699.23",
+        "k": 34,
+        "level": "19044.03",
+        "opening": "1957033.39",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "3316.39",
+        "closing": "1950427.09",
+        "commission": "0.00",
+        "dueDate": "2031-08-31",
+        "fixedCharges": "536.99",
+        "insurance": "2051.43",
+        "insuranceComponents": [
+          "1628.12",
+          "423.31"
+        ],
+        "interest": "13676.21",
+        "k": 35,
+        "level": "19044.03",
+        "opening": "1953743.48",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "3343.09",
+        "closing": "1947084.00",
+        "commission": "0.00",
+        "dueDate": "2031-09-30",
+        "fixedCharges": "536.99",
+        "insurance": "2047.95",
+        "insuranceComponents": [
+          "1625.36",
+          "422.59"
+        ],
+        "interest": "13652.99",
+        "k": 36,
+        "level": "19044.03",
+        "opening": "1950427.09",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19581.02"
+      },
+      {
+        "capital": "3294.27",
+        "closing": "1943789.73",
+        "commission": "0.00",
+        "dueDate": "2031-10-31",
+        "fixedCharges": "536.99",
+        "insurance": "2044.44",
+        "insuranceComponents": [
+          "1622.57",
+          "421.87"
+        ],
+        "interest": "13954.10",
+        "k": 37,
+        "level": "19292.81",
+        "opening": "1947084.00",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "3321.34",
+        "closing": "1940468.39",
+        "commission": "0.00",
+        "dueDate": "2031-11-30",
+        "fixedCharges": "536.99",
+        "insurance": "2040.98",
+        "insuranceComponents": [
+          "1619.83",
+          "421.15"
+        ],
+        "interest": "13930.49",
+        "k": 38,
+        "level": "19292.81",
+        "opening": "1943789.73",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "3348.63",
+        "closing": "1937119.76",
+        "commission": "0.00",
+        "dueDate": "2031-12-31",
+        "fixedCharges": "536.99",
+        "insurance": "2037.49",
+        "insuranceComponents": [
+          "1617.06",
+          "420.43"
+        ],
+        "interest": "13906.69",
+        "k": 39,
+        "level": "19292.81",
+        "opening": "1940468.39",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "3376.14",
+        "closing": "1933743.62",
+        "commission": "0.00",
+        "dueDate": "2032-01-31",
+        "fixedCharges": "536.99",
+        "insurance": "2033.98",
+        "insuranceComponents": [
+          "1614.27",
+          "419.71"
+        ],
+        "interest": "13882.69",
+        "k": 40,
+        "level": "19292.81",
+        "opening": "1937119.76",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "3403.88",
+        "closing": "1930339.74",
+        "commission": "0.00",
+        "dueDate": "2032-02-29",
+        "fixedCharges": "536.99",
+        "insurance": "2030.43",
+        "insuranceComponents": [
+          "1611.45",
+          "418.98"
+        ],
+        "interest": "13858.50",
+        "k": 41,
+        "level": "19292.81",
+        "opening": "1933743.62",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "3431.85",
+        "closing": "1926907.89",
+        "commission": "0.00",
+        "dueDate": "2032-03-31",
+        "fixedCharges": "536.99",
+        "insurance": "2026.86",
+        "insuranceComponents": [
+          "1608.62",
+          "418.24"
+        ],
+        "interest": "13834.10",
+        "k": 42,
+        "level": "19292.81",
+        "opening": "1930339.74",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "3460.05",
+        "closing": "1923447.84",
+        "commission": "0.00",
+        "dueDate": "2032-04-30",
+        "fixedCharges": "536.99",
+        "insurance": "2023.25",
+        "insuranceComponents": [
+          "1605.75",
+          "417.50"
+        ],
+        "interest": "13809.51",
+        "k": 43,
+        "level": "19292.81",
+        "opening": "1926907.89",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "3488.48",
+        "closing": "1919959.36",
+        "commission": "0.00",
+        "dueDate": "2032-05-31",
+        "fixedCharges": "536.99",
+        "insurance": "2019.62",
+        "insuranceComponents": [
+          "1602.87",
+          "416.75"
+        ],
+        "interest": "13784.71",
+        "k": 44,
+        "level": "19292.81",
+        "opening": "1923447.84",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "3517.14",
+        "closing": "1916442.22",
+        "commission": "0.00",
+        "dueDate": "2032-06-30",
+        "fixedCharges": "536.99",
+        "insurance": "2015.96",
+        "insuranceComponents": [
+          "1599.97",
+          "415.99"
+        ],
+        "interest": "13759.71",
+        "k": 45,
+        "level": "19292.81",
+        "opening": "1919959.36",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "3546.04",
+        "closing": "1912896.18",
+        "commission": "0.00",
+        "dueDate": "2032-07-31",
+        "fixedCharges": "536.99",
+        "insurance": "2012.26",
+        "insuranceComponents": [
+          "1597.03",
+          "415.23"
+        ],
+        "interest": "13734.51",
+        "k": 46,
+        "level": "19292.81",
+        "opening": "1916442.22",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "3575.18",
+        "closing": "1909321.00",
+        "commission": "0.00",
+        "dueDate": "2032-08-31",
+        "fixedCharges": "536.99",
+        "insurance": "2008.54",
+        "insuranceComponents": [
+          "1594.08",
+          "414.46"
+        ],
+        "interest": "13709.09",
+        "k": 47,
+        "level": "19292.81",
+        "opening": "1912896.18",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "3604.56",
+        "closing": "1905716.44",
+        "commission": "0.00",
+        "dueDate": "2032-09-30",
+        "fixedCharges": "536.99",
+        "insurance": "2004.79",
+        "insuranceComponents": [
+          "1591.10",
+          "413.69"
+        ],
+        "interest": "13683.46",
+        "k": 48,
+        "level": "19292.81",
+        "opening": "1909321.00",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "3634.17",
+        "closing": "1902082.27",
+        "commission": "0.00",
+        "dueDate": "2032-10-31",
+        "fixedCharges": "536.99",
+        "insurance": "2001.00",
+        "insuranceComponents": [
+          "1588.10",
+          "412.90"
+        ],
+        "interest": "13657.64",
+        "k": 49,
+        "level": "19292.81",
+        "opening": "1905716.44",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "3664.03",
+        "closing": "1898418.24",
+        "commission": "0.00",
+        "dueDate": "2032-11-30",
+        "fixedCharges": "536.99",
+        "insurance": "1997.19",
+        "insuranceComponents": [
+          "1585.07",
+          "412.12"
+        ],
+        "interest": "13631.59",
+        "k": 50,
+        "level": "19292.81",
+        "opening": "1902082.27",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "3694.14",
+        "closing": "1894724.10",
+        "commission": "0.00",
+        "dueDate": "2032-12-31",
+        "fixedCharges": "536.99",
+        "insurance": "1993.34",
+        "insuranceComponents": [
+          "1582.02",
+          "411.32"
+        ],
+        "interest": "13605.33",
+        "k": 51,
+        "level": "19292.81",
+        "opening": "1898418.24",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "3724.49",
+        "closing": "1890999.61",
+        "commission": "0.00",
+        "dueDate": "2033-01-31",
+        "fixedCharges": "536.99",
+        "insurance": "1989.46",
+        "insuranceComponents": [
+          "1578.94",
+          "410.52"
+        ],
+        "interest": "13578.86",
+        "k": 52,
+        "level": "19292.81",
+        "opening": "1894724.10",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "3755.10",
+        "closing": "1887244.51",
+        "commission": "0.00",
+        "dueDate": "2033-02-28",
+        "fixedCharges": "536.99",
+        "insurance": "1985.55",
+        "insuranceComponents": [
+          "1575.83",
+          "409.72"
+        ],
+        "interest": "13552.16",
+        "k": 53,
+        "level": "19292.81",
+        "opening": "1890999.61",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "3785.95",
+        "closing": "1883458.56",
+        "commission": "0.00",
+        "dueDate": "2033-03-31",
+        "fixedCharges": "536.99",
+        "insurance": "1981.61",
+        "insuranceComponents": [
+          "1572.71",
+          "408.90"
+        ],
+        "interest": "13525.25",
+        "k": 54,
+        "level": "19292.81",
+        "opening": "1887244.51",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "3817.06",
+        "closing": "1879641.50",
+        "commission": "0.00",
+        "dueDate": "2033-04-30",
+        "fixedCharges": "536.99",
+        "insurance": "1977.63",
+        "insuranceComponents": [
+          "1569.55",
+          "408.08"
+        ],
+        "interest": "13498.12",
+        "k": 55,
+        "level": "19292.81",
+        "opening": "1883458.56",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "3848.42",
+        "closing": "1875793.08",
+        "commission": "0.00",
+        "dueDate": "2033-05-31",
+        "fixedCharges": "536.99",
+        "insurance": "1973.62",
+        "insuranceComponents": [
+          "1566.37",
+          "407.25"
+        ],
+        "interest": "13470.77",
+        "k": 56,
+        "level": "19292.81",
+        "opening": "1879641.50",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "3880.04",
+        "closing": "1871913.04",
+        "commission": "0.00",
+        "dueDate": "2033-06-30",
+        "fixedCharges": "536.99",
+        "insurance": "1969.58",
+        "insuranceComponents": [
+          "1563.16",
+          "406.42"
+        ],
+        "interest": "13443.19",
+        "k": 57,
+        "level": "19292.81",
+        "opening": "1875793.08",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "3911.92",
+        "closing": "1868001.12",
+        "commission": "0.00",
+        "dueDate": "2033-07-31",
+        "fixedCharges": "536.99",
+        "insurance": "1965.51",
+        "insuranceComponents": [
+          "1559.93",
+          "405.58"
+        ],
+        "interest": "13415.38",
+        "k": 58,
+        "level": "19292.81",
+        "opening": "1871913.04",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "3944.07",
+        "closing": "1864057.05",
+        "commission": "0.00",
+        "dueDate": "2033-08-31",
+        "fixedCharges": "536.99",
+        "insurance": "1961.40",
+        "insuranceComponents": [
+          "1556.67",
+          "404.73"
+        ],
+        "interest": "13387.34",
+        "k": 59,
+        "level": "19292.81",
+        "opening": "1868001.12",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "3976.47",
+        "closing": "1860080.58",
+        "commission": "0.00",
+        "dueDate": "2033-09-30",
+        "fixedCharges": "536.99",
+        "insurance": "1957.26",
+        "insuranceComponents": [
+          "1553.38",
+          "403.88"
+        ],
+        "interest": "13359.08",
+        "k": 60,
+        "level": "19292.81",
+        "opening": "1864057.05",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "4009.15",
+        "closing": "1856071.43",
+        "commission": "0.00",
+        "dueDate": "2033-10-31",
+        "fixedCharges": "536.99",
+        "insurance": "1953.08",
+        "insuranceComponents": [
+          "1550.06",
+          "403.02"
+        ],
+        "interest": "13330.58",
+        "k": 61,
+        "level": "19292.81",
+        "opening": "1860080.58",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "4042.09",
+        "closing": "1852029.34",
+        "commission": "0.00",
+        "dueDate": "2033-11-30",
+        "fixedCharges": "536.99",
+        "insurance": "1948.87",
+        "insuranceComponents": [
+          "1546.72",
+          "402.15"
+        ],
+        "interest": "13301.85",
+        "k": 62,
+        "level": "19292.81",
+        "opening": "1856071.43",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "4075.30",
+        "closing": "1847954.04",
+        "commission": "0.00",
+        "dueDate": "2033-12-31",
+        "fixedCharges": "536.99",
+        "insurance": "1944.63",
+        "insuranceComponents": [
+          "1543.36",
+          "401.27"
+        ],
+        "interest": "13272.88",
+        "k": 63,
+        "level": "19292.81",
+        "opening": "1852029.34",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "4108.79",
+        "closing": "1843845.25",
+        "commission": "0.00",
+        "dueDate": "2034-01-31",
+        "fixedCharges": "536.99",
+        "insurance": "1940.35",
+        "insuranceComponents": [
+          "1539.96",
+          "400.39"
+        ],
+        "interest": "13243.67",
+        "k": 64,
+        "level": "19292.81",
+        "opening": "1847954.04",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "4142.55",
+        "closing": "1839702.70",
+        "commission": "0.00",
+        "dueDate": "2034-02-28",
+        "fixedCharges": "536.99",
+        "insurance": "1936.04",
+        "insuranceComponents": [
+          "1536.54",
+          "399.50"
+        ],
+        "interest": "13214.22",
+        "k": 65,
+        "level": "19292.81",
+        "opening": "1843845.25",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "4176.59",
+        "closing": "1835526.11",
+        "commission": "0.00",
+        "dueDate": "2034-03-31",
+        "fixedCharges": "536.99",
+        "insurance": "1931.69",
+        "insuranceComponents": [
+          "1533.09",
+          "398.60"
+        ],
+        "interest": "13184.53",
+        "k": 66,
+        "level": "19292.81",
+        "opening": "1839702.70",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "4210.90",
+        "closing": "1831315.21",
+        "commission": "0.00",
+        "dueDate": "2034-04-30",
+        "fixedCharges": "536.99",
+        "insurance": "1927.30",
+        "insuranceComponents": [
+          "1529.60",
+          "397.70"
+        ],
+        "interest": "13154.61",
+        "k": 67,
+        "level": "19292.81",
+        "opening": "1835526.11",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "4245.50",
+        "closing": "1827069.71",
+        "commission": "0.00",
+        "dueDate": "2034-05-31",
+        "fixedCharges": "536.99",
+        "insurance": "1922.88",
+        "insuranceComponents": [
+          "1526.10",
+          "396.78"
+        ],
+        "interest": "13124.43",
+        "k": 68,
+        "level": "19292.81",
+        "opening": "1831315.21",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "4280.39",
+        "closing": "1822789.32",
+        "commission": "0.00",
+        "dueDate": "2034-06-30",
+        "fixedCharges": "536.99",
+        "insurance": "1918.42",
+        "insuranceComponents": [
+          "1522.56",
+          "395.86"
+        ],
+        "interest": "13094.00",
+        "k": 69,
+        "level": "19292.81",
+        "opening": "1827069.71",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "4315.56",
+        "closing": "1818473.76",
+        "commission": "0.00",
+        "dueDate": "2034-07-31",
+        "fixedCharges": "536.99",
+        "insurance": "1913.93",
+        "insuranceComponents": [
+          "1518.99",
+          "394.94"
+        ],
+        "interest": "13063.32",
+        "k": 70,
+        "level": "19292.81",
+        "opening": "1822789.32",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "4351.02",
+        "closing": "1814122.74",
+        "commission": "0.00",
+        "dueDate": "2034-08-31",
+        "fixedCharges": "536.99",
+        "insurance": "1909.40",
+        "insuranceComponents": [
+          "1515.40",
+          "394.00"
+        ],
+        "interest": "13032.39",
+        "k": 71,
+        "level": "19292.81",
+        "opening": "1818473.76",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "4386.77",
+        "closing": "1809735.97",
+        "commission": "0.00",
+        "dueDate": "2034-09-30",
+        "fixedCharges": "536.99",
+        "insurance": "1904.83",
+        "insuranceComponents": [
+          "1511.77",
+          "393.06"
+        ],
+        "interest": "13001.21",
+        "k": 72,
+        "level": "19292.81",
+        "opening": "1814122.74",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "4422.81",
+        "closing": "1805313.16",
+        "commission": "0.00",
+        "dueDate": "2034-10-31",
+        "fixedCharges": "536.99",
+        "insurance": "1900.22",
+        "insuranceComponents": [
+          "1508.11",
+          "392.11"
+        ],
+        "interest": "12969.78",
+        "k": 73,
+        "level": "19292.81",
+        "opening": "1809735.97",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "4459.15",
+        "closing": "1800854.01",
+        "commission": "0.00",
+        "dueDate": "2034-11-30",
+        "fixedCharges": "536.99",
+        "insurance": "1895.58",
+        "insuranceComponents": [
+          "1504.43",
+          "391.15"
+        ],
+        "interest": "12938.08",
+        "k": 74,
+        "level": "19292.81",
+        "opening": "1805313.16",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "4495.79",
+        "closing": "1796358.22",
+        "commission": "0.00",
+        "dueDate": "2034-12-31",
+        "fixedCharges": "536.99",
+        "insurance": "1890.90",
+        "insuranceComponents": [
+          "1500.71",
+          "390.19"
+        ],
+        "interest": "12906.12",
+        "k": 75,
+        "level": "19292.81",
+        "opening": "1800854.01",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "4532.73",
+        "closing": "1791825.49",
+        "commission": "0.00",
+        "dueDate": "2035-01-31",
+        "fixedCharges": "536.99",
+        "insurance": "1886.18",
+        "insuranceComponents": [
+          "1496.97",
+          "389.21"
+        ],
+        "interest": "12873.90",
+        "k": 76,
+        "level": "19292.81",
+        "opening": "1796358.22",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "4569.98",
+        "closing": "1787255.51",
+        "commission": "0.00",
+        "dueDate": "2035-02-28",
+        "fixedCharges": "536.99",
+        "insurance": "1881.42",
+        "insuranceComponents": [
+          "1493.19",
+          "388.23"
+        ],
+        "interest": "12841.41",
+        "k": 77,
+        "level": "19292.81",
+        "opening": "1791825.49",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "4607.53",
+        "closing": "1782647.98",
+        "commission": "0.00",
+        "dueDate": "2035-03-31",
+        "fixedCharges": "536.99",
+        "insurance": "1876.62",
+        "insuranceComponents": [
+          "1489.38",
+          "387.24"
+        ],
+        "interest": "12808.66",
+        "k": 78,
+        "level": "19292.81",
+        "opening": "1787255.51",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "4645.39",
+        "closing": "1778002.59",
+        "commission": "0.00",
+        "dueDate": "2035-04-30",
+        "fixedCharges": "536.99",
+        "insurance": "1871.78",
+        "insuranceComponents": [
+          "1485.54",
+          "386.24"
+        ],
+        "interest": "12775.64",
+        "k": 79,
+        "level": "19292.81",
+        "opening": "1782647.98",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "4683.56",
+        "closing": "1773319.03",
+        "commission": "0.00",
+        "dueDate": "2035-05-31",
+        "fixedCharges": "536.99",
+        "insurance": "1866.90",
+        "insuranceComponents": [
+          "1481.67",
+          "385.23"
+        ],
+        "interest": "12742.35",
+        "k": 80,
+        "level": "19292.81",
+        "opening": "1778002.59",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "4722.04",
+        "closing": "1768596.99",
+        "commission": "0.00",
+        "dueDate": "2035-06-30",
+        "fixedCharges": "536.99",
+        "insurance": "1861.98",
+        "insuranceComponents": [
+          "1477.76",
+          "384.22"
+        ],
+        "interest": "12708.79",
+        "k": 81,
+        "level": "19292.81",
+        "opening": "1773319.03",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "4760.84",
+        "closing": "1763836.15",
+        "commission": "0.00",
+        "dueDate": "2035-07-31",
+        "fixedCharges": "536.99",
+        "insurance": "1857.03",
+        "insuranceComponents": [
+          "1473.83",
+          "383.20"
+        ],
+        "interest": "12674.94",
+        "k": 82,
+        "level": "19292.81",
+        "opening": "1768596.99",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "4799.96",
+        "closing": "1759036.19",
+        "commission": "0.00",
+        "dueDate": "2035-08-31",
+        "fixedCharges": "536.99",
+        "insurance": "1852.03",
+        "insuranceComponents": [
+          "1469.87",
+          "382.16"
+        ],
+        "interest": "12640.82",
+        "k": 83,
+        "level": "19292.81",
+        "opening": "1763836.15",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "4839.40",
+        "closing": "1754196.79",
+        "commission": "0.00",
+        "dueDate": "2035-09-30",
+        "fixedCharges": "536.99",
+        "insurance": "1846.99",
+        "insuranceComponents": [
+          "1465.87",
+          "381.12"
+        ],
+        "interest": "12606.42",
+        "k": 84,
+        "level": "19292.81",
+        "opening": "1759036.19",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "4879.16",
+        "closing": "1749317.63",
+        "commission": "0.00",
+        "dueDate": "2035-10-31",
+        "fixedCharges": "536.99",
+        "insurance": "1841.91",
+        "insuranceComponents": [
+          "1461.83",
+          "380.08"
+        ],
+        "interest": "12571.74",
+        "k": 85,
+        "level": "19292.81",
+        "opening": "1754196.79",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "4919.25",
+        "closing": "1744398.38",
+        "commission": "0.00",
+        "dueDate": "2035-11-30",
+        "fixedCharges": "536.99",
+        "insurance": "1836.78",
+        "insuranceComponents": [
+          "1457.76",
+          "379.02"
+        ],
+        "interest": "12536.78",
+        "k": 86,
+        "level": "19292.81",
+        "opening": "1749317.63",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "4959.67",
+        "closing": "1739438.71",
+        "commission": "0.00",
+        "dueDate": "2035-12-31",
+        "fixedCharges": "536.99",
+        "insurance": "1831.62",
+        "insuranceComponents": [
+          "1453.67",
+          "377.95"
+        ],
+        "interest": "12501.52",
+        "k": 87,
+        "level": "19292.81",
+        "opening": "1744398.38",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "5000.42",
+        "closing": "1734438.29",
+        "commission": "0.00",
+        "dueDate": "2036-01-31",
+        "fixedCharges": "536.99",
+        "insurance": "1826.41",
+        "insuranceComponents": [
+          "1449.53",
+          "376.88"
+        ],
+        "interest": "12465.98",
+        "k": 88,
+        "level": "19292.81",
+        "opening": "1739438.71",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "5041.51",
+        "closing": "1729396.78",
+        "commission": "0.00",
+        "dueDate": "2036-02-29",
+        "fixedCharges": "536.99",
+        "insurance": "1821.16",
+        "insuranceComponents": [
+          "1445.37",
+          "375.79"
+        ],
+        "interest": "12430.14",
+        "k": 89,
+        "level": "19292.81",
+        "opening": "1734438.29",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "5082.93",
+        "closing": "1724313.85",
+        "commission": "0.00",
+        "dueDate": "2036-03-31",
+        "fixedCharges": "536.99",
+        "insurance": "1815.87",
+        "insuranceComponents": [
+          "1441.17",
+          "374.70"
+        ],
+        "interest": "12394.01",
+        "k": 90,
+        "level": "19292.81",
+        "opening": "1729396.78",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "5124.70",
+        "closing": "1719189.15",
+        "commission": "0.00",
+        "dueDate": "2036-04-30",
+        "fixedCharges": "536.99",
+        "insurance": "1810.53",
+        "insuranceComponents": [
+          "1436.93",
+          "373.60"
+        ],
+        "interest": "12357.58",
+        "k": 91,
+        "level": "19292.81",
+        "opening": "1724313.85",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "5166.81",
+        "closing": "1714022.34",
+        "commission": "0.00",
+        "dueDate": "2036-05-31",
+        "fixedCharges": "536.99",
+        "insurance": "1805.15",
+        "insuranceComponents": [
+          "1432.66",
+          "372.49"
+        ],
+        "interest": "12320.85",
+        "k": 92,
+        "level": "19292.81",
+        "opening": "1719189.15",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "5209.26",
+        "closing": "1708813.08",
+        "commission": "0.00",
+        "dueDate": "2036-06-30",
+        "fixedCharges": "536.99",
+        "insurance": "1799.72",
+        "insuranceComponents": [
+          "1428.35",
+          "371.37"
+        ],
+        "interest": "12283.83",
+        "k": 93,
+        "level": "19292.81",
+        "opening": "1714022.34",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "5252.06",
+        "closing": "1703561.02",
+        "commission": "0.00",
+        "dueDate": "2036-07-31",
+        "fixedCharges": "536.99",
+        "insurance": "1794.25",
+        "insuranceComponents": [
+          "1424.01",
+          "370.24"
+        ],
+        "interest": "12246.50",
+        "k": 94,
+        "level": "19292.81",
+        "opening": "1708813.08",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "5295.22",
+        "closing": "1698265.80",
+        "commission": "0.00",
+        "dueDate": "2036-08-31",
+        "fixedCharges": "536.99",
+        "insurance": "1788.74",
+        "insuranceComponents": [
+          "1419.63",
+          "369.11"
+        ],
+        "interest": "12208.85",
+        "k": 95,
+        "level": "19292.81",
+        "opening": "1703561.02",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "5338.73",
+        "closing": "1692927.07",
+        "commission": "0.00",
+        "dueDate": "2036-09-30",
+        "fixedCharges": "536.99",
+        "insurance": "1783.18",
+        "insuranceComponents": [
+          "1415.22",
+          "367.96"
+        ],
+        "interest": "12170.90",
+        "k": 96,
+        "level": "19292.81",
+        "opening": "1698265.80",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "5382.59",
+        "closing": "1687544.48",
+        "commission": "0.00",
+        "dueDate": "2036-10-31",
+        "fixedCharges": "536.99",
+        "insurance": "1777.57",
+        "insuranceComponents": [
+          "1410.77",
+          "366.80"
+        ],
+        "interest": "12132.65",
+        "k": 97,
+        "level": "19292.81",
+        "opening": "1692927.07",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "5426.82",
+        "closing": "1682117.66",
+        "commission": "0.00",
+        "dueDate": "2036-11-30",
+        "fixedCharges": "536.99",
+        "insurance": "1771.92",
+        "insuranceComponents": [
+          "1406.29",
+          "365.63"
+        ],
+        "interest": "12094.07",
+        "k": 98,
+        "level": "19292.81",
+        "opening": "1687544.48",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "5471.41",
+        "closing": "1676646.25",
+        "commission": "0.00",
+        "dueDate": "2036-12-31",
+        "fixedCharges": "536.99",
+        "insurance": "1766.22",
+        "insuranceComponents": [
+          "1401.76",
+          "364.46"
+        ],
+        "interest": "12055.18",
+        "k": 99,
+        "level": "19292.81",
+        "opening": "1682117.66",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "5516.37",
+        "closing": "1671129.88",
+        "commission": "0.00",
+        "dueDate": "2037-01-31",
+        "fixedCharges": "536.99",
+        "insurance": "1760.48",
+        "insuranceComponents": [
+          "1397.21",
+          "363.27"
+        ],
+        "interest": "12015.96",
+        "k": 100,
+        "level": "19292.81",
+        "opening": "1676646.25",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "5561.69",
+        "closing": "1665568.19",
+        "commission": "0.00",
+        "dueDate": "2037-02-28",
+        "fixedCharges": "536.99",
+        "insurance": "1754.69",
+        "insuranceComponents": [
+          "1392.61",
+          "362.08"
+        ],
+        "interest": "11976.43",
+        "k": 101,
+        "level": "19292.81",
+        "opening": "1671129.88",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "5607.39",
+        "closing": "1659960.80",
+        "commission": "0.00",
+        "dueDate": "2037-03-31",
+        "fixedCharges": "536.99",
+        "insurance": "1748.85",
+        "insuranceComponents": [
+          "1387.98",
+          "360.87"
+        ],
+        "interest": "11936.57",
+        "k": 102,
+        "level": "19292.81",
+        "opening": "1665568.19",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "5653.47",
+        "closing": "1654307.33",
+        "commission": "0.00",
+        "dueDate": "2037-04-30",
+        "fixedCharges": "536.99",
+        "insurance": "1742.96",
+        "insuranceComponents": [
+          "1383.30",
+          "359.66"
+        ],
+        "interest": "11896.38",
+        "k": 103,
+        "level": "19292.81",
+        "opening": "1659960.80",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "5699.92",
+        "closing": "1648607.41",
+        "commission": "0.00",
+        "dueDate": "2037-05-31",
+        "fixedCharges": "536.99",
+        "insurance": "1737.02",
+        "insuranceComponents": [
+          "1378.59",
+          "358.43"
+        ],
+        "interest": "11855.87",
+        "k": 104,
+        "level": "19292.81",
+        "opening": "1654307.33",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "5746.75",
+        "closing": "1642860.66",
+        "commission": "0.00",
+        "dueDate": "2037-06-30",
+        "fixedCharges": "536.99",
+        "insurance": "1731.04",
+        "insuranceComponents": [
+          "1373.84",
+          "357.20"
+        ],
+        "interest": "11815.02",
+        "k": 105,
+        "level": "19292.81",
+        "opening": "1648607.41",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "5793.97",
+        "closing": "1637066.69",
+        "commission": "0.00",
+        "dueDate": "2037-07-31",
+        "fixedCharges": "536.99",
+        "insurance": "1725.00",
+        "insuranceComponents": [
+          "1369.05",
+          "355.95"
+        ],
+        "interest": "11773.84",
+        "k": 106,
+        "level": "19292.81",
+        "opening": "1642860.66",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "5841.58",
+        "closing": "1631225.11",
+        "commission": "0.00",
+        "dueDate": "2037-08-31",
+        "fixedCharges": "536.99",
+        "insurance": "1718.92",
+        "insuranceComponents": [
+          "1364.22",
+          "354.70"
+        ],
+        "interest": "11732.31",
+        "k": 107,
+        "level": "19292.81",
+        "opening": "1637066.69",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "5889.58",
+        "closing": "1625335.53",
+        "commission": "0.00",
+        "dueDate": "2037-09-30",
+        "fixedCharges": "536.99",
+        "insurance": "1712.79",
+        "insuranceComponents": [
+          "1359.36",
+          "353.43"
+        ],
+        "interest": "11690.44",
+        "k": 108,
+        "level": "19292.81",
+        "opening": "1631225.11",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "5937.97",
+        "closing": "1619397.56",
+        "commission": "0.00",
+        "dueDate": "2037-10-31",
+        "fixedCharges": "536.99",
+        "insurance": "1706.60",
+        "insuranceComponents": [
+          "1354.44",
+          "352.16"
+        ],
+        "interest": "11648.24",
+        "k": 109,
+        "level": "19292.81",
+        "opening": "1625335.53",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "5986.76",
+        "closing": "1613410.80",
+        "commission": "0.00",
+        "dueDate": "2037-11-30",
+        "fixedCharges": "536.99",
+        "insurance": "1700.37",
+        "insuranceComponents": [
+          "1349.50",
+          "350.87"
+        ],
+        "interest": "11605.68",
+        "k": 110,
+        "level": "19292.81",
+        "opening": "1619397.56",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "6035.95",
+        "closing": "1607374.85",
+        "commission": "0.00",
+        "dueDate": "2037-12-31",
+        "fixedCharges": "536.99",
+        "insurance": "1694.08",
+        "insuranceComponents": [
+          "1344.51",
+          "349.57"
+        ],
+        "interest": "11562.78",
+        "k": 111,
+        "level": "19292.81",
+        "opening": "1613410.80",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "6085.55",
+        "closing": "1601289.30",
+        "commission": "0.00",
+        "dueDate": "2038-01-31",
+        "fixedCharges": "536.99",
+        "insurance": "1687.74",
+        "insuranceComponents": [
+          "1339.48",
+          "348.26"
+        ],
+        "interest": "11519.52",
+        "k": 112,
+        "level": "19292.81",
+        "opening": "1607374.85",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "6135.55",
+        "closing": "1595153.75",
+        "commission": "0.00",
+        "dueDate": "2038-02-28",
+        "fixedCharges": "536.99",
+        "insurance": "1681.35",
+        "insuranceComponents": [
+          "1334.40",
+          "346.95"
+        ],
+        "interest": "11475.91",
+        "k": 113,
+        "level": "19292.81",
+        "opening": "1601289.30",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "6185.96",
+        "closing": "1588967.79",
+        "commission": "0.00",
+        "dueDate": "2038-03-31",
+        "fixedCharges": "536.99",
+        "insurance": "1674.91",
+        "insuranceComponents": [
+          "1329.29",
+          "345.62"
+        ],
+        "interest": "11431.94",
+        "k": 114,
+        "level": "19292.81",
+        "opening": "1595153.75",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "6236.79",
+        "closing": "1582731.00",
+        "commission": "0.00",
+        "dueDate": "2038-04-30",
+        "fixedCharges": "536.99",
+        "insurance": "1668.42",
+        "insuranceComponents": [
+          "1324.14",
+          "344.28"
+        ],
+        "interest": "11387.60",
+        "k": 115,
+        "level": "19292.81",
+        "opening": "1588967.79",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "6288.04",
+        "closing": "1576442.96",
+        "commission": "0.00",
+        "dueDate": "2038-05-31",
+        "fixedCharges": "536.99",
+        "insurance": "1661.87",
+        "insuranceComponents": [
+          "1318.94",
+          "342.93"
+        ],
+        "interest": "11342.90",
+        "k": 116,
+        "level": "19292.81",
+        "opening": "1582731.00",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "6339.70",
+        "closing": "1570103.26",
+        "commission": "0.00",
+        "dueDate": "2038-06-30",
+        "fixedCharges": "536.99",
+        "insurance": "1655.27",
+        "insuranceComponents": [
+          "1313.71",
+          "341.56"
+        ],
+        "interest": "11297.84",
+        "k": 117,
+        "level": "19292.81",
+        "opening": "1576442.96",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "6391.79",
+        "closing": "1563711.47",
+        "commission": "0.00",
+        "dueDate": "2038-07-31",
+        "fixedCharges": "536.99",
+        "insurance": "1648.61",
+        "insuranceComponents": [
+          "1308.42",
+          "340.19"
+        ],
+        "interest": "11252.41",
+        "k": 118,
+        "level": "19292.81",
+        "opening": "1570103.26",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "6444.31",
+        "closing": "1557267.16",
+        "commission": "0.00",
+        "dueDate": "2038-08-31",
+        "fixedCharges": "536.99",
+        "insurance": "1641.90",
+        "insuranceComponents": [
+          "1303.10",
+          "338.80"
+        ],
+        "interest": "11206.60",
+        "k": 119,
+        "level": "19292.81",
+        "opening": "1563711.47",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "6497.26",
+        "closing": "1550769.90",
+        "commission": "0.00",
+        "dueDate": "2038-09-30",
+        "fixedCharges": "536.99",
+        "insurance": "1635.13",
+        "insuranceComponents": [
+          "1297.72",
+          "337.41"
+        ],
+        "interest": "11160.42",
+        "k": 120,
+        "level": "19292.81",
+        "opening": "1557267.16",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "6550.65",
+        "closing": "1544219.25",
+        "commission": "0.00",
+        "dueDate": "2038-10-31",
+        "fixedCharges": "536.99",
+        "insurance": "1628.31",
+        "insuranceComponents": [
+          "1292.31",
+          "336.00"
+        ],
+        "interest": "11113.85",
+        "k": 121,
+        "level": "19292.81",
+        "opening": "1550769.90",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "6604.48",
+        "closing": "1537614.77",
+        "commission": "0.00",
+        "dueDate": "2038-11-30",
+        "fixedCharges": "536.99",
+        "insurance": "1621.43",
+        "insuranceComponents": [
+          "1286.85",
+          "334.58"
+        ],
+        "interest": "11066.90",
+        "k": 122,
+        "level": "19292.81",
+        "opening": "1544219.25",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "6658.74",
+        "closing": "1530956.03",
+        "commission": "0.00",
+        "dueDate": "2038-12-31",
+        "fixedCharges": "536.99",
+        "insurance": "1614.50",
+        "insuranceComponents": [
+          "1281.35",
+          "333.15"
+        ],
+        "interest": "11019.57",
+        "k": 123,
+        "level": "19292.81",
+        "opening": "1537614.77",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "6713.45",
+        "closing": "1524242.58",
+        "commission": "0.00",
+        "dueDate": "2039-01-31",
+        "fixedCharges": "536.99",
+        "insurance": "1607.50",
+        "insuranceComponents": [
+          "1275.79",
+          "331.71"
+        ],
+        "interest": "10971.86",
+        "k": 124,
+        "level": "19292.81",
+        "opening": "1530956.03",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "6768.62",
+        "closing": "1517473.96",
+        "commission": "0.00",
+        "dueDate": "2039-02-28",
+        "fixedCharges": "536.99",
+        "insurance": "1600.45",
+        "insuranceComponents": [
+          "1270.20",
+          "330.25"
+        ],
+        "interest": "10923.74",
+        "k": 125,
+        "level": "19292.81",
+        "opening": "1524242.58",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "6824.23",
+        "closing": "1510649.73",
+        "commission": "0.00",
+        "dueDate": "2039-03-31",
+        "fixedCharges": "536.99",
+        "insurance": "1593.35",
+        "insuranceComponents": [
+          "1264.56",
+          "328.79"
+        ],
+        "interest": "10875.23",
+        "k": 126,
+        "level": "19292.81",
+        "opening": "1517473.96",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "6880.30",
+        "closing": "1503769.43",
+        "commission": "0.00",
+        "dueDate": "2039-04-30",
+        "fixedCharges": "536.99",
+        "insurance": "1586.18",
+        "insuranceComponents": [
+          "1258.87",
+          "327.31"
+        ],
+        "interest": "10826.33",
+        "k": 127,
+        "level": "19292.81",
+        "opening": "1510649.73",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "6936.84",
+        "closing": "1496832.59",
+        "commission": "0.00",
+        "dueDate": "2039-05-31",
+        "fixedCharges": "536.99",
+        "insurance": "1578.96",
+        "insuranceComponents": [
+          "1253.14",
+          "325.82"
+        ],
+        "interest": "10777.01",
+        "k": 128,
+        "level": "19292.81",
+        "opening": "1503769.43",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "6993.84",
+        "closing": "1489838.75",
+        "commission": "0.00",
+        "dueDate": "2039-06-30",
+        "fixedCharges": "536.99",
+        "insurance": "1571.67",
+        "insuranceComponents": [
+          "1247.36",
+          "324.31"
+        ],
+        "interest": "10727.30",
+        "k": 129,
+        "level": "19292.81",
+        "opening": "1496832.59",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "7051.30",
+        "closing": "1482787.45",
+        "commission": "0.00",
+        "dueDate": "2039-07-31",
+        "fixedCharges": "536.99",
+        "insurance": "1564.33",
+        "insuranceComponents": [
+          "1241.53",
+          "322.80"
+        ],
+        "interest": "10677.18",
+        "k": 130,
+        "level": "19292.81",
+        "opening": "1489838.75",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "7109.24",
+        "closing": "1475678.21",
+        "commission": "0.00",
+        "dueDate": "2039-08-31",
+        "fixedCharges": "536.99",
+        "insurance": "1556.93",
+        "insuranceComponents": [
+          "1235.66",
+          "321.27"
+        ],
+        "interest": "10626.64",
+        "k": 131,
+        "level": "19292.81",
+        "opening": "1482787.45",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "7167.65",
+        "closing": "1468510.56",
+        "commission": "0.00",
+        "dueDate": "2039-09-30",
+        "fixedCharges": "536.99",
+        "insurance": "1549.46",
+        "insuranceComponents": [
+          "1229.73",
+          "319.73"
+        ],
+        "interest": "10575.70",
+        "k": 132,
+        "level": "19292.81",
+        "opening": "1475678.21",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "7226.55",
+        "closing": "1461284.01",
+        "commission": "0.00",
+        "dueDate": "2039-10-31",
+        "fixedCharges": "536.99",
+        "insurance": "1541.94",
+        "insuranceComponents": [
+          "1223.76",
+          "318.18"
+        ],
+        "interest": "10524.32",
+        "k": 133,
+        "level": "19292.81",
+        "opening": "1468510.56",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "7285.93",
+        "closing": "1453998.08",
+        "commission": "0.00",
+        "dueDate": "2039-11-30",
+        "fixedCharges": "536.99",
+        "insurance": "1534.35",
+        "insuranceComponents": [
+          "1217.74",
+          "316.61"
+        ],
+        "interest": "10472.53",
+        "k": 134,
+        "level": "19292.81",
+        "opening": "1461284.01",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "7345.79",
+        "closing": "1446652.29",
+        "commission": "0.00",
+        "dueDate": "2039-12-31",
+        "fixedCharges": "536.99",
+        "insurance": "1526.70",
+        "insuranceComponents": [
+          "1211.67",
+          "315.03"
+        ],
+        "interest": "10420.32",
+        "k": 135,
+        "level": "19292.81",
+        "opening": "1453998.08",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "7406.15",
+        "closing": "1439246.14",
+        "commission": "0.00",
+        "dueDate": "2040-01-31",
+        "fixedCharges": "536.99",
+        "insurance": "1518.98",
+        "insuranceComponents": [
+          "1205.54",
+          "313.44"
+        ],
+        "interest": "10367.68",
+        "k": 136,
+        "level": "19292.81",
+        "opening": "1446652.29",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "7467.00",
+        "closing": "1431779.14",
+        "commission": "0.00",
+        "dueDate": "2040-02-29",
+        "fixedCharges": "536.99",
+        "insurance": "1511.21",
+        "insuranceComponents": [
+          "1199.37",
+          "311.84"
+        ],
+        "interest": "10314.60",
+        "k": 137,
+        "level": "19292.81",
+        "opening": "1439246.14",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "7528.36",
+        "closing": "1424250.78",
+        "commission": "0.00",
+        "dueDate": "2040-03-31",
+        "fixedCharges": "536.99",
+        "insurance": "1503.37",
+        "insuranceComponents": [
+          "1193.15",
+          "310.22"
+        ],
+        "interest": "10261.08",
+        "k": 138,
+        "level": "19292.81",
+        "opening": "1431779.14",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "7590.22",
+        "closing": "1416660.56",
+        "commission": "0.00",
+        "dueDate": "2040-04-30",
+        "fixedCharges": "536.99",
+        "insurance": "1495.46",
+        "insuranceComponents": [
+          "1186.87",
+          "308.59"
+        ],
+        "interest": "10207.13",
+        "k": 139,
+        "level": "19292.81",
+        "opening": "1424250.78",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "7652.58",
+        "closing": "1409007.98",
+        "commission": "0.00",
+        "dueDate": "2040-05-31",
+        "fixedCharges": "536.99",
+        "insurance": "1487.49",
+        "insuranceComponents": [
+          "1180.55",
+          "306.94"
+        ],
+        "interest": "10152.74",
+        "k": 140,
+        "level": "19292.81",
+        "opening": "1416660.56",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "7715.46",
+        "closing": "1401292.52",
+        "commission": "0.00",
+        "dueDate": "2040-06-30",
+        "fixedCharges": "536.99",
+        "insurance": "1479.46",
+        "insuranceComponents": [
+          "1174.17",
+          "305.29"
+        ],
+        "interest": "10097.89",
+        "k": 141,
+        "level": "19292.81",
+        "opening": "1409007.98",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "7778.86",
+        "closing": "1393513.66",
+        "commission": "0.00",
+        "dueDate": "2040-07-31",
+        "fixedCharges": "536.99",
+        "insurance": "1471.36",
+        "insuranceComponents": [
+          "1167.75",
+          "303.61"
+        ],
+        "interest": "10042.59",
+        "k": 142,
+        "level": "19292.81",
+        "opening": "1401292.52",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "7842.77",
+        "closing": "1385670.89",
+        "commission": "0.00",
+        "dueDate": "2040-08-31",
+        "fixedCharges": "536.99",
+        "insurance": "1463.19",
+        "insuranceComponents": [
+          "1161.26",
+          "301.93"
+        ],
+        "interest": "9986.85",
+        "k": 143,
+        "level": "19292.81",
+        "opening": "1393513.66",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "7907.21",
+        "closing": "1377763.68",
+        "commission": "0.00",
+        "dueDate": "2040-09-30",
+        "fixedCharges": "536.99",
+        "insurance": "1454.95",
+        "insuranceComponents": [
+          "1154.72",
+          "300.23"
+        ],
+        "interest": "9930.65",
+        "k": 144,
+        "level": "19292.81",
+        "opening": "1385670.89",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "7972.19",
+        "closing": "1369791.49",
+        "commission": "0.00",
+        "dueDate": "2040-10-31",
+        "fixedCharges": "536.99",
+        "insurance": "1446.65",
+        "insuranceComponents": [
+          "1148.13",
+          "298.52"
+        ],
+        "interest": "9873.97",
+        "k": 145,
+        "level": "19292.81",
+        "opening": "1377763.68",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "8037.69",
+        "closing": "1361753.80",
+        "commission": "0.00",
+        "dueDate": "2040-11-30",
+        "fixedCharges": "536.99",
+        "insurance": "1438.28",
+        "insuranceComponents": [
+          "1141.49",
+          "296.79"
+        ],
+        "interest": "9816.84",
+        "k": 146,
+        "level": "19292.81",
+        "opening": "1369791.49",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "8103.73",
+        "closing": "1353650.07",
+        "commission": "0.00",
+        "dueDate": "2040-12-31",
+        "fixedCharges": "536.99",
+        "insurance": "1429.84",
+        "insuranceComponents": [
+          "1134.79",
+          "295.05"
+        ],
+        "interest": "9759.24",
+        "k": 147,
+        "level": "19292.81",
+        "opening": "1361753.80",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "8170.32",
+        "closing": "1345479.75",
+        "commission": "0.00",
+        "dueDate": "2041-01-31",
+        "fixedCharges": "536.99",
+        "insurance": "1421.33",
+        "insuranceComponents": [
+          "1128.04",
+          "293.29"
+        ],
+        "interest": "9701.16",
+        "k": 148,
+        "level": "19292.81",
+        "opening": "1353650.07",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "8237.45",
+        "closing": "1337242.30",
+        "commission": "0.00",
+        "dueDate": "2041-02-28",
+        "fixedCharges": "536.99",
+        "insurance": "1412.75",
+        "insuranceComponents": [
+          "1121.23",
+          "291.52"
+        ],
+        "interest": "9642.61",
+        "k": 149,
+        "level": "19292.81",
+        "opening": "1345479.75",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "8305.14",
+        "closing": "1328937.16",
+        "commission": "0.00",
+        "dueDate": "2041-03-31",
+        "fixedCharges": "536.99",
+        "insurance": "1404.10",
+        "insuranceComponents": [
+          "1114.37",
+          "289.73"
+        ],
+        "interest": "9583.57",
+        "k": 150,
+        "level": "19292.81",
+        "opening": "1337242.30",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "8373.38",
+        "closing": "1320563.78",
+        "commission": "0.00",
+        "dueDate": "2041-04-30",
+        "fixedCharges": "536.99",
+        "insurance": "1395.38",
+        "insuranceComponents": [
+          "1107.44",
+          "287.94"
+        ],
+        "interest": "9524.05",
+        "k": 151,
+        "level": "19292.81",
+        "opening": "1328937.16",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "8442.18",
+        "closing": "1312121.60",
+        "commission": "0.00",
+        "dueDate": "2041-05-31",
+        "fixedCharges": "536.99",
+        "insurance": "1386.59",
+        "insuranceComponents": [
+          "1100.47",
+          "286.12"
+        ],
+        "interest": "9464.04",
+        "k": 152,
+        "level": "19292.81",
+        "opening": "1320563.78",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "8511.54",
+        "closing": "1303610.06",
+        "commission": "0.00",
+        "dueDate": "2041-06-30",
+        "fixedCharges": "536.99",
+        "insurance": "1377.73",
+        "insuranceComponents": [
+          "1093.44",
+          "284.29"
+        ],
+        "interest": "9403.54",
+        "k": 153,
+        "level": "19292.81",
+        "opening": "1312121.60",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "8581.48",
+        "closing": "1295028.58",
+        "commission": "0.00",
+        "dueDate": "2041-07-31",
+        "fixedCharges": "536.99",
+        "insurance": "1368.79",
+        "insuranceComponents": [
+          "1086.34",
+          "282.45"
+        ],
+        "interest": "9342.54",
+        "k": 154,
+        "level": "19292.81",
+        "opening": "1303610.06",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "8651.99",
+        "closing": "1286376.59",
+        "commission": "0.00",
+        "dueDate": "2041-08-31",
+        "fixedCharges": "536.99",
+        "insurance": "1359.78",
+        "insuranceComponents": [
+          "1079.19",
+          "280.59"
+        ],
+        "interest": "9281.04",
+        "k": 155,
+        "level": "19292.81",
+        "opening": "1295028.58",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "8723.08",
+        "closing": "1277653.51",
+        "commission": "0.00",
+        "dueDate": "2041-09-30",
+        "fixedCharges": "536.99",
+        "insurance": "1350.70",
+        "insuranceComponents": [
+          "1071.98",
+          "278.72"
+        ],
+        "interest": "9219.03",
+        "k": 156,
+        "level": "19292.81",
+        "opening": "1286376.59",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "8794.76",
+        "closing": "1268858.75",
+        "commission": "0.00",
+        "dueDate": "2041-10-31",
+        "fixedCharges": "536.99",
+        "insurance": "1341.54",
+        "insuranceComponents": [
+          "1064.71",
+          "276.83"
+        ],
+        "interest": "9156.51",
+        "k": 157,
+        "level": "19292.81",
+        "opening": "1277653.51",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "8867.02",
+        "closing": "1259991.73",
+        "commission": "0.00",
+        "dueDate": "2041-11-30",
+        "fixedCharges": "536.99",
+        "insurance": "1332.30",
+        "insuranceComponents": [
+          "1057.38",
+          "274.92"
+        ],
+        "interest": "9093.49",
+        "k": 158,
+        "level": "19292.81",
+        "opening": "1268858.75",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "8939.88",
+        "closing": "1251051.85",
+        "commission": "0.00",
+        "dueDate": "2041-12-31",
+        "fixedCharges": "536.99",
+        "insurance": "1322.99",
+        "insuranceComponents": [
+          "1049.99",
+          "273.00"
+        ],
+        "interest": "9029.94",
+        "k": 159,
+        "level": "19292.81",
+        "opening": "1259991.73",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "9013.33",
+        "closing": "1242038.52",
+        "commission": "0.00",
+        "dueDate": "2042-01-31",
+        "fixedCharges": "536.99",
+        "insurance": "1313.60",
+        "insuranceComponents": [
+          "1042.54",
+          "271.06"
+        ],
+        "interest": "8965.88",
+        "k": 160,
+        "level": "19292.81",
+        "opening": "1251051.85",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "9087.39",
+        "closing": "1232951.13",
+        "commission": "0.00",
+        "dueDate": "2042-02-28",
+        "fixedCharges": "536.99",
+        "insurance": "1304.14",
+        "insuranceComponents": [
+          "1035.03",
+          "269.11"
+        ],
+        "interest": "8901.28",
+        "k": 161,
+        "level": "19292.81",
+        "opening": "1242038.52",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "9162.06",
+        "closing": "1223789.07",
+        "commission": "0.00",
+        "dueDate": "2042-03-31",
+        "fixedCharges": "536.99",
+        "insurance": "1294.60",
+        "insuranceComponents": [
+          "1027.46",
+          "267.14"
+        ],
+        "interest": "8836.15",
+        "k": 162,
+        "level": "19292.81",
+        "opening": "1232951.13",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "9237.34",
+        "closing": "1214551.73",
+        "commission": "0.00",
+        "dueDate": "2042-04-30",
+        "fixedCharges": "536.99",
+        "insurance": "1284.98",
+        "insuranceComponents": [
+          "1019.83",
+          "265.15"
+        ],
+        "interest": "8770.49",
+        "k": 163,
+        "level": "19292.81",
+        "opening": "1223789.07",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "9313.24",
+        "closing": "1205238.49",
+        "commission": "0.00",
+        "dueDate": "2042-05-31",
+        "fixedCharges": "536.99",
+        "insurance": "1275.28",
+        "insuranceComponents": [
+          "1012.13",
+          "263.15"
+        ],
+        "interest": "8704.29",
+        "k": 164,
+        "level": "19292.81",
+        "opening": "1214551.73",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "9389.77",
+        "closing": "1195848.72",
+        "commission": "0.00",
+        "dueDate": "2042-06-30",
+        "fixedCharges": "536.99",
+        "insurance": "1265.50",
+        "insuranceComponents": [
+          "1004.37",
+          "261.13"
+        ],
+        "interest": "8637.54",
+        "k": 165,
+        "level": "19292.81",
+        "opening": "1205238.49",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "9466.92",
+        "closing": "1186381.80",
+        "commission": "0.00",
+        "dueDate": "2042-07-31",
+        "fixedCharges": "536.99",
+        "insurance": "1255.64",
+        "insuranceComponents": [
+          "996.54",
+          "259.10"
+        ],
+        "interest": "8570.25",
+        "k": 166,
+        "level": "19292.81",
+        "opening": "1195848.72",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "9544.71",
+        "closing": "1176837.09",
+        "commission": "0.00",
+        "dueDate": "2042-08-31",
+        "fixedCharges": "536.99",
+        "insurance": "1245.70",
+        "insuranceComponents": [
+          "988.65",
+          "257.05"
+        ],
+        "interest": "8502.40",
+        "k": 167,
+        "level": "19292.81",
+        "opening": "1186381.80",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "9623.13",
+        "closing": "1167213.96",
+        "commission": "0.00",
+        "dueDate": "2042-09-30",
+        "fixedCharges": "536.99",
+        "insurance": "1235.68",
+        "insuranceComponents": [
+          "980.70",
+          "254.98"
+        ],
+        "interest": "8434.00",
+        "k": 168,
+        "level": "19292.81",
+        "opening": "1176837.09",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "9702.20",
+        "closing": "1157511.76",
+        "commission": "0.00",
+        "dueDate": "2042-10-31",
+        "fixedCharges": "536.99",
+        "insurance": "1225.57",
+        "insuranceComponents": [
+          "972.67",
+          "252.90"
+        ],
+        "interest": "8365.04",
+        "k": 169,
+        "level": "19292.81",
+        "opening": "1167213.96",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "9781.92",
+        "closing": "1147729.84",
+        "commission": "0.00",
+        "dueDate": "2042-11-30",
+        "fixedCharges": "536.99",
+        "insurance": "1215.39",
+        "insuranceComponents": [
+          "964.60",
+          "250.79"
+        ],
+        "interest": "8295.50",
+        "k": 170,
+        "level": "19292.81",
+        "opening": "1157511.76",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "9862.30",
+        "closing": "1137867.54",
+        "commission": "0.00",
+        "dueDate": "2042-12-31",
+        "fixedCharges": "536.99",
+        "insurance": "1205.12",
+        "insuranceComponents": [
+          "956.44",
+          "248.68"
+        ],
+        "interest": "8225.39",
+        "k": 171,
+        "level": "19292.81",
+        "opening": "1147729.84",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "9943.33",
+        "closing": "1127924.21",
+        "commission": "0.00",
+        "dueDate": "2043-01-31",
+        "fixedCharges": "536.99",
+        "insurance": "1194.76",
+        "insuranceComponents": [
+          "948.22",
+          "246.54"
+        ],
+        "interest": "8154.72",
+        "k": 172,
+        "level": "19292.81",
+        "opening": "1137867.54",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "10025.03",
+        "closing": "1117899.18",
+        "commission": "0.00",
+        "dueDate": "2043-02-28",
+        "fixedCharges": "536.99",
+        "insurance": "1184.32",
+        "insuranceComponents": [
+          "939.94",
+          "244.38"
+        ],
+        "interest": "8083.46",
+        "k": 173,
+        "level": "19292.81",
+        "opening": "1127924.21",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "10107.41",
+        "closing": "1107791.77",
+        "commission": "0.00",
+        "dueDate": "2043-03-31",
+        "fixedCharges": "536.99",
+        "insurance": "1173.79",
+        "insuranceComponents": [
+          "931.58",
+          "242.21"
+        ],
+        "interest": "8011.61",
+        "k": 174,
+        "level": "19292.81",
+        "opening": "1117899.18",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "10190.45",
+        "closing": "1097601.32",
+        "commission": "0.00",
+        "dueDate": "2043-04-30",
+        "fixedCharges": "536.99",
+        "insurance": "1163.18",
+        "insuranceComponents": [
+          "923.16",
+          "240.02"
+        ],
+        "interest": "7939.18",
+        "k": 175,
+        "level": "19292.81",
+        "opening": "1107791.77",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "10274.19",
+        "closing": "1087327.13",
+        "commission": "0.00",
+        "dueDate": "2043-05-31",
+        "fixedCharges": "536.99",
+        "insurance": "1152.48",
+        "insuranceComponents": [
+          "914.67",
+          "237.81"
+        ],
+        "interest": "7866.14",
+        "k": 176,
+        "level": "19292.81",
+        "opening": "1097601.32",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "10358.61",
+        "closing": "1076968.52",
+        "commission": "0.00",
+        "dueDate": "2043-06-30",
+        "fixedCharges": "536.99",
+        "insurance": "1141.69",
+        "insuranceComponents": [
+          "906.10",
+          "235.59"
+        ],
+        "interest": "7792.51",
+        "k": 177,
+        "level": "19292.81",
+        "opening": "1087327.13",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "10443.72",
+        "closing": "1066524.80",
+        "commission": "0.00",
+        "dueDate": "2043-07-31",
+        "fixedCharges": "536.99",
+        "insurance": "1130.82",
+        "insuranceComponents": [
+          "897.48",
+          "233.34"
+        ],
+        "interest": "7718.27",
+        "k": 178,
+        "level": "19292.81",
+        "opening": "1076968.52",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "10529.53",
+        "closing": "1055995.27",
+        "commission": "0.00",
+        "dueDate": "2043-08-31",
+        "fixedCharges": "536.99",
+        "insurance": "1119.85",
+        "insuranceComponents": [
+          "888.77",
+          "231.08"
+        ],
+        "interest": "7643.43",
+        "k": 179,
+        "level": "19292.81",
+        "opening": "1066524.80",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "10616.05",
+        "closing": "1045379.22",
+        "commission": "0.00",
+        "dueDate": "2043-09-30",
+        "fixedCharges": "536.99",
+        "insurance": "1108.79",
+        "insuranceComponents": [
+          "879.99",
+          "228.80"
+        ],
+        "interest": "7567.97",
+        "k": 180,
+        "level": "19292.81",
+        "opening": "1055995.27",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "10703.28",
+        "closing": "1034675.94",
+        "commission": "0.00",
+        "dueDate": "2043-10-31",
+        "fixedCharges": "536.99",
+        "insurance": "1097.65",
+        "insuranceComponents": [
+          "871.15",
+          "226.50"
+        ],
+        "interest": "7491.88",
+        "k": 181,
+        "level": "19292.81",
+        "opening": "1045379.22",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "10791.22",
+        "closing": "1023884.72",
+        "commission": "0.00",
+        "dueDate": "2043-11-30",
+        "fixedCharges": "536.99",
+        "insurance": "1086.41",
+        "insuranceComponents": [
+          "862.23",
+          "224.18"
+        ],
+        "interest": "7415.18",
+        "k": 182,
+        "level": "19292.81",
+        "opening": "1034675.94",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "10879.89",
+        "closing": "1013004.83",
+        "commission": "0.00",
+        "dueDate": "2043-12-31",
+        "fixedCharges": "536.99",
+        "insurance": "1075.08",
+        "insuranceComponents": [
+          "853.24",
+          "221.84"
+        ],
+        "interest": "7337.84",
+        "k": 183,
+        "level": "19292.81",
+        "opening": "1023884.72",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "10969.29",
+        "closing": "1002035.54",
+        "commission": "0.00",
+        "dueDate": "2044-01-31",
+        "fixedCharges": "536.99",
+        "insurance": "1063.65",
+        "insuranceComponents": [
+          "844.17",
+          "219.48"
+        ],
+        "interest": "7259.87",
+        "k": 184,
+        "level": "19292.81",
+        "opening": "1013004.83",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "11059.42",
+        "closing": "990976.12",
+        "commission": "0.00",
+        "dueDate": "2044-02-29",
+        "fixedCharges": "536.99",
+        "insurance": "1052.14",
+        "insuranceComponents": [
+          "835.03",
+          "217.11"
+        ],
+        "interest": "7181.25",
+        "k": 185,
+        "level": "19292.81",
+        "opening": "1002035.54",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "11150.29",
+        "closing": "979825.83",
+        "commission": "0.00",
+        "dueDate": "2044-03-31",
+        "fixedCharges": "536.99",
+        "insurance": "1040.52",
+        "insuranceComponents": [
+          "825.81",
+          "214.71"
+        ],
+        "interest": "7102.00",
+        "k": 186,
+        "level": "19292.81",
+        "opening": "990976.12",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "11241.91",
+        "closing": "968583.92",
+        "commission": "0.00",
+        "dueDate": "2044-04-30",
+        "fixedCharges": "536.99",
+        "insurance": "1028.82",
+        "insuranceComponents": [
+          "816.52",
+          "212.30"
+        ],
+        "interest": "7022.08",
+        "k": 187,
+        "level": "19292.81",
+        "opening": "979825.83",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "11334.28",
+        "closing": "957249.64",
+        "commission": "0.00",
+        "dueDate": "2044-05-31",
+        "fixedCharges": "536.99",
+        "insurance": "1017.01",
+        "insuranceComponents": [
+          "807.15",
+          "209.86"
+        ],
+        "interest": "6941.52",
+        "k": 188,
+        "level": "19292.81",
+        "opening": "968583.92",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "11427.41",
+        "closing": "945822.23",
+        "commission": "0.00",
+        "dueDate": "2044-06-30",
+        "fixedCharges": "536.99",
+        "insurance": "1005.11",
+        "insuranceComponents": [
+          "797.71",
+          "207.40"
+        ],
+        "interest": "6860.29",
+        "k": 189,
+        "level": "19292.81",
+        "opening": "957249.64",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "11521.30",
+        "closing": "934300.93",
+        "commission": "0.00",
+        "dueDate": "2044-07-31",
+        "fixedCharges": "536.99",
+        "insurance": "993.11",
+        "insuranceComponents": [
+          "788.18",
+          "204.93"
+        ],
+        "interest": "6778.40",
+        "k": 190,
+        "level": "19292.81",
+        "opening": "945822.23",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "11615.97",
+        "closing": "922684.96",
+        "commission": "0.00",
+        "dueDate": "2044-08-31",
+        "fixedCharges": "536.99",
+        "insurance": "981.02",
+        "insuranceComponents": [
+          "778.59",
+          "202.43"
+        ],
+        "interest": "6695.82",
+        "k": 191,
+        "level": "19292.81",
+        "opening": "934300.93",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "11711.42",
+        "closing": "910973.54",
+        "commission": "0.00",
+        "dueDate": "2044-09-30",
+        "fixedCharges": "536.99",
+        "insurance": "968.82",
+        "insuranceComponents": [
+          "768.90",
+          "199.92"
+        ],
+        "interest": "6612.57",
+        "k": 192,
+        "level": "19292.81",
+        "opening": "922684.96",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "11807.64",
+        "closing": "899165.90",
+        "commission": "0.00",
+        "dueDate": "2044-10-31",
+        "fixedCharges": "536.99",
+        "insurance": "956.52",
+        "insuranceComponents": [
+          "759.14",
+          "197.38"
+        ],
+        "interest": "6528.65",
+        "k": 193,
+        "level": "19292.81",
+        "opening": "910973.54",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "11904.66",
+        "closing": "887261.24",
+        "commission": "0.00",
+        "dueDate": "2044-11-30",
+        "fixedCharges": "536.99",
+        "insurance": "944.12",
+        "insuranceComponents": [
+          "749.30",
+          "194.82"
+        ],
+        "interest": "6444.03",
+        "k": 194,
+        "level": "19292.81",
+        "opening": "899165.90",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "12002.48",
+        "closing": "875258.76",
+        "commission": "0.00",
+        "dueDate": "2044-12-31",
+        "fixedCharges": "536.99",
+        "insurance": "931.62",
+        "insuranceComponents": [
+          "739.38",
+          "192.24"
+        ],
+        "interest": "6358.71",
+        "k": 195,
+        "level": "19292.81",
+        "opening": "887261.24",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "12101.10",
+        "closing": "863157.66",
+        "commission": "0.00",
+        "dueDate": "2045-01-31",
+        "fixedCharges": "536.99",
+        "insurance": "919.02",
+        "insuranceComponents": [
+          "729.38",
+          "189.64"
+        ],
+        "interest": "6272.69",
+        "k": 196,
+        "level": "19292.81",
+        "opening": "875258.76",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "12200.53",
+        "closing": "850957.13",
+        "commission": "0.00",
+        "dueDate": "2045-02-28",
+        "fixedCharges": "536.99",
+        "insurance": "906.32",
+        "insuranceComponents": [
+          "719.30",
+          "187.02"
+        ],
+        "interest": "6185.96",
+        "k": 197,
+        "level": "19292.81",
+        "opening": "863157.66",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "12300.78",
+        "closing": "838656.35",
+        "commission": "0.00",
+        "dueDate": "2045-03-31",
+        "fixedCharges": "536.99",
+        "insurance": "893.50",
+        "insuranceComponents": [
+          "709.13",
+          "184.37"
+        ],
+        "interest": "6098.53",
+        "k": 198,
+        "level": "19292.81",
+        "opening": "850957.13",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "12401.85",
+        "closing": "826254.50",
+        "commission": "0.00",
+        "dueDate": "2045-04-30",
+        "fixedCharges": "536.99",
+        "insurance": "880.59",
+        "insuranceComponents": [
+          "698.88",
+          "181.71"
+        ],
+        "interest": "6010.37",
+        "k": 199,
+        "level": "19292.81",
+        "opening": "838656.35",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "12503.75",
+        "closing": "813750.75",
+        "commission": "0.00",
+        "dueDate": "2045-05-31",
+        "fixedCharges": "536.99",
+        "insurance": "867.57",
+        "insuranceComponents": [
+          "688.55",
+          "179.02"
+        ],
+        "interest": "5921.49",
+        "k": 200,
+        "level": "19292.81",
+        "opening": "826254.50",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "12606.49",
+        "closing": "801144.26",
+        "commission": "0.00",
+        "dueDate": "2045-06-30",
+        "fixedCharges": "536.99",
+        "insurance": "854.44",
+        "insuranceComponents": [
+          "678.13",
+          "176.31"
+        ],
+        "interest": "5831.88",
+        "k": 201,
+        "level": "19292.81",
+        "opening": "813750.75",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "12710.07",
+        "closing": "788434.19",
+        "commission": "0.00",
+        "dueDate": "2045-07-31",
+        "fixedCharges": "536.99",
+        "insurance": "841.20",
+        "insuranceComponents": [
+          "667.62",
+          "173.58"
+        ],
+        "interest": "5741.54",
+        "k": 202,
+        "level": "19292.81",
+        "opening": "801144.26",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "12814.51",
+        "closing": "775619.68",
+        "commission": "0.00",
+        "dueDate": "2045-08-31",
+        "fixedCharges": "536.99",
+        "insurance": "827.86",
+        "insuranceComponents": [
+          "657.03",
+          "170.83"
+        ],
+        "interest": "5650.44",
+        "k": 203,
+        "level": "19292.81",
+        "opening": "788434.19",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "12919.80",
+        "closing": "762699.88",
+        "commission": "0.00",
+        "dueDate": "2045-09-30",
+        "fixedCharges": "536.99",
+        "insurance": "814.40",
+        "insuranceComponents": [
+          "646.35",
+          "168.05"
+        ],
+        "interest": "5558.61",
+        "k": 204,
+        "level": "19292.81",
+        "opening": "775619.68",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "13025.96",
+        "closing": "749673.92",
+        "commission": "0.00",
+        "dueDate": "2045-10-31",
+        "fixedCharges": "536.99",
+        "insurance": "800.83",
+        "insuranceComponents": [
+          "635.58",
+          "165.25"
+        ],
+        "interest": "5466.02",
+        "k": 205,
+        "level": "19292.81",
+        "opening": "762699.88",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "13132.99",
+        "closing": "736540.93",
+        "commission": "0.00",
+        "dueDate": "2045-11-30",
+        "fixedCharges": "536.99",
+        "insurance": "787.16",
+        "insuranceComponents": [
+          "624.73",
+          "162.43"
+        ],
+        "interest": "5372.66",
+        "k": 206,
+        "level": "19292.81",
+        "opening": "749673.92",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "13240.90",
+        "closing": "723300.03",
+        "commission": "0.00",
+        "dueDate": "2045-12-31",
+        "fixedCharges": "536.99",
+        "insurance": "773.37",
+        "insuranceComponents": [
+          "613.79",
+          "159.58"
+        ],
+        "interest": "5278.54",
+        "k": 207,
+        "level": "19292.81",
+        "opening": "736540.93",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "13349.69",
+        "closing": "709950.34",
+        "commission": "0.00",
+        "dueDate": "2046-01-31",
+        "fixedCharges": "536.99",
+        "insurance": "759.47",
+        "insuranceComponents": [
+          "602.75",
+          "156.72"
+        ],
+        "interest": "5183.65",
+        "k": 208,
+        "level": "19292.81",
+        "opening": "723300.03",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "13459.38",
+        "closing": "696490.96",
+        "commission": "0.00",
+        "dueDate": "2046-02-28",
+        "fixedCharges": "536.99",
+        "insurance": "745.45",
+        "insuranceComponents": [
+          "591.63",
+          "153.82"
+        ],
+        "interest": "5087.98",
+        "k": 209,
+        "level": "19292.81",
+        "opening": "709950.34",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "13569.98",
+        "closing": "682920.98",
+        "commission": "0.00",
+        "dueDate": "2046-03-31",
+        "fixedCharges": "536.99",
+        "insurance": "731.31",
+        "insuranceComponents": [
+          "580.40",
+          "150.91"
+        ],
+        "interest": "4991.52",
+        "k": 210,
+        "level": "19292.81",
+        "opening": "696490.96",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "13681.48",
+        "closing": "669239.50",
+        "commission": "0.00",
+        "dueDate": "2046-04-30",
+        "fixedCharges": "536.99",
+        "insurance": "717.07",
+        "insuranceComponents": [
+          "569.10",
+          "147.97"
+        ],
+        "interest": "4894.26",
+        "k": 211,
+        "level": "19292.81",
+        "opening": "682920.98",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "13793.89",
+        "closing": "655445.61",
+        "commission": "0.00",
+        "dueDate": "2046-05-31",
+        "fixedCharges": "536.99",
+        "insurance": "702.70",
+        "insuranceComponents": [
+          "557.70",
+          "145.00"
+        ],
+        "interest": "4796.22",
+        "k": 212,
+        "level": "19292.81",
+        "opening": "669239.50",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "13907.23",
+        "closing": "641538.38",
+        "commission": "0.00",
+        "dueDate": "2046-06-30",
+        "fixedCharges": "536.99",
+        "insurance": "688.22",
+        "insuranceComponents": [
+          "546.21",
+          "142.01"
+        ],
+        "interest": "4697.36",
+        "k": 213,
+        "level": "19292.81",
+        "opening": "655445.61",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "14021.50",
+        "closing": "627516.88",
+        "commission": "0.00",
+        "dueDate": "2046-07-31",
+        "fixedCharges": "536.99",
+        "insurance": "673.62",
+        "insuranceComponents": [
+          "534.62",
+          "139.00"
+        ],
+        "interest": "4597.69",
+        "k": 214,
+        "level": "19292.81",
+        "opening": "641538.38",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "14136.71",
+        "closing": "613380.17",
+        "commission": "0.00",
+        "dueDate": "2046-08-31",
+        "fixedCharges": "536.99",
+        "insurance": "658.89",
+        "insuranceComponents": [
+          "522.93",
+          "135.96"
+        ],
+        "interest": "4497.21",
+        "k": 215,
+        "level": "19292.81",
+        "opening": "627516.88",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "14252.87",
+        "closing": "599127.30",
+        "commission": "0.00",
+        "dueDate": "2046-09-30",
+        "fixedCharges": "536.99",
+        "insurance": "644.05",
+        "insuranceComponents": [
+          "511.15",
+          "132.90"
+        ],
+        "interest": "4395.89",
+        "k": 216,
+        "level": "19292.81",
+        "opening": "613380.17",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "14369.98",
+        "closing": "584757.32",
+        "commission": "0.00",
+        "dueDate": "2046-10-31",
+        "fixedCharges": "536.99",
+        "insurance": "629.08",
+        "insuranceComponents": [
+          "499.27",
+          "129.81"
+        ],
+        "interest": "4293.75",
+        "k": 217,
+        "level": "19292.81",
+        "opening": "599127.30",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "14488.05",
+        "closing": "570269.27",
+        "commission": "0.00",
+        "dueDate": "2046-11-30",
+        "fixedCharges": "536.99",
+        "insurance": "614.00",
+        "insuranceComponents": [
+          "487.30",
+          "126.70"
+        ],
+        "interest": "4190.76",
+        "k": 218,
+        "level": "19292.81",
+        "opening": "584757.32",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "14607.10",
+        "closing": "555662.17",
+        "commission": "0.00",
+        "dueDate": "2046-12-31",
+        "fixedCharges": "536.99",
+        "insurance": "598.78",
+        "insuranceComponents": [
+          "475.22",
+          "123.56"
+        ],
+        "interest": "4086.93",
+        "k": 219,
+        "level": "19292.81",
+        "opening": "570269.27",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "14727.12",
+        "closing": "540935.05",
+        "commission": "0.00",
+        "dueDate": "2047-01-31",
+        "fixedCharges": "536.99",
+        "insurance": "583.45",
+        "insuranceComponents": [
+          "463.06",
+          "120.39"
+        ],
+        "interest": "3982.24",
+        "k": 220,
+        "level": "19292.81",
+        "opening": "555662.17",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "14848.13",
+        "closing": "526086.92",
+        "commission": "0.00",
+        "dueDate": "2047-02-28",
+        "fixedCharges": "536.99",
+        "insurance": "567.98",
+        "insuranceComponents": [
+          "450.78",
+          "117.20"
+        ],
+        "interest": "3876.70",
+        "k": 221,
+        "level": "19292.81",
+        "opening": "540935.05",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "14970.13",
+        "closing": "511116.79",
+        "commission": "0.00",
+        "dueDate": "2047-03-31",
+        "fixedCharges": "536.99",
+        "insurance": "552.39",
+        "insuranceComponents": [
+          "438.40",
+          "113.99"
+        ],
+        "interest": "3770.29",
+        "k": 222,
+        "level": "19292.81",
+        "opening": "526086.92",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "15093.13",
+        "closing": "496023.66",
+        "commission": "0.00",
+        "dueDate": "2047-04-30",
+        "fixedCharges": "536.99",
+        "insurance": "536.67",
+        "insuranceComponents": [
+          "425.93",
+          "110.74"
+        ],
+        "interest": "3663.01",
+        "k": 223,
+        "level": "19292.81",
+        "opening": "511116.79",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "15217.15",
+        "closing": "480806.51",
+        "commission": "0.00",
+        "dueDate": "2047-05-31",
+        "fixedCharges": "536.99",
+        "insurance": "520.82",
+        "insuranceComponents": [
+          "413.35",
+          "107.47"
+        ],
+        "interest": "3554.84",
+        "k": 224,
+        "level": "19292.81",
+        "opening": "496023.66",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "15342.18",
+        "closing": "465464.33",
+        "commission": "0.00",
+        "dueDate": "2047-06-30",
+        "fixedCharges": "536.99",
+        "insurance": "504.85",
+        "insuranceComponents": [
+          "400.67",
+          "104.18"
+        ],
+        "interest": "3445.78",
+        "k": 225,
+        "level": "19292.81",
+        "opening": "480806.51",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "15468.24",
+        "closing": "449996.09",
+        "commission": "0.00",
+        "dueDate": "2047-07-31",
+        "fixedCharges": "536.99",
+        "insurance": "488.74",
+        "insuranceComponents": [
+          "387.89",
+          "100.85"
+        ],
+        "interest": "3335.83",
+        "k": 226,
+        "level": "19292.81",
+        "opening": "465464.33",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "15595.34",
+        "closing": "434400.75",
+        "commission": "0.00",
+        "dueDate": "2047-08-31",
+        "fixedCharges": "536.99",
+        "insurance": "472.50",
+        "insuranceComponents": [
+          "375.00",
+          "97.50"
+        ],
+        "interest": "3224.97",
+        "k": 227,
+        "level": "19292.81",
+        "opening": "449996.09",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "15723.48",
+        "closing": "418677.27",
+        "commission": "0.00",
+        "dueDate": "2047-09-30",
+        "fixedCharges": "536.99",
+        "insurance": "456.12",
+        "insuranceComponents": [
+          "362.00",
+          "94.12"
+        ],
+        "interest": "3113.21",
+        "k": 228,
+        "level": "19292.81",
+        "opening": "434400.75",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "15852.68",
+        "closing": "402824.59",
+        "commission": "0.00",
+        "dueDate": "2047-10-31",
+        "fixedCharges": "536.99",
+        "insurance": "439.61",
+        "insuranceComponents": [
+          "348.90",
+          "90.71"
+        ],
+        "interest": "3000.52",
+        "k": 229,
+        "level": "19292.81",
+        "opening": "418677.27",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "15982.93",
+        "closing": "386841.66",
+        "commission": "0.00",
+        "dueDate": "2047-11-30",
+        "fixedCharges": "536.99",
+        "insurance": "422.97",
+        "insuranceComponents": [
+          "335.69",
+          "87.28"
+        ],
+        "interest": "2886.91",
+        "k": 230,
+        "level": "19292.81",
+        "opening": "402824.59",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "16114.26",
+        "closing": "370727.40",
+        "commission": "0.00",
+        "dueDate": "2047-12-31",
+        "fixedCharges": "536.99",
+        "insurance": "406.18",
+        "insuranceComponents": [
+          "322.37",
+          "83.81"
+        ],
+        "interest": "2772.37",
+        "k": 231,
+        "level": "19292.81",
+        "opening": "386841.66",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "16246.67",
+        "closing": "354480.73",
+        "commission": "0.00",
+        "dueDate": "2048-01-31",
+        "fixedCharges": "536.99",
+        "insurance": "389.26",
+        "insuranceComponents": [
+          "308.94",
+          "80.32"
+        ],
+        "interest": "2656.88",
+        "k": 232,
+        "level": "19292.81",
+        "opening": "370727.40",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "16380.16",
+        "closing": "338100.57",
+        "commission": "0.00",
+        "dueDate": "2048-02-29",
+        "fixedCharges": "536.99",
+        "insurance": "372.20",
+        "insuranceComponents": [
+          "295.40",
+          "76.80"
+        ],
+        "interest": "2540.45",
+        "k": 233,
+        "level": "19292.81",
+        "opening": "354480.73",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "16514.75",
+        "closing": "321585.82",
+        "commission": "0.00",
+        "dueDate": "2048-03-31",
+        "fixedCharges": "536.99",
+        "insurance": "355.01",
+        "insuranceComponents": [
+          "281.75",
+          "73.26"
+        ],
+        "interest": "2423.05",
+        "k": 234,
+        "level": "19292.81",
+        "opening": "338100.57",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "16650.45",
+        "closing": "304935.37",
+        "commission": "0.00",
+        "dueDate": "2048-04-30",
+        "fixedCharges": "536.99",
+        "insurance": "337.66",
+        "insuranceComponents": [
+          "267.98",
+          "69.68"
+        ],
+        "interest": "2304.70",
+        "k": 235,
+        "level": "19292.81",
+        "opening": "321585.82",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "16787.26",
+        "closing": "288148.11",
+        "commission": "0.00",
+        "dueDate": "2048-05-31",
+        "fixedCharges": "536.99",
+        "insurance": "320.18",
+        "insuranceComponents": [
+          "254.11",
+          "66.07"
+        ],
+        "interest": "2185.37",
+        "k": 236,
+        "level": "19292.81",
+        "opening": "304935.37",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "16925.19",
+        "closing": "271222.92",
+        "commission": "0.00",
+        "dueDate": "2048-06-30",
+        "fixedCharges": "536.99",
+        "insurance": "302.56",
+        "insuranceComponents": [
+          "240.13",
+          "62.43"
+        ],
+        "interest": "2065.06",
+        "k": 237,
+        "level": "19292.81",
+        "opening": "288148.11",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "17064.26",
+        "closing": "254158.66",
+        "commission": "0.00",
+        "dueDate": "2048-07-31",
+        "fixedCharges": "536.99",
+        "insurance": "284.78",
+        "insuranceComponents": [
+          "226.02",
+          "58.76"
+        ],
+        "interest": "1943.77",
+        "k": 238,
+        "level": "19292.81",
+        "opening": "271222.92",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "17204.47",
+        "closing": "236954.19",
+        "commission": "0.00",
+        "dueDate": "2048-08-31",
+        "fixedCharges": "536.99",
+        "insurance": "266.87",
+        "insuranceComponents": [
+          "211.80",
+          "55.07"
+        ],
+        "interest": "1821.47",
+        "k": 239,
+        "level": "19292.81",
+        "opening": "254158.66",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "17345.84",
+        "closing": "219608.35",
+        "commission": "0.00",
+        "dueDate": "2048-09-30",
+        "fixedCharges": "536.99",
+        "insurance": "248.80",
+        "insuranceComponents": [
+          "197.46",
+          "51.34"
+        ],
+        "interest": "1698.17",
+        "k": 240,
+        "level": "19292.81",
+        "opening": "236954.19",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "17488.36",
+        "closing": "202119.99",
+        "commission": "0.00",
+        "dueDate": "2048-10-31",
+        "fixedCharges": "536.99",
+        "insurance": "230.59",
+        "insuranceComponents": [
+          "183.01",
+          "47.58"
+        ],
+        "interest": "1573.86",
+        "k": 241,
+        "level": "19292.81",
+        "opening": "219608.35",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "17632.06",
+        "closing": "184487.93",
+        "commission": "0.00",
+        "dueDate": "2048-11-30",
+        "fixedCharges": "536.99",
+        "insurance": "212.23",
+        "insuranceComponents": [
+          "168.44",
+          "43.79"
+        ],
+        "interest": "1448.52",
+        "k": 242,
+        "level": "19292.81",
+        "opening": "202119.99",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "17776.93",
+        "closing": "166711.00",
+        "commission": "0.00",
+        "dueDate": "2048-12-31",
+        "fixedCharges": "536.99",
+        "insurance": "193.71",
+        "insuranceComponents": [
+          "153.74",
+          "39.97"
+        ],
+        "interest": "1322.17",
+        "k": 243,
+        "level": "19292.81",
+        "opening": "184487.93",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "17923.00",
+        "closing": "148788.00",
+        "commission": "0.00",
+        "dueDate": "2049-01-31",
+        "fixedCharges": "536.99",
+        "insurance": "175.05",
+        "insuranceComponents": [
+          "138.93",
+          "36.12"
+        ],
+        "interest": "1194.76",
+        "k": 244,
+        "level": "19292.81",
+        "opening": "166711.00",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "18070.27",
+        "closing": "130717.73",
+        "commission": "0.00",
+        "dueDate": "2049-02-28",
+        "fixedCharges": "536.99",
+        "insurance": "156.23",
+        "insuranceComponents": [
+          "123.99",
+          "32.24"
+        ],
+        "interest": "1066.31",
+        "k": 245,
+        "level": "19292.81",
+        "opening": "148788.00",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "18218.75",
+        "closing": "112498.98",
+        "commission": "0.00",
+        "dueDate": "2049-03-31",
+        "fixedCharges": "536.99",
+        "insurance": "137.25",
+        "insuranceComponents": [
+          "108.93",
+          "28.32"
+        ],
+        "interest": "936.81",
+        "k": 246,
+        "level": "19292.81",
+        "opening": "130717.73",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "18368.44",
+        "closing": "94130.54",
+        "commission": "0.00",
+        "dueDate": "2049-04-30",
+        "fixedCharges": "536.99",
+        "insurance": "118.12",
+        "insuranceComponents": [
+          "93.75",
+          "24.37"
+        ],
+        "interest": "806.25",
+        "k": 247,
+        "level": "19292.81",
+        "opening": "112498.98",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "18519.37",
+        "closing": "75611.17",
+        "commission": "0.00",
+        "dueDate": "2049-05-31",
+        "fixedCharges": "536.99",
+        "insurance": "98.84",
+        "insuranceComponents": [
+          "78.44",
+          "20.40"
+        ],
+        "interest": "674.60",
+        "k": 248,
+        "level": "19292.81",
+        "opening": "94130.54",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "18671.54",
+        "closing": "56939.63",
+        "commission": "0.00",
+        "dueDate": "2049-06-30",
+        "fixedCharges": "536.99",
+        "insurance": "79.39",
+        "insuranceComponents": [
+          "63.01",
+          "16.38"
+        ],
+        "interest": "541.88",
+        "k": 249,
+        "level": "19292.81",
+        "opening": "75611.17",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "18824.96",
+        "closing": "38114.67",
+        "commission": "0.00",
+        "dueDate": "2049-07-31",
+        "fixedCharges": "536.99",
+        "insurance": "59.79",
+        "insuranceComponents": [
+          "47.45",
+          "12.34"
+        ],
+        "interest": "408.06",
+        "k": 250,
+        "level": "19292.81",
+        "opening": "56939.63",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "18979.63",
+        "closing": "19135.04",
+        "commission": "0.00",
+        "dueDate": "2049-08-31",
+        "fixedCharges": "536.99",
+        "insurance": "40.02",
+        "insuranceComponents": [
+          "31.76",
+          "8.26"
+        ],
+        "interest": "273.16",
+        "k": 251,
+        "level": "19292.81",
+        "opening": "38114.67",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.80"
+      },
+      {
+        "capital": "19135.04",
+        "closing": "0.00",
+        "commission": "0.00",
+        "dueDate": "2049-09-30",
+        "fixedCharges": "536.99",
+        "insurance": "20.09",
+        "insuranceComponents": [
+          "15.94",
+          "4.15"
+        ],
+        "interest": "137.13",
+        "k": 252,
+        "level": "19292.81",
+        "opening": "19135.04",
+        "paid": false,
+        "prepayment": "0.00",
+        "total": "19829.25"
+      }
+    ],
+    "summary": {
+      "endDate": "2049-09-30",
+      "installments": 252,
+      "totalCapital": "2052043.04",
+      "totalCommissions": "0.00",
+      "totalFixedCharges": "135321.48",
+      "totalInsurance": "359446.23",
+      "totalInterest": "2441342.22",
+      "totalPaid": "4988152.97",
+      "totalPrepayments": "0.00"
+    }
+  },
+  "features": [
+    "core",
+    "rateChange:RECALC_INSTALLMENT_KEEP_TERM"
+  ],
+  "generatorVersion": 1,
+  "id": "full-0001",
+  "inputs": {
+    "events": [
+      {
+        "date": "2031-10-22",
+        "id": "ev-01",
+        "interestRate": "0.0860",
+        "policy": "RECALC_INSTALLMENT_KEEP_TERM",
+        "type": "RateChange"
+      }
+    ],
+    "terms": {
+      "currency": "GTQ",
+      "disbursementDate": "2028-09-01",
+      "firstDueDate": "2028-10-31",
+      "fixedCharges": [
+        {
+          "amount": "506.79",
+          "effectiveFrom": "2028-10-31",
+          "label": "IUSI"
+        },
+        {
+          "amount": "30.20",
+          "effectiveFrom": "2028-10-31",
+          "label": "Seguro de daños"
+        }
+      ],
+      "insuranceRates": [
+        "0.01",
+        "0.0026"
+      ],
+      "interestRate": "0.0840",
+      "paymentDay": "END_OF_MONTH",
+      "principal": "2052043.04",
+      "roundingProfile": "FHA_GT_V1",
+      "termMonths": 252
+    }
+  },
+  "loanIndex": 1,
+  "profile": "full",
+  "seed": 20261027,
+  "synthetic": true,
+  "traits": [
+    "roundingProfile:FHA_GT_V1",
+    "paymentDay:EOM",
+    "currency:GTQ",
+    "lastRow"
+  ]
+}

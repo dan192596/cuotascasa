@@ -280,12 +280,14 @@ Se agrupa por **año calendario del vencimiento** (`dueDate`). Por año (`year`)
 - **Diferencia:** `realDelta = Bᵣ − apertura modelada de k`, con el mismo signo que [ALG.ANCHOR].
   - **Modelado:** el camino real calculado **conservando solo las anclas con `k' < k`**. Se excluyen todas las anclas de la misma `k` y de cuotas posteriores. Hereda todos los eventos reales que conserva, así que no vuelve a validar su rango ([ALG.EVENTS.ANCHOR], regla 3). Así coincide con la fase 0 de [ALG.EVENTS.ORDER], donde todas las anclas de una misma `k` se comparan contra la misma apertura proyectada. En el asistente de alta coincide con el plan original.
   - **Fuera de rango:** si la cuota `k` del saldo reportado no está entre la 1 y la última cuota del calendario modelado, se lanza un error de validación tipado ([ALG.EVENTS.ANCHOR]).
+  - **Calendario modelado que no amortiza:** el calendario modelado conserva los eventos reales de cuotas posteriores a `k` pero no las anclas de `k` ni las posteriores, así que puede lanzar `NegativeAmortizationError` aunque el camino real se calcule bien (por ejemplo, un `RateChange` `KEEP_INSTALLMENT_ADJUST_TERM` posterior que solo amortiza sobre un saldo re-anclado). En ese caso el saldo reportado de `k` queda **`UNVALIDATED`** (sin validar), con causa nula y sin apertura modelada ni `realDelta` de validación; el error no se propaga y el préstamo se sigue calculando (el camino real y el `realDelta` de [ALG.ANCHOR] no cambian) (dictamen de Opus en W3-01, 2026-10-09).
 - **Semáforo**, en unidades de la moneda del préstamo:
   - **`GREEN`:** `|realDelta| ≤ 1.00`.
   - **`AMBER`:** `|realDelta| ≤ máx(50.00, 0.0002 · Bᵣ)`. El límite no se redondea ([ALG.CONV]).
   - **`RED`:** cualquier otra diferencia.
+  - **`UNVALIDATED`:** el calendario modelado no amortiza (ver arriba); no se compara.
 - **Causa** (determinista en v1):
-  - Si es `GREEN`, no hay causa.
+  - Si es `GREEN` o `UNVALIDATED`, no hay causa.
   - `INSTALLMENT_MISALIGNMENT` si `Bᵣ` está a ≤ 1.00 de la apertura modelada de `k−1` o de `k+1`.
   - Si no, `UNKNOWN`.
   - `RATE_MISMATCH`, `INSURANCE_RATE_MISMATCH`, `ROUNDING_PROFILE` y `MISSING_EVENT` quedan **reservadas** (no se emiten en v1).
