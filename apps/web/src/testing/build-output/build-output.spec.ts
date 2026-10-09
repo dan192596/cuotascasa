@@ -38,9 +38,16 @@ describe('pnpm build output (ADR-0011 decision 3)', () => {
     expect(html).not.toContain('ng-server-context');
   });
 
+  it('prerenders the 404 page from the wildcard route (ADR-0022, amended by W2-02)', () => {
+    const html = read(join(BROWSER, '404', 'index.html'));
+    expect(html).toContain('<title>Página no encontrada · CuotasCasa</title>');
+    expect(html).toContain('data-testid="page-not-found"');
+    expect(html).toContain('ng-server-context="ssg"');
+  });
+
   it('prerenders only public routes', () => {
     const { routes } = JSON.parse(read(join(DIST, 'prerendered-routes.json'))) as { routes: Record<string, unknown> };
-    expect(Object.keys(routes)).toEqual(expect.arrayContaining(['/', '/privacidad']));
+    expect(Object.keys(routes)).toEqual(expect.arrayContaining(['/', '/privacidad', '/404']));
     expect(Object.keys(routes).filter((route) => route.startsWith('/app'))).toEqual([]);
   });
 
@@ -68,5 +75,45 @@ describe('pnpm build output (ADR-0011 decision 3)', () => {
     const positive = ngsw.navigationUrls.filter((url) => url.positive).map((url) => url.regex);
     expect(positive.length).toBeGreaterThan(0);
     expect(positive.filter((regex) => !regex.startsWith('^\\/app'))).toEqual([]);
+  });
+
+  it('never lets the service worker cache a public document (ADR-0023)', () => {
+    const ngsw = JSON.parse(read(join(BROWSER, 'ngsw.json'))) as {
+      assetGroups: { urls: string[] }[];
+      hashTable: Record<string, string>;
+    };
+    const cached = [...ngsw.assetGroups.flatMap((group) => group.urls), ...Object.keys(ngsw.hashTable)];
+    const PUBLIC = [
+      '/index.html',
+      '/privacidad/index.html',
+      '/404/index.html',
+      '/404.html',
+      '/_headers',
+      '/_redirects',
+    ];
+    expect(cached.filter((url) => PUBLIC.includes(url))).toEqual([]);
+  });
+
+  describe('HTML documents (ADR-0021)', () => {
+    const DOCUMENTS = ['index.html', 'privacidad/index.html', '404/index.html', 'index.csr.html'];
+
+    it.each(DOCUMENTS)('%s keeps <base href="/"> (ADR-0021: base-uri \'self\')', (document) => {
+      expect(read(join(BROWSER, document)).match(/<base\b[^>]*>/g)).toEqual(['<base href="/">']);
+    });
+
+    it.each(DOCUMENTS)('%s carries no builder CSP <meta> (no autoCsp)', (document) => {
+      expect(read(join(BROWSER, document))).not.toMatch(/http-equiv="Content-Security-Policy"/i);
+    });
+
+    it.each(DOCUMENTS)('%s has the icon link and the Spanish <noscript>', (document) => {
+      const html = read(join(BROWSER, document));
+      expect(html).toContain('<link rel="icon" href="icons/icon.svg" type="image/svg+xml">');
+      expect(html).toMatch(/<noscript>\s*<p>CuotasCasa necesita JavaScript[^<]*<\/p>\s*<\/noscript>/);
+    });
+
+    it.each(DOCUMENTS)('%s loads no external origin', (document) => {
+      const html = read(join(BROWSER, document));
+      expect(html.match(/\b(?:src|href)="(?:https?:)?\/\/[^"]*"/g) ?? []).toEqual([]);
+    });
   });
 });
