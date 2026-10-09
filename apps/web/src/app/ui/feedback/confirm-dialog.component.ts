@@ -39,7 +39,6 @@ let nextId = 0;
           [cdkTrapFocusAutoCapture]="true"
           [attr.aria-labelledby]="titleId"
           [attr.aria-describedby]="messageId"
-          (click)="$event.stopPropagation()"
         >
           <h2 class="title" [id]="titleId">{{ heading() }}</h2>
           <p class="message" [id]="messageId">{{ message() }}</p>
