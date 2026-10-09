@@ -82,4 +82,21 @@ describe('StorageHealthService', () => {
     });
     expect(health.safariNonStandalone()).toBe(true);
   });
+
+  it('a slow persisted() resolving after persist() does not overwrite true', async () => {
+    let release: (v: boolean) => void = () => undefined;
+    const slow = new Promise<boolean>((resolve) => (release = resolve));
+    const health = setup({
+      storage: {
+        persisted: vi.fn().mockReturnValue(slow),
+        persist: vi.fn().mockResolvedValue(true),
+        estimate: vi.fn().mockResolvedValue({}),
+      },
+    });
+    await health.requestPersist();
+    expect(health.persisted()).toBe(true);
+    release(false);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(health.persisted()).toBe(true);
+  });
 });
