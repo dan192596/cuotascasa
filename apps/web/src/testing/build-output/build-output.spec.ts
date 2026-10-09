@@ -38,8 +38,9 @@ describe('pnpm build output (ADR-0011 decision 3)', () => {
     expect(html).not.toContain('ng-server-context');
   });
 
-  it('prerenders the 404 page from the wildcard route (ADR-0022, amended by W2-02)', () => {
-    const html = read(join(BROWSER, '404', 'index.html'));
+  it('prerenders the 404 page and the post-build step promotes it to /404.html (ADR-0022, ADR-0021)', () => {
+    expect(existsSync(join(BROWSER, '404'))).toBe(false);
+    const html = read(join(BROWSER, '404.html'));
     expect(html).toContain('<title>Página no encontrada · CuotasCasa</title>');
     expect(html).toContain('data-testid="page-not-found"');
     expect(html).toContain('ng-server-context="ssg"');
@@ -94,8 +95,15 @@ describe('pnpm build output (ADR-0011 decision 3)', () => {
     expect(cached.filter((url) => PUBLIC.includes(url))).toEqual([]);
   });
 
+  it('writes the final _headers with every hash slot filled (ADR-0021 post-build step)', () => {
+    const headers = read(join(BROWSER, '_headers'));
+    expect(headers).not.toContain('{{hashes');
+    expect(headers).not.toContain('Report-Only');
+    expect(headers).toMatch(/script-src 'self' 'sha256-/);
+  });
+
   describe('HTML documents (ADR-0021)', () => {
-    const DOCUMENTS = ['index.html', 'privacidad/index.html', '404/index.html', 'index.csr.html'];
+    const DOCUMENTS = ['index.html', 'privacidad/index.html', '404.html', 'index.csr.html'];
 
     it.each(DOCUMENTS)('%s keeps <base href="/"> (ADR-0021: base-uri \'self\')', (document) => {
       expect(read(join(BROWSER, document)).match(/<base\b[^>]*>/g)).toEqual(['<base href="/">']);
