@@ -81,3 +81,13 @@ Restricciones: escritorio primero, formatos de Guatemala, accesibilidad AA y nin
 - `docs/discovery/direccion-visual.md` (direcciones, bocetos y paleta propuesta), `docs/discovery/historias-de-usuario.md` (comportamiento por pantalla).
 - `docs/specs/design-palette.md`, `docs/specs/component-contracts.md`.
 - Tarjetas W0-05, W3-05 a W3-09, W4-03, W4-04 y W6-02.
+
+## Enmiendas
+
+**Enmienda (2026-10-09, W3).** Precisiones de W3-05, W3-06 y W3-09 que no cambian la decisión:
+
+- **Tailwind v4 sin *preflight*.** `apps/web/src/styles/tailwind.scss` importa solo las capas `theme` y `utilities`, sin el reinicio de estilos base. Las utilidades se importan con `important`, porque los estilos de los componentes de Material no están en capas y, si no, ganarían a cualquier regla de `@layer utilities`.
+- **Fuentes propias solo en woff2.** Las fuentes de `@fontsource/*` se sirven desde el propio sitio y el build no emite archivos `.woff` (lo comprueba `fonts.dist.spec.ts`).
+- **Roles de Material sobre los tokens.** `material-theme.scss` apunta los roles de color `--mat-sys-*` a los tokens `--cc-*`, que siguen siendo la única fuente de color.
+- **Avisos propios en vez de `MatSnackBar`.** El aviso de errores (`cc-error-toast`, en `core/errors`) y el aviso de actualización (`cc-update-prompt`, en `core/pwa`) son componentes ligeros propios, para cuidar los presupuestos del bundle de la landing y de `/app`.
+- **Montos negativos.** El signo va antes del símbolo: `-Q 1,234.50` (y `-US$ 1,234.50`); el cero nunca lleva signo.

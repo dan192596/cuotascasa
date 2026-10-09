@@ -78,3 +78,7 @@ Hechos que explican la tabla y el resto de la decisión:
 - ADR-0011, ADR-0016, ADR-0017, ADR-0021 y ADR-0022.
 - Tarjetas W2-02, W2-10, W3-14 y W2-11.
 - Angular service worker: https://angular.dev/ecosystem/service-workers
+
+## Enmiendas
+
+**Enmienda (2026-10-09, W3-14).** `provideServiceWorker()` **no** está en los providers raíz. `provideAppPwa()` carga `core/pwa/pwa-runtime.ts` con `import()` después de la primera navegación a `/app`, y ese módulo crea `provideServiceWorker()` en un `EnvironmentInjector` hijo. Así, `@angular/service-worker` queda fuera del bundle de la landing. `SwUpdate` se sigue inyectando, desde ese inyector hijo, y el registro manual con Trusted Types de la decisión 3 no cambia.
