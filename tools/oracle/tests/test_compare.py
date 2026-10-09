@@ -348,3 +348,64 @@ def test_abbreviated_options_are_usage_errors(tmp_path, capsys):
     assert run(argv, capsys) == (2, "", "error: usage\n")
     compare_argv = ["compare", "--ter", "x", "--expected", "y"]
     assert run(compare_argv, capsys) == (2, "", "error: usage\n")
+
+
+EVENTS = [
+    {
+        "id": "ev-01",
+        "type": "Prepayment",
+        "date": "2027-03-10",
+        "amount": "5000.00",
+        "mode": "REDUCE_TERM",
+        "commission": {"kind": "FLAT", "amount": "50.00"},
+    },
+    {"id": "ev-02", "type": "ReportedBalance", "date": "2028-05-01", "balance": "100000.00"},
+]
+
+
+def _with_events(private, tmp_path, events, rows):
+    argv = private(rows)
+    (tmp_path / "a-terms.json").write_text(
+        json.dumps({"terms": TERMS, "events": events}), encoding="utf-8"
+    )
+    return argv
+
+
+def test_compare_applies_the_events_of_a_private_terms_file(private, capsys):
+    from cuotascasa_oracle.schedule import build_schedule
+
+    rows = build_schedule(TERMS, EVENTS)["rows"]
+    assert len(rows) != ROW_COUNT
+    argv = _with_events(private, private.tmp_path, EVENTS, rows)
+    code, out, err = run(argv, capsys)
+    assert (code, err) == (0, "")
+    assert out == "allRowsMatched: yes\nmismatchedRows: 0\nmaxAbsDiff: 0.00\n"
+    # Sin los eventos, el mismo CSV ya no coincide.
+    (private.tmp_path / "a-terms.json").write_text(
+        json.dumps({"terms": TERMS, "events": EVENTS[:1]}), encoding="utf-8"
+    )
+    assert run(argv, capsys)[0] == 1
+
+
+@pytest.mark.parametrize(
+    "events",
+    [
+        # Evento después de la última cuota ([ALG.EVENTS.ANCHOR], regla 3).
+        [{"id": "ev-01", "type": "ReportedBalance", "date": "2099-01-01", "balance": "1.00"}],
+        # Error de cálculo (NegativeAmortizationError) también es `terms-invalid`.
+        [
+            {
+                "id": "ev-01",
+                "type": "RateChange",
+                "date": "2027-03-10",
+                "policy": "KEEP_INSTALLMENT_ADJUST_TERM",
+                "interestRate": "0.9000",
+            }
+        ],
+        # ActualPayment sin installmentNumber.
+        [{"id": "ev-01", "type": "ActualPayment", "paidDate": "2027-03-10", "total": "1.00"}],
+    ],
+)
+def test_events_that_cannot_be_applied_are_terms_invalid_without_values(private, capsys, events):
+    argv = _with_events(private, private.tmp_path, events, private.rows)
+    assert run(argv, capsys) == (2, "", "error: terms-invalid\n")
