@@ -64,6 +64,8 @@ export const buildScheduleReport: BuildScheduleReportFn = ({ schedule, pathKind,
     if (subtotal === undefined) {
       return;
     }
+    // Los escritores deben despachar por `cell.kind`, nunca por `column.kind`: aquí una celda de la columna de fecha
+    // es texto ('Subtotal AAAA') y las de cuota y saldo van vacías.
     rows.push({
       role: 'subtotal',
       cells: [
@@ -83,6 +85,7 @@ export const buildScheduleReport: BuildScheduleReportFn = ({ schedule, pathKind,
   });
 
   const { totals } = schedule;
+  // Igual que en los subtotales: despachar por `cell.kind`, nunca por `column.kind`.
   rows.push({
     role: 'total',
     cells: [

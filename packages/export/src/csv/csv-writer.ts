@@ -5,8 +5,12 @@ const BOM = '﻿';
 const EOL = '\r\n';
 /** ADR-0013: solo estas celdas se escriben tal cual (montos con 2 decimales o enteros, también negativos). */
 const NUMERIC = /^-?\d+(\.\d{2})?$/;
-/** Celdas de texto que una hoja de cálculo podría interpretar como fórmula (OWASP: `= + - @`, tab y CR). */
-const FORMULA_START = /^[=+\-@\t\r]/;
+/**
+ * Celdas de texto que una hoja de cálculo podría interpretar como fórmula: `= + - @`, tab, CR y LF, también tras
+ * espacios iniciales (incluidos NBSP y el espacio ideográfico). Los caracteres de ancho completo (p. ej. `＝`) no se
+ * neutralizan a propósito: las hojas de cálculo no los tratan como fórmula.
+ */
+const FORMULA_START = /^[\s\u00A0\u3000]*[=+\-@\t\r\n]/;
 
 /** RFC 4180: entrecomilla si hay coma, comilla, CR o LF, y duplica las comillas. */
 function quote(field: string): string {

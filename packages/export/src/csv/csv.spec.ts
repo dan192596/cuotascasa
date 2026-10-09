@@ -95,6 +95,37 @@ describe('csvWriter', () => {
     expect(cr).toContain('"\'\rx",');
   });
 
+  it('neutralizes a formula character hidden behind leading whitespace', async () => {
+    const cases: [string, string][] = [
+      [' =1+1', "' =1+1,"],
+      ['  +cmd', "'  +cmd,"],
+      ['\u00A0@x', "'\u00A0@x,"],
+      ['\u3000-1', "'\u3000-1,"],
+    ];
+    for (const [input, expected] of cases) {
+      const out = await lines(
+        modelWith([{ role: 'data', cells: [{ kind: 'text', value: input }, { kind: 'empty' }] }]),
+      );
+      expect(out).toContain(expected);
+    }
+  });
+
+  it('neutralizes a leading line feed inside a quoted cell', async () => {
+    const text = textOf(
+      await csvWriter.write(
+        modelWith([{ role: 'data', cells: [{ kind: 'text', value: '\n=1+1' }, { kind: 'empty' }] }]),
+      ),
+    );
+    expect(text).toContain('"\'\n=1+1",');
+  });
+
+  it('leaves a full-width formula character unchanged (spreadsheets do not evaluate it)', async () => {
+    const out = await lines(
+      modelWith([{ role: 'data', cells: [{ kind: 'text', value: '＝1+1' }, { kind: 'empty' }] }]),
+    );
+    expect(out).toContain('＝1+1,');
+  });
+
   it('leaves a safe text cell untouched', async () => {
     const out = await lines(
       modelWith([{ role: 'data', cells: [{ kind: 'text', value: 'Casa = A' }, { kind: 'empty' }] }]),
