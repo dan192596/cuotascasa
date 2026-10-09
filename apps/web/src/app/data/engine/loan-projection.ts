@@ -11,7 +11,6 @@ import {
   type Money,
   type Paths,
   type ScheduleRow,
-  type TrafficLight,
   moneyIsZero,
   yearlySubtotals,
   ZERO_MONEY,
@@ -190,8 +189,7 @@ export class LoanProjectionImpl implements LoanProjection {
       return current.paths.realDelta.perAnchor.map((delta) => {
         const result = validateAnchor(current.terms, current.realEvents, current.anchorsById.get(delta.eventId)!);
         // Opus ruling (W3-01 triage, [ALG.VALIDATE] gap): a failing modeled path leaves the delta and has no status.
-        // api.ts types status as TrafficLight; the value 'UNVALIDATED' is out of that type and needs a contract card.
-        const status = result === null ? ('UNVALIDATED' as unknown as TrafficLight) : result.status;
+        const status = result === null ? 'UNVALIDATED' : result.status;
         return { ...delta, status, cause: result === null ? null : result.cause };
       });
     });
