@@ -54,8 +54,14 @@ class Stop extends Error {
 }
 
 /** One pass either finished or asks to start over from the download. */
-type Pass =
-  { readonly kind: 'done'; readonly stats: MergeStats; readonly purged: number } | { readonly kind: 'restart' };
+interface Done {
+  readonly kind: 'done';
+  readonly stats: MergeStats;
+  readonly purged: number;
+}
+interface Restart {
+  readonly kind: 'restart';
+}
 
 function sameVersion(a: RemoteFile | null, b: RemoteFile | null): boolean {
   if (a === null || b === null) {
@@ -97,7 +103,9 @@ export function createSyncSession(deps: SyncSessionDeps, options: SyncSessionOpt
     return parsed.value.document.data;
   }
 
-  async function pass(key: StoredKey, allowRestart: boolean): Promise<Pass> {
+  function pass(key: StoredKey, allowRestart: true): Promise<Done | Restart>;
+  function pass(key: StoredKey, allowRestart: false): Promise<Done>;
+  async function pass(key: StoredKey, allowRestart: boolean): Promise<Done | Restart> {
     const meta = await local.getSyncMeta();
     const lastSyncAt = meta.lastSyncAt;
 
@@ -153,6 +161,11 @@ export function createSyncSession(deps: SyncSessionDeps, options: SyncSessionOpt
     }
   }
 
+  /**
+   * One run under the lock. Sync failures resolve as statuses. Storage failures from the local DataStore (read, save,
+   * markSynced) are not SyncErrors and reject sync(), because the frozen SyncStatus has no code for them; the status
+   * is restored and the single-flight guard released first. Opus will decide on a code later.
+   */
   async function run(): Promise<SyncOutcome> {
     try {
       const key = await keys.load();
@@ -162,13 +175,8 @@ export function createSyncSession(deps: SyncSessionDeps, options: SyncSessionOpt
       if (!provider.isAuthorized()) {
         await provider.authorize();
       }
-      let result = await pass(key, true);
-      if (result.kind === 'restart') {
-        result = await pass(key, false);
-      }
-      if (result.kind === 'restart') {
-        throw new Error('unreachable: the second pass never restarts');
-      }
+      const first = await pass(key, true);
+      const result = first.kind === 'restart' ? await pass(key, false) : first;
       const at: IsoInstant = clock.now();
       await local.markSynced(at);
       const meta = await local.getSyncMeta();
@@ -184,28 +192,23 @@ export function createSyncSession(deps: SyncSessionDeps, options: SyncSessionOpt
   }
 
   /**
-   * Runs under the cross-tab lock. A tab that waited for the lock while another tab finished a successful run (its
-   * lastSyncAt is at or after this request) joins that run instead of repeating it.
+   * Runs under the cross-tab lock. Runs never overlap across tabs and are never joined: a tab that waited for the
+   * lock runs its own full pass after the other finished (idempotent, and it sees that tab's upload). No clock is
+   * compared, so a backwards clock or a same-millisecond request can never turn a sync into a no-op.
    */
-  async function locked(requestedAt: IsoInstant): Promise<SyncOutcome> {
-    return locks.request(SYNC_LOCK_NAME, async () => {
-      const meta = await local.getSyncMeta();
-      if (meta.lastSyncAt !== null && meta.lastSyncAt >= requestedAt) {
-        const joined: SyncStatus = { state: 'idle', pendingChanges: meta.pendingChanges, lastSyncAt: meta.lastSyncAt };
-        return { status: joined, stats: null, purged: 0 };
-      }
-      return run();
-    });
+  function locked(): Promise<SyncOutcome> {
+    return locks.request(SYNC_LOCK_NAME, run);
   }
 
   return {
+    /** Resolves with the outcome of every sync failure; rejects on storage failures (see run). */
     sync(): Promise<SyncOutcome> {
       if (inflight !== null) {
         return inflight;
       }
       const previous = status;
       setStatus({ state: 'syncing' });
-      const started = locked(clock.now()).then(
+      const started = locked().then(
         (outcome) => {
           inflight = null;
           setStatus(outcome.status);

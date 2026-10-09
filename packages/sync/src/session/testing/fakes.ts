@@ -113,9 +113,15 @@ export function createFakeProvider(
       provider.onDownload?.();
       return Promise.resolve(content);
     },
+    // Leniencies fixed to mirror Drive: createFile never overwrites an existing name, and updating or copying a file
+    // that is not there rejects like a Drive 404 (NetworkError). The copy target is overwritten on purpose: it models
+    // SyncProvider.copyFile ("leaves exactly one file named `name`").
     createFile: (name, content) => {
       try {
         enter('createFile', name);
+        if (files.has(name)) {
+          throw new Error(`fake provider: createFile would overwrite ${name}`);
+        }
       } catch (error) {
         return Promise.reject(error as Error);
       }
@@ -124,6 +130,9 @@ export function createFakeProvider(
     updateFile: (file, content) => {
       try {
         enter('updateFile', file.name);
+        if (!files.has(file.name)) {
+          throw new SyncError('NetworkError');
+        }
       } catch (error) {
         return Promise.reject(error as Error);
       }
@@ -132,6 +141,9 @@ export function createFakeProvider(
     copyFile: (file, name) => {
       try {
         enter('copyFile', name);
+        if (!files.has(file.name)) {
+          throw new SyncError('NetworkError');
+        }
       } catch (error) {
         return Promise.reject(error as Error);
       }

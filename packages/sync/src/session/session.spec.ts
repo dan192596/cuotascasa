@@ -8,6 +8,7 @@ import {
   type Uuid,
 } from '@cuotascasa/schema';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createDriveFake } from '../testing/index.ts';
 import { decrypt, deriveStoredKey, encrypt, parseEnvelope, serializeEnvelope } from '../crypto/index.ts';
 import {
   REMOTE_FILE_NAME,
@@ -17,6 +18,7 @@ import {
   type StoredKey,
   type SyncStatus,
 } from '../ports.ts';
+import { createDriveProvider } from './testing/drive-provider.ts';
 import {
   createFakeClock,
   createFakeLocal,
@@ -484,17 +486,45 @@ describe('single flight and status', () => {
     expect(h.local.reads).toBe(2);
   });
 
-  it('coalesces across two tabs sharing the lock manager and the stores', async () => {
+  it('serializes two tabs on the lock manager: strictly one after the other, both upload', async () => {
     const locks = createFakeLocks();
     const first = setup({ locks });
     const second = setup({ locks, provider: first.provider, local: first.local });
     const [a, b] = await Promise.all([first.session.sync(), second.session.sync()]);
-    expect(uploads(first.provider)).toEqual(['createFile:cuotascasa.json']);
-    expect(first.local.reads).toBe(1);
-    expect(first.local.syncedAt).toHaveLength(1);
+    const calls = first.provider.calls.filter((c) => !/^(local|merge|purge)/.test(c));
+    expect(calls).toEqual([
+      // run 1: no remote file yet
+      'findFile:cuotascasa.json',
+      'findFile:cuotascasa.json',
+      'createFile:cuotascasa.json',
+      // run 2 starts only after run 1 finished, and sees its upload
+      'findFile:cuotascasa.json',
+      'downloadFile:cuotascasa.json',
+      'findFile:cuotascasa.json',
+      'copyFile:cuotascasa.prev.json',
+      'updateFile:cuotascasa.json',
+    ]);
+    expect(first.local.reads).toBe(2);
+    expect(first.local.syncedAt).toHaveLength(2);
     expect(a.status.state).toBe('idle');
-    expect(b.status).toEqual({ state: 'idle', pendingChanges: 0, lastSyncAt: NOW });
+    expect(b.status.state).toBe('idle');
     expect(locks.requests).toEqual([SYNC_LOCK_NAME, SYNC_LOCK_NAME]);
+  });
+
+  it('a lastSyncAt in the future does not stop a sync', async () => {
+    const h = setup({ lastSyncAt: '2030-01-01T00:00:00.000Z' as IsoInstant });
+    const outcome = await h.session.sync();
+    expect(h.local.reads).toBe(1);
+    expect(outcome.stats).not.toBeNull();
+    expect(h.provider.calls).toContain('createFile:cuotascasa.json');
+  });
+
+  it('two sequential syncs at the same instant both run', async () => {
+    const h = setup();
+    await h.session.sync();
+    await h.session.sync();
+    expect(h.local.reads).toBe(2);
+    expect(h.local.syncedAt).toEqual([NOW, NOW]);
   });
 
   it('a second tab still runs when the first one failed', async () => {
@@ -525,5 +555,169 @@ describe('single flight and status', () => {
       throw new Error('listener');
     });
     expect((await h.session.sync()).status.state).toBe('idle');
+  });
+});
+
+describe('against the frozen DriveFake', () => {
+  function setupDrive(options: { pending?: number; dataset?: BackupData } = {}) {
+    const drive = createDriveFake({ now: () => NOW });
+    const provider = createDriveProvider(drive);
+    const local = createFakeLocal(
+      options.dataset ?? withLoans(loan(L1, 'Local')),
+      { deviceId: DEVICE_A, lastSyncAt: PREV_SYNC, pendingChanges: options.pending ?? 2 },
+      [],
+    );
+    const session = createSyncSession(
+      { provider, local, keys: createMemoryKeyStore(key), clock: createFakeClock(NOW), locks: createFakeLocks() },
+      { appVersion: 'test-1.2.3', minIterations: ITERATIONS },
+    );
+    return { drive, provider, local, session };
+  }
+  const read = async (drive: ReturnType<typeof createDriveFake>, name: string): Promise<BackupDocument> => {
+    const text = drive.fileByName(name)?.content;
+    expect(text).toBeDefined();
+    const plain = await decrypt(key, parseEnvelope(text as string), { minIterations: ITERATIONS });
+    const parsed = parseBackup(plain);
+    if (!parsed.ok) {
+      throw new Error('not a backup');
+    }
+    return parsed.value.document;
+  };
+  const ops = (drive: ReturnType<typeof createDriveFake>): string[] => drive.requests.map((r) => r.operation);
+
+  it('first sync creates an encrypted cuotascasa.json and no prev file', async () => {
+    const { drive, session } = setupDrive();
+    const outcome = await session.sync();
+    expect(outcome.status.state).toBe('idle');
+    expect(drive.files().map((f) => f.name)).toEqual(['cuotascasa.json']);
+    expect(drive.fileByName('cuotascasa.json')?.content).not.toContain('Banco Ficticio');
+    expect((await read(drive, 'cuotascasa.json')).data.loans.map((l) => l.name)).toEqual(['Local']);
+  });
+
+  it('runs the full pipeline and keeps the previous remote as cuotascasa.prev.json before overwriting', async () => {
+    const { drive, session, local } = setupDrive();
+    drive.seed({ name: 'cuotascasa.json', content: await remoteText(withLoans(loan(L2, 'Remota'))) });
+    const before = drive.fileByName('cuotascasa.json')?.content;
+    await session.sync();
+    expect(drive.fileByName('cuotascasa.prev.json')?.content).toBe(before);
+    expect(drive.files().filter((f) => f.name === 'cuotascasa.json')).toHaveLength(1);
+    expect((await read(drive, 'cuotascasa.json')).data.loans.map((l) => l.name).sort()).toEqual(['Local', 'Remota']);
+    expect(local.dataset.loans).toHaveLength(2);
+    expect(ops(drive).indexOf('files.copy')).toBeLessThan(ops(drive).lastIndexOf('files.update.multipart'));
+    // a second sync updates the existing prev file instead of creating duplicates
+    await session.sync();
+    expect(drive.files().filter((f) => f.name === 'cuotascasa.prev.json')).toHaveLength(1);
+  });
+
+  it('converges on the smallest id when the fake holds duplicate names', async () => {
+    const { drive, session } = setupDrive();
+    drive.seed({ name: 'cuotascasa.json', content: await remoteText(withLoans(loan(L2, 'Primera'))) });
+    drive.seed({ name: 'cuotascasa.json', content: await remoteText(withLoans(loan(L3, 'Segunda'))) });
+    await session.sync();
+    const [first, second] = drive.files();
+    expect((first?.id ?? '') < (second?.id ?? '')).toBe(true);
+    // the smallest id was read and updated; the other file is untouched
+    const plain = await decrypt(key, parseEnvelope(first?.content as string), { minIterations: ITERATIONS });
+    expect(plain).toContain('Primera');
+    expect(plain).toContain('Local');
+    expect(plain).not.toContain('Segunda');
+    expect(second?.version).toBe('1');
+  });
+
+  it('starts over from the download once when the remote version changed', async () => {
+    const { drive, provider, local, session } = setupDrive();
+    drive.seed({ name: 'cuotascasa.json', content: await remoteText(withLoans(loan(L2, 'Remota'))) });
+    const bumped = await remoteText(withLoans(loan(L2, 'Remota'), loan(L3, 'Tercera')));
+    const download = provider.downloadFile.bind(provider);
+    let bumps = 0;
+    provider.downloadFile = async (file) => {
+      const text = await download(file);
+      if (bumps === 0) {
+        bumps += 1;
+        await provider.updateFile(file, bumped);
+      }
+      return text;
+    };
+    await session.sync();
+    expect(ops(drive).filter((o) => o === 'files.get.media')).toHaveLength(2);
+    expect(local.reads).toBe(2);
+    expect(local.dataset.loans.map((l) => l.name).sort()).toEqual(['Local', 'Remota', 'Tercera']);
+    expect((await read(drive, 'cuotascasa.json')).data.loans).toHaveLength(3);
+  });
+
+  for (const operation of ['files.list', 'files.get.media', 'files.copy', 'files.update.multipart'] as const) {
+    it(`a network failure in ${operation} gives offline and leaves the remote untouched`, async () => {
+      const { drive, local, session } = setupDrive({ pending: 5 });
+      drive.seed({ name: 'cuotascasa.json', content: await remoteText(withLoans(loan(L2, 'Remota'))) });
+      const before = drive.fileByName('cuotascasa.json')?.content;
+      drive.failNext({ kind: 'network' }, { operation });
+      const outcome = await session.sync();
+      expect(outcome.status).toEqual({ state: 'offline', pendingChanges: 5 });
+      expect(drive.fileByName('cuotascasa.json')?.content).toBe(before);
+      expect(local.syncedAt).toEqual([]);
+    });
+  }
+
+  it('5xx and 429 give offline; 401 and a non-rate-limit 403 give needs-auth', async () => {
+    for (const status of [500, 503, 429] as const) {
+      const { drive, session } = setupDrive();
+      drive.failNext({ kind: 'status', status });
+      expect((await session.sync()).status.state).toBe('offline');
+    }
+    const a = setupDrive();
+    a.drive.failNext({ kind: 'status', status: 401 });
+    expect((await a.session.sync()).status).toEqual({ state: 'needs-auth' });
+    const b = setupDrive();
+    b.drive.failNext({ kind: 'status', status: 403, reason: 'insufficientFilePermissions' });
+    expect((await b.session.sync()).status).toEqual({ state: 'needs-auth' });
+    const c = setupDrive();
+    c.drive.failNext({ kind: 'status', status: 403 });
+    expect((await c.session.sync()).status.state).toBe('offline');
+  });
+
+  it('a file that vanished before the download is a NetworkError (offline), not InvalidRemote', async () => {
+    const { drive, provider, session } = setupDrive();
+    drive.seed({ name: 'cuotascasa.json', content: await remoteText(withLoans(loan(L2, 'Remota'))) });
+    const download = provider.downloadFile.bind(provider);
+    provider.downloadFile = (file) => {
+      drive.reset();
+      return download(file);
+    };
+    expect((await session.sync()).status).toEqual({ state: 'offline', pendingChanges: 2 });
+  });
+});
+
+describe('consistency after a partial run', () => {
+  it('a passphrase failure on pass 2, after pass 1 saved, uploads nothing and keeps the saved state', async () => {
+    const h = setup();
+    await seedRemote(h.provider, withLoans(loan(L2, 'Remota')));
+    const foreign = await remoteText(withLoans(loan(L3, 'Ajena')), wrongPassphraseKey);
+    let n = 0;
+    h.provider.onDownload = () => {
+      n += 1;
+      if (n === 1) {
+        h.provider.writeRemote(REMOTE_FILE_NAME, foreign);
+      }
+    };
+    const outcome = await h.session.sync();
+    expect(outcome.status).toEqual({ state: 'needs-passphrase', reason: 'WrongPassphraseOrTamper' });
+    expect(h.local.saves).toBe(1);
+    expect(h.local.dataset.loans.map((l) => l.name).sort()).toEqual(['Local', 'Remota']);
+    expect(uploads(h.provider)).toEqual([]);
+    expect(h.local.syncedAt).toEqual([]);
+    expect(h.local.meta.lastSyncAt).toBe(PREV_SYNC);
+  });
+
+  it('copyFile succeeding and updateFile failing leaves cuotascasa.json and lastSyncAt unchanged', async () => {
+    const h = setup();
+    await seedRemote(h.provider, withLoans(loan(L2, 'Remota')));
+    const before = h.provider.content(REMOTE_FILE_NAME);
+    h.provider.failNext('updateFile', 'NetworkError');
+    const outcome = await h.session.sync();
+    expect(outcome.status.state).toBe('offline');
+    expect(h.provider.content(REMOTE_FILE_NAME)).toBe(before);
+    expect(h.provider.content(REMOTE_PREV_FILE_NAME)).toBe(before);
+    expect(h.local.meta.lastSyncAt).toBe(PREV_SYNC);
+    expect(h.local.syncedAt).toEqual([]);
   });
 });
