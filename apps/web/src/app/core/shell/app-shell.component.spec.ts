@@ -1,8 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { describe, expect, it } from 'vitest';
+import type { SettingsStore, StorageHealth } from '../../data/api.ts';
+import { SETTINGS_STORE, STORAGE_HEALTH } from '../../data/tokens.ts';
 import { AppShellComponent } from './app-shell.component.ts';
 
 @Component({ template: '<h1 id="t">Pantalla</h1>' })
@@ -11,9 +13,18 @@ class WithHeadingComponent {}
 @Component({ template: '<p>Sin título</p>' })
 class WithoutHeadingComponent {}
 
+/** Minimal fakes for what the real slot components inject; their internals are tested in their own specs. */
+const fakeSettings: Pick<SettingsStore, 'theme' | 'setTheme'> = {
+  theme: signal('system' as const),
+  setTheme: () => Promise.resolve(),
+};
+const fakeStorageHealth: Pick<StorageHealth, 'safariNonStandalone'> = { safariNonStandalone: signal(false) };
+
 async function mount() {
   TestBed.configureTestingModule({
     providers: [
+      { provide: SETTINGS_STORE, useValue: fakeSettings },
+      { provide: STORAGE_HEALTH, useValue: fakeStorageHealth },
       provideRouter([
         {
           path: 'app',
