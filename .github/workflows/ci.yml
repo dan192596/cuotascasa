@@ -42,6 +42,11 @@ jobs:
         run: pnpm lint
       - name: Typecheck
         run: pnpm typecheck && pnpm exec tsc -p tools/lint-fixtures/tsconfig.json
+      - name: Cache Playwright browsers (keyed by the pinned Playwright version and the lockfile)
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
       - name: Playwright browsers for Vitest browser projects (Chromium and WebKit)
         # A stalled download used to hang until the 30-minute job timeout: cap each attempt and retry.
         timeout-minutes: 16
@@ -74,6 +79,7 @@ jobs:
           WRANGLER_SEND_METRICS: 'false'
         run: node tools/edge/headers/smoke-csp.mjs
       - name: E2E on Chromium and WebKit (W2-11)
+        timeout-minutes: 15
         env:
           WRANGLER_SEND_METRICS: 'false'
         run: pnpm e2e
