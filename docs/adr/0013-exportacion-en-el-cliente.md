@@ -67,3 +67,10 @@ Restricciones: el dinero viaja como string decimal (ADR-0003), Excel guarda núm
 
 - ADR-0003, ADR-0007, ADR-0011, ADR-0012, ADR-0016, ADR-0020.
 - Tarjetas W0-03, W3-15, W4-10, W4-11, W5-06 y W6-01.
+
+## Enmiendas
+
+**Enmienda (2026-10-09, W3).** Precisiones de W3-15 que no cambian la decisión:
+
+- **Despacho por celda.** Los escritores (CSV, Excel y PDF) formatean cada celda según `cell.kind`, nunca según `column.kind`. En las filas de subtotal y de total, una celda de una columna de fecha puede llevar texto (por ejemplo, el año o «Total»), y despachar por columna la formatearía mal.
+- **Neutralización de fórmulas en CSV.** Un campo se neutraliza si empieza por `=`, `+`, `-`, `@`, tabulador, retorno de carro o salto de línea (LF), también cuando esos caracteres van detrás de espacios iniciales, incluidos el espacio duro (NBSP) y el espacio ideográfico (U+3000).

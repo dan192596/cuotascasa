@@ -199,6 +199,8 @@ Se aplica **inmediatamente después de pagar la cuota `k`** (fase 3), así que r
 
   La comisión **no** reduce el saldo y se suma a `totalPaid`.
 
+Un abono no siempre baja el interés total: ver [ALG.METRICS] (**Un abono no garantiza menos interés**).
+
 ### <a id="alg-advance"></a>[ALG.ADVANCE] Adelantar N cuotas (`AdvanceInstallments`)
 
 - **Monto:** `projectCapital(state, N)`, el capital de las cuotas `k+1 … k+N` del calendario **vigente justo antes del evento**.
@@ -245,6 +247,14 @@ Todas comparan un escenario contra su **base**. Por defecto la base es el camino
 - **`totalPaid`** = Σ `total` + Σ abonos + Σ comisiones.
 - **`netSaving`** = `totalPaid` de la base − `totalPaid` del escenario. Incluye los cargos fijos que ya no se pagan y descuenta las comisiones.
 
+<a id="alg-metrics-negative"></a>**Un abono no garantiza menos interés** (dictamen de Opus en W3, 2026-10-09). «Un abono nunca aumenta el interés total» **no** es una invariante de este algoritmo. Hay tres casos en que un abono puede subir el interés total (o los seguros) frente a su base:
+
+- `REDUCE_TERM` con `monthsSaved = −1` ([ALG.PREPAY.REDUCE_TERM]): el calendario derivado tiene una cuota más, que cobra interés y seguros.
+- `REDUCE_INSTALLMENT` ([ALG.PREPAY.REDUCE_INSTALLMENT]): la nueva `level` se redondea a centavos ([ALG.LEVEL]), y con abonos pequeños ese redondeo puede amortizar un poco más lento que la base.
+- `REDUCE_INSTALLMENT` sobre un plazo derivado ([ALG.TERM]): el calendario fijo nuevo puede terminar con una cuota corta (*stub*) que reparte el saldo de otra forma y cobra algo más de interés.
+
+Por eso `interestSaved` y `netSaving` **pueden ser negativos**, y las pantallas deben mostrar la cifra real con su signo, sin recortarla a cero ni ocultarla. Las pruebas de propiedades usan variantes acotadas (tolerancia de un centavo por cuota) y dejan las versiones literales en cuarentena visible (W3-02).
+
 ## <a id="alg-yearly"></a>[ALG.YEARLY] Subtotales anuales
 
 Se agrupa por **año calendario del vencimiento** (`dueDate`). Por año (`year`) se suman `capital`, `interest`, `insurance` (suma de seguros), `fixedCharges`, `prepayments` (abonos aplicados), `commissions` y `total`; `total` es la suma del `total` de las filas, sin abonos ni comisiones. Un año sin cuotas no aparece.
@@ -260,16 +270,22 @@ Se agrupa por **año calendario del vencimiento** (`dueDate`). Por año (`year`)
   - Una meta `MAX_INSTALLMENT` con valor negativo está mal formada: se lanza `InfeasibleGoalError` sin `k`. Con `0.00` es válida.
 
 **Método:**
-- Bisección sobre centavos enteros en `[1, closing_k × 100]`: con `closing_k`, la prueba liquida en `k`. La meta es monótona respecto del monto.
+- Bisección sobre centavos enteros en `[1, closing_k × 100]`: con `closing_k`, la prueba liquida en `k`. El predicado de la búsqueda es **«cumple la meta o lanza `NegativeAmortizationError`»**, que es monótono respecto del monto (ver **Pruebas que lanzan**).
 - La búsqueda **no aplica comisión**. Si el usuario agrega una comisión al abono resultante, las métricas se recalculan.
 - Cada prueba agrega al camino base un `Prepayment` con fecha `d`, sin comisión y con el modo de la meta. En [ALG.EVENTS.ORDER] va por su fecha; si empata en fecha con un evento de la fase 3 del camino base, va después de él.
 
 **Resultado:** `GoalSeekResult` (nunca se lanza excepción por una meta inalcanzable):
 - **`ALREADY_MET`:** la meta ya se cumple con monto 0.
-- **`FOUND{ amount, metrics, isPayoff }`:** el **mínimo** monto, al centavo, que cumple la meta; con un centavo menos ya no se cumple. `isPayoff` indica que el monto liquida el préstamo: `amount = closing_k`.
+- **`FOUND{ amount, metrics, isPayoff }`:** el **mínimo** monto, al centavo, que cumple el predicado de la búsqueda; con un centavo menos ya no se cumple. Si ese mínimo es una prueba que lanza, el resultado es la liquidación: `amount = closing_k` e `isPayoff = true`. `isPayoff` es **literal**: vale `true` si y solo si `amount = closing_k` (ver **`isPayoff` literal**).
 - **`INFEASIBLE{ payoffAmount, reason }`:** ni liquidando en `k` se cumple; `payoffAmount = closing_k` y `reason = GOAL_DATE_BEFORE_PREPAYMENT`.
 
 **Alcance de `INFEASIBLE`.** Con `FINISH_BY` ocurre si y solo si la fecha meta es anterior al vencimiento de `k`. Con `MAX_INSTALLMENT` nunca ocurre, porque la liquidación en `k` siempre cumple la meta; si la meta es menor que los cargos fijos de la cuota `k+1`, el resultado es `FOUND` con `isPayoff`.
+
+<a id="alg-goal-throws"></a>**Pruebas que lanzan** (dictamen de Opus en W3, 2026-10-09). Una prueba de la búsqueda puede lanzar `NegativeAmortizationError` aunque el camino base se calcule bien. Ocurre con `MAX_INSTALLMENT` (modo `REDUCE_INSTALLMENT`) cuando el camino base tiene un `RateChange` posterior a `k` con plazo derivado (`KEEP_INSTALLMENT_ADJUST_TERM` o `BANK_INSTALLMENT`). Con `REDUCE_INSTALLMENT`, la nueva `level` y el saldo que llega al cambio de tasa bajan casi en la misma proporción que el saldo, así que la relación entre `level` y el cargo financiero del camino base se conserva. Solo el redondeo a centavos la rompe, y eso pasa con **saldos residuales diminutos**, es decir, con montos de prueba muy cercanos a `closing_k`: la `level` de unos pocos centavos ya no cubre el cargo con las tasas nuevas y [ALG.RATE.KEEP_INSTALLMENT] lanza. Por eso una prueba que lanza cuenta como **cumplida** para la búsqueda: más monto deja menos saldo residual y termina en la liquidación, que siempre cumple. Si el monto mínimo para ese predicado es una prueba que lanza, el resultado es `FOUND` con la liquidación (`amount = closing_k`, `isPayoff = true`), que no lanza porque no deja cuotas. `FINISH_BY` (modo `REDUCE_TERM`) **nunca** lanza así: `level` no cambia y el saldo baja, así que el cargo de cada cuota posterior es menor o igual que en el camino base, que ya amortizaba.
+
+<a id="alg-goal-payoff"></a>**`isPayoff` literal** (dictamen de Opus en W3, 2026-10-09). `isPayoff` describe el monto, no el final del préstamo: es `true` si y solo si `amount = closing_k`. Un `Prepayment` del camino base en la misma `k` pero con fecha posterior a `d` va después de la prueba en [ALG.EVENTS.ORDER] y puede liquidar el préstamo después de una prueba menor que `closing_k`. En ese caso el préstamo termina en `k`, el resultado es `FOUND` con ese monto menor e `isPayoff = false`.
+
+<a id="alg-goal-monotone"></a>**Monotonía y mínimo** (dictamen de Opus en W3, 2026-10-09). Con saldos residuales diminutos, «cumple la meta» por sí sola puede dejar de ser monótona al centavo, porque el redondeo de `level` y de los cargos pesa más que el monto (observación de W3-03). Con pruebas que lanzan, además, el predicado sin ellas tendría huecos. El predicado de la búsqueda, «cumple la meta o lanza», es el que rige: la bisección devuelve su **mínimo global** al centavo, y ese es el resultado de `FOUND`.
 
 **`metrics` de `FOUND`.** Son las de [ALG.METRICS] del camino base con el abono encontrado, comparado con el mismo camino base sin el abono.
 

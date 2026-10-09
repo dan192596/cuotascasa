@@ -481,7 +481,7 @@ describe('validation-only errors ([ALG.VALIDATE] modeled path fails)', () => {
     const deltas = projection.paths()!.realDelta.perAnchor;
     expect(anchors).toHaveLength(2);
     anchors.forEach((anchor, index) => expect(anchor).toMatchObject(deltas[index]!));
-    expect(anchors.some((anchor) => (anchor.status as string) === 'UNVALIDATED' && anchor.cause === null)).toBe(true);
+    expect(anchors.some((anchor) => anchor.status === 'UNVALIDATED' && anchor.cause === null)).toBe(true);
   });
 
   it('a validation-only error keeps the loan computed and its validation UNVALIDATED', () => {

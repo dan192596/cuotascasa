@@ -655,8 +655,8 @@ describe('reload edge cases', () => {
   });
 });
 
-describe('data stores unavailable', () => {
-  it('stays not ready and rejects writes with STORAGE', async () => {
+describe('DATA_STORE is required', () => {
+  it('fails fast at injection when no DataStore is provided (W3 close: provideDataStores of W3-10 always provides it)', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
@@ -664,10 +664,7 @@ describe('data stores unavailable', () => {
         { provide: STORAGE_HEALTH, useValue: { requestPersist: () => Promise.resolve(true) } },
       ],
     });
-    const loans = TestBed.inject(LOANS_STORE);
-    expect(loans.ready()).toBe(false);
-    await expectDataError(loans.create(sampleLoan()), 'STORAGE');
-    expect(loans.loans()).toEqual([]);
+    expect(() => TestBed.inject(LOANS_STORE)).toThrow(/DATA_STORE|No provider/);
   });
 });
 

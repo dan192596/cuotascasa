@@ -18,7 +18,6 @@ import type {
   Paths,
   Schedule,
   ScheduleRow,
-  TrafficLight,
   ValidationStatus,
   YearlySubtotal,
 } from '@cuotascasa/domain';
@@ -148,7 +147,8 @@ export interface LoanValidation {
 
 /** Spec §9 «Real Δ por ancla»: the domain AnchorRealDelta plus its traffic light and cause ([ALG.VALIDATE]). */
 export interface AnchorDelta extends AnchorRealDelta {
-  readonly status: TrafficLight;
+  /** UNVALIDATED (cause null) when the modeled path of [ALG.VALIDATE] does not amortize (Opus ruling, W3-01). */
+  readonly status: ValidationStatus;
   readonly cause: DeltaCause | null;
 }
 

@@ -9,7 +9,6 @@ import type {
   Money,
   Paths,
   ScheduleRow,
-  TrafficLight,
   ValidationStatus,
 } from '@cuotascasa/domain';
 import type { Uuid } from '@cuotascasa/schema';
@@ -71,7 +70,7 @@ describe('data/api.ts LoanProjectionService (spec §9 «Valores derivados»)', (
     expectTypeOf<LoanProjection['paidInstallments']>().toEqualTypeOf<Signal<ReadonlySet<number>>>();
     expectTypeOf<LoanProjection['realDeltaPerAnchor']>().toEqualTypeOf<Signal<readonly AnchorDelta[]>>();
     expectTypeOf<AnchorDelta>().toExtend<AnchorRealDelta>();
-    expectTypeOf<AnchorDelta['status']>().toEqualTypeOf<TrafficLight>();
+    expectTypeOf<AnchorDelta['status']>().toEqualTypeOf<ValidationStatus>();
     expectTypeOf<AnchorDelta['cause']>().toEqualTypeOf<DeltaCause | null>();
     expectTypeOf<LoanProjection['realDeltaPerComponent']>().toEqualTypeOf<Signal<readonly ComponentRealDelta[]>>();
     expectTypeOf<LoanProjection['paths']>().toEqualTypeOf<Signal<Paths | null>>();

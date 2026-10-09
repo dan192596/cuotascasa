@@ -32,9 +32,14 @@ describe('wrangler.jsonc', () => {
   });
 
   it('carries no account id, zone, route or domain (set at deploy time)', () => {
-    for (const key of ['account_id', 'routes', 'route', 'zone_id', 'workers_dev', 'env']) {
+    for (const key of ['account_id', 'routes', 'route', 'zone_id', 'env']) {
       expect(config).not.toHaveProperty(key);
     }
+  });
+
+  it('disables the workers.dev subdomain and preview URLs (only the custom domain serves the site, W3-17)', () => {
+    expect(config).toHaveProperty('workers_dev', false);
+    expect(config).toHaveProperty('preview_urls', false);
   });
 });
 

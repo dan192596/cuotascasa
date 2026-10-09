@@ -1,4 +1,4 @@
-import { type EnvironmentProviders, inject, Injector, makeEnvironmentProviders } from '@angular/core';
+import { type EnvironmentProviders, inject, makeEnvironmentProviders } from '@angular/core';
 import { CLOCK } from '../data-layer.tokens.ts';
 import {
   LOAN_EVENTS_STORE,
@@ -19,15 +19,14 @@ export function provideEngineFacade(): EnvironmentProviders {
     {
       provide: LOAN_PROJECTION_SERVICE,
       useFactory: () => {
-        const injector = inject(Injector);
+        const clock = inject(CLOCK);
         return new EngineFacade({
           loans: inject(LOANS_STORE),
           events: inject(LOAN_EVENTS_STORE),
           balances: inject(REPORTED_BALANCES_STORE),
           payments: inject(PAYMENTS_STORE),
           scenarios: inject(SCENARIOS_STORE),
-          // TODO(W3 close): W3-10 is not on main yet; switch to `clock: () => clock` with inject(CLOCK) to fail fast.
-          clock: () => injector.get(CLOCK),
+          clock: () => clock,
         });
       },
     },

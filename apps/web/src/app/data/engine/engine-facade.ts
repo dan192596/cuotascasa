@@ -40,7 +40,7 @@ export interface EngineFacadeDeps {
   readonly balances: ReportedBalancesStore;
   readonly payments: PaymentsStore;
   readonly scenarios: ScenariosStore;
-  /** Resolved on first read of asOf, so the facade can be created before the Clock is provided. */
+  /** Read on every evaluation of asOf; provideEngineFacade() injects the CLOCK eagerly (W3 close). */
   readonly clock: () => Clock;
 }
 

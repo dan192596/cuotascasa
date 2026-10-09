@@ -79,6 +79,26 @@ export type EventFormValue =
 
 Mientras `realEndDate()` es `null`, la anfitriona pasa la `endDate` del plan original: `buildSchedule(toLoanTerms(loan)).endDate`.
 
+### 3.1 Registro de `ui/` y `core/` (cierre de W3)
+
+Componentes y pipes que W3 fusionó en `ui/` y `core/`, para que W4 y W5 los usen sin duplicarlos. Es un **registro**, no un contrato congelado: no tienen `*.contract.spec.ts` y su dueño puede ampliarlos con una tarjeta. Una línea por pieza (selector o nombre · archivo bajo `apps/web/src/app/` · tarjeta).
+
+- `cc-house-meter` · `ui/house-meter/house-meter.component.ts` · W3-08: medidor de capital pagado; entradas `percent` (requerida, string decimal) y `label`.
+- `cc-status-chip` · `ui/feedback/status-chip.component.ts` · W3-08: chip de semáforo; entrada `status` (`GREEN`, `AMBER`, `RED` o `UNVALIDATED`, requerida) y `live` (sin `role="status"` por defecto).
+- `cc-banner` · `ui/feedback/banner.component.ts` · W3-08: aviso en línea; entradas `tone`, `dismissible` y `dismissLabel`; salida `dismissed`.
+- `cc-empty-state` · `ui/feedback/empty-state.component.ts` · W3-08: estado vacío con `heading` (requerida) y contenido proyectado.
+- `cc-confirm-dialog` · `ui/feedback/confirm-dialog.component.ts` · W3-08: diálogo de confirmación; entradas `open`, `heading`, `message`, `confirmLabel`, `cancelLabel` y `destructive`; salidas `confirmed` y `cancelled`.
+- `Announcer` · `ui/feedback/announcer.service.ts` · W3-08: servicio para anunciar resultados a lectores de pantalla (`polite` o `assertive`).
+- `cc-ledger-table` · `ui/ledger-table/ledger-table.component.ts` · W3-07: grilla de teclado con celdas editables; entradas `columns` y `rows` (requeridas), `label` y `stickyColumns`; salida `cellEdit`.
+- `cc-money-input` · `ui/money-input/money-input.component.ts` · W3-06: control de Signal Forms para montos (modelo `value`, string decimal); entrada `currency`.
+- `cc-date-input` · `ui/money-input/date-input.component.ts` · W3-06: control de Signal Forms para fechas `dd/mm/aaaa` (modelo `LocalDate`).
+- `cc-rate-input` · `ui/money-input/rate-input.component.ts` · W3-06: control de Signal Forms: el usuario escribe un porcentaje y el modelo es la fracción decimal (`7.25` → `0.0725`).
+- Pipe `money` · `ui/format/money.pipe.ts` · W3-06: `Q 1,234.56`, `US$ 1,234.56` y negativos `-Q 1,234.50`.
+- Pipe `localDate` · `ui/format/local-date.pipe.ts` · W3-06: fechas `dd/mm/aaaa`.
+- Pipe `rate` · `ui/format/rate.pipe.ts` · W3-06: muestra una fracción como porcentaje (`0.0126` → `1.26 %`).
+- `cc-error-toast` · `core/errors/error-toast.component.ts` · W3-09: aviso ligero de errores globales (sin `MatSnackBar`, ADR-0012); lo aloja el shell.
+- `cc-update-prompt` · `core/pwa/update-prompt.component.ts` · W3-14: aviso propio de versión nueva (ya en la tabla de arriba; sin `MatSnackBar`).
+
 ## 4. Providers
 
 | Función | Archivo | Dónde se instala | Implementa | Stub inerte |

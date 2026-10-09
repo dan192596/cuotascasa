@@ -68,7 +68,7 @@ export function toUpdate<T extends BaseRecord>(record: T, changes: Partial<T> = 
  */
 @Injectable()
 export class StoresRuntime {
-  private readonly dataStore = inject(DATA_STORE, { optional: true });
+  private readonly dataStore = inject(DATA_STORE);
   private readonly health = inject(STORAGE_HEALTH);
   private tail: Promise<unknown> = Promise.resolve();
   private persistRequested = false;
@@ -142,9 +142,6 @@ export class StoresRuntime {
   }
 
   private async requireStore(): Promise<DataStore> {
-    if (!this.dataStore) {
-      throw new DataError('STORAGE');
-    }
     try {
       return await this.dataStore;
     } catch {
@@ -153,9 +150,6 @@ export class StoresRuntime {
   }
 
   private async start(): Promise<void> {
-    if (!this.dataStore) {
-      return;
-    }
     const store = await this.requireStore();
     if (this.destroyed) {
       return;

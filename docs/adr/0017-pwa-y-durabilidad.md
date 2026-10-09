@@ -76,3 +76,7 @@ Además, conviene que la app funcione sin conexión, y la landing debe seguir si
 
 - ADR-0001, ADR-0008, ADR-0011, ADR-0012, ADR-0022, ADR-0023.
 - Tarjetas W3-13, W3-14, W5-07, W6-02 y W6-04.
+
+## Enmiendas
+
+**Enmienda (2026-10-09, W3): pregunta abierta.** En iOS, los navegadores distintos de Safari (Chrome, Firefox, Edge) también usan WebKit y sufren la misma limpieza de almacenamiento de ITP. Aun así, el aviso de la decisión 6 se muestra solo en Safari, como piden la tarjeta W3-13 y este ADR. Se revisa en los chequeos manuales de W6: si se confirma el mismo riesgo, se amplía la detección a todos los navegadores de iOS que no corren como app instalada.
