@@ -9,6 +9,8 @@ export const DEFAULT_PORT = 8799;
 /** Headers every response must carry, 404s included (`/*` rule of `_headers`). */
 const SECURITY_HEADERS = {
   'x-content-type-options': 'nosniff',
+  'x-frame-options': 'DENY',
+  'strict-transport-security': 'max-age=31536000',
   'referrer-policy': 'strict-origin-when-cross-origin',
   'permissions-policy': /camera=\(\)/,
   'content-security-policy': "frame-ancestors 'none'",
@@ -91,7 +93,7 @@ export const ROUTES = [
     path: '/index.csr',
     status: 200,
     bodyIncludes: CSR_SHELL,
-    headers: { ...SECURITY_HEADERS, ...HTML },
+    headers: { ...SECURITY_HEADERS, ...NO_CACHE, ...HTML },
     note: 'rewrite target; reachable directly',
   },
   {
@@ -114,6 +116,20 @@ export const ROUTES = [
     bodyIncludes: [NOT_FOUND_TITLE],
     headers: { ...SECURITY_HEADERS, ...HTML },
     note: 'unknown route: real 404 with the 404 page',
+  },
+  {
+    path: '/nope/',
+    status: 404,
+    bodyIncludes: [NOT_FOUND_TITLE],
+    headers: { ...SECURITY_HEADERS, ...HTML },
+    note: 'trailing slash on an unknown route is still a 404',
+  },
+  {
+    path: '/Privacidad',
+    status: 404,
+    bodyIncludes: [NOT_FOUND_TITLE],
+    headers: { ...SECURITY_HEADERS, ...HTML },
+    note: 'routes are case-sensitive',
   },
   { path: '/ngsw.json', status: 200, headers: { ...SECURITY_HEADERS, ...NO_CACHE }, note: 'service worker manifest' },
   {

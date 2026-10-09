@@ -190,6 +190,8 @@ describe('runChecks against a fake origin', () => {
   it('does not follow redirects, so a 307 is observed as a 307', async () => {
     const base = await listen((req, res) => {
       res.setHeader('x-content-type-options', 'nosniff');
+      res.setHeader('x-frame-options', 'DENY');
+      res.setHeader('strict-transport-security', 'max-age=31536000');
       res.setHeader('referrer-policy', 'strict-origin-when-cross-origin');
       res.setHeader('permissions-policy', 'camera=()');
       res.setHeader('content-security-policy', "frame-ancestors 'none'");

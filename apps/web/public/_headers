@@ -34,6 +34,8 @@
   Cache-Control: no-cache
 /app/*
   Cache-Control: no-cache
+/index.csr
+  Cache-Control: no-cache
 /index.csr.html
   Cache-Control: no-cache
 /ngsw.json

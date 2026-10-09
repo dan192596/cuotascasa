@@ -33,10 +33,10 @@ La evidencia sale de `wrangler dev --local` (wrangler 4.147.0, motor local `work
 | `/privacidad/` | 307 a `/privacidad` | |
 | `/app`, `/app/`, `/app/prestamos/x/tabla` | 200, contenido de `index.csr.html` | la barra final dentro de `/app` se reescribe, no se redirige |
 | `/app/missing.js` | **200 con HTML** de la app | un archivo inexistente con aspecto de activo bajo `/app` no da 404; el navegador lo recibe como HTML. Aceptado: los activos reales cuelgan de la raíz, no de `/app` |
-| `/app/<archivo real>` (ej. `/app/real.txt`) | 200 con el HTML de la app | **el rewrite gana al archivo existente**: no puede haber assets bajo `/app/` |
+| `/app/<archivo real>` (ej. `/app/real.txt`) | 200 con el HTML de la app (medido a mano con un archivo añadido a una copia del build; `edge:check` no lo afirma porque el build no tiene archivos bajo `/app/`) | **el rewrite gana al archivo existente**: no puede haber assets bajo `/app/` |
 | `/application`, `/nope`, `/nope/` | 404 con la página 404 | `/app` no captura prefijos parecidos |
 | `/index.csr.html` | 307 a `/index.csr` | `html_handling` quita `.html` |
-| `/index.csr` | 200 | destino del rewrite, accesible directamente |
+| `/index.csr` | 200, `no-cache` | destino del rewrite, accesible directamente |
 | `/Privacidad` | 404 | las rutas distinguen mayúsculas |
 | hash `main-*.js`, `styles-*.css` | 200, `public, max-age=31536000, immutable` | |
 | `ngsw.json`, `manifest.webmanifest` | 200, `no-cache` | |
@@ -72,8 +72,9 @@ Otros hechos: las reglas de `_headers` se evalúan contra la **URL pedida**, no 
 
 ## Verificación
 
-- `pnpm build && pnpm edge:check` (`tools/edge/check-routing.mjs`): 15 peticiones, sin Cloudflare ni red.
+- `pnpm build && pnpm edge:check` (`tools/edge/check-routing.mjs`): 17 peticiones, sin Cloudflare ni red.
 - `pnpm edge:check -- --base-url https://<subdominio>` contra un origen desplegado.
+- La tabla afirma también `X-Frame-Options: DENY` y el HSTS exacto de `_headers`; `wrangler dev --local` los entrega sin cambios.
 - `tools/edge/edge.spec.ts` (Vitest) valida `wrangler.jsonc`, `_redirects`, `_headers`, la tabla y el staging del 404.
 
 ## Referencias

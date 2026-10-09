@@ -37,6 +37,8 @@ async function waitUntilReady(baseUrl, child) {
 export async function startEdge({ port = DEFAULT_PORT, assets, log = console.error } = {}) {
   const staged = stageAssets(assets ? resolve(assets) : BUILD_DIR);
   log(`edge: ${staged.note}`);
+  // Synchronous, so a crash or process.exit() cannot leave the temporary copy behind.
+  if (staged.staged) process.on('exit', () => rmSync(staged.dir, { recursive: true, force: true }));
   const args = ['dev', '--local', '--ip', '127.0.0.1', '--port', String(port)];
   if (staged.staged || assets) args.push('--assets', staged.dir);
   const child = spawn(resolve(ROOT, 'node_modules/.bin/wrangler'), args, {
