@@ -1,27 +1,32 @@
-import { compareMoney, minMoney, moneySub, periodicRate, ZERO_MONEY } from '../../money/index.ts';
+import { compareMoney, dec, halfUp2, minMoney, moneySub, periodicRate, ZERO_MONEY } from '../../money/index.ts';
 import { isStubHandler } from '../../stub.ts';
 import type { EngineContext, EventHandler, EventHandlerRegistry } from '../../types/engine.ts';
 import type { DomainEventType } from '../../types/events.ts';
 import { InvalidInputError } from '../../types/primitives.ts';
 
 /**
- * Handler de PRUEBA de un `Prepayment` `REDUCE_TERM` sin comisión ([ALG.PREPAY.CAP], [ALG.PREPAY.REDUCE_TERM]).
+ * Handler de PRUEBA de un `Prepayment` `REDUCE_TERM`, con o sin comisión ([ALG.PREPAY.CAP], [ALG.PREPAY.REDUCE_TERM],
+ * [ALG.PREPAY.COMMISSION]).
  * Existe solo para que las pruebas de W2-05 no dependan del código de W2-04: no es el handler del producto.
  */
 export const testPrepaymentHandler: EventHandler<'Prepayment'> = ({ ctx, event, state, row }) => {
-  if (row === null || event.mode !== 'REDUCE_TERM' || event.commission !== undefined) {
-    throw new InvalidInputError(
-      'INVALID_EVENT',
-      'The test prepayment handler only supports REDUCE_TERM without commission',
-    );
+  if (row === null || event.mode !== 'REDUCE_TERM') {
+    throw new InvalidInputError('INVALID_EVENT', 'The test prepayment handler only supports REDUCE_TERM');
   }
   const applied = minMoney(event.amount, moneySub(row.closing, row.prepayment));
   const balance = moneySub(state.balance, applied);
   const payoff = compareMoney(balance, ZERO_MONEY) <= 0;
   const reduced = { ...state, balance, termMode: 'DERIVED' as const };
+  const { commission } = event;
+  const charged =
+    commission === undefined || compareMoney(applied, ZERO_MONEY) <= 0
+      ? ZERO_MONEY
+      : commission.kind === 'FLAT'
+        ? commission.amount
+        : halfUp2(dec(applied).times(dec(commission.rate)));
   return {
     state: payoff ? reduced : { ...reduced, term: state.k + ctx.remainingTerm(reduced) },
-    rowEffect: { prepayment: applied, payoff },
+    rowEffect: { prepayment: applied, commission: charged, payoff },
   };
 };
 
