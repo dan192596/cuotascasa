@@ -52,6 +52,8 @@ interface State {
 interface Scope {
   readonly state: State;
   readonly touched: Set<EntityKey>;
+  /** Set once the transaction has ended; its repositories then reject. */
+  done: boolean;
 }
 
 /** Structural view of a zod schema, so this package never imports zod (ADR-0010 §5). */
@@ -136,14 +138,31 @@ class InMemoryDataStore implements DataStore {
   transaction<R>(work: (tx: DataStoreRepositories) => Promise<R>): Promise<R> {
     return this.enqueue(async () => {
       const scope = this.openScope();
+      const guard = (): void => {
+        this.ensureOpen();
+        if (scope.done) {
+          throw new PersistenceError('CLOSED', 'The transaction has ended');
+        }
+      };
       // The transaction's repositories read and write the scope's private copy, so they see their own writes.
+      // They are async so that any failure is a rejected promise, never a synchronous throw.
       const tx = this.buildRepositories(
-        (reader) => Promise.resolve(structuredClone(reader(scope.state))),
-        (writer) => Promise.resolve(structuredClone(writer(scope))),
+        async (reader) => {
+          guard();
+          return structuredClone(reader(scope.state));
+        },
+        async (writer) => {
+          guard();
+          return structuredClone(writer(scope));
+        },
       );
-      const result = await work(tx);
-      this.commit(scope, 'write');
-      return result;
+      try {
+        const result = await work(tx);
+        this.commit(scope, 'write');
+        return result;
+      } finally {
+        scope.done = true;
+      }
     });
   }
 
@@ -262,10 +281,11 @@ class InMemoryDataStore implements DataStore {
     }));
   }
 
-  close(): Promise<void> {
+  async close(): Promise<void> {
     this.closed = true;
     this.listeners.clear();
-    return Promise.resolve();
+    // Let writes that were already queued finish.
+    await this.tail;
   }
 
   private ensureOpen(): void {
@@ -283,16 +303,16 @@ class InMemoryDataStore implements DataStore {
 
   /** Appends a task to the serialization queue; a failure does not poison later tasks. */
   private enqueue<R>(task: () => R | Promise<R>): Promise<R> {
-    const run = this.tail.then(() => {
-      this.ensureOpen();
-      return task();
-    });
+    if (this.closed) {
+      return Promise.reject(new PersistenceError('CLOSED', 'DataStore is closed'));
+    }
+    const run = this.tail.then(task);
     this.tail = run.catch(() => undefined);
     return run;
   }
 
   private openScope(): Scope {
-    return { state: structuredClone(this.state), touched: new Set() };
+    return { state: structuredClone(this.state), touched: new Set(), done: false };
   }
 
   /** One store-level write: it is its own transaction, committed only when `writer` does not throw. */
@@ -315,7 +335,15 @@ class InMemoryDataStore implements DataStore {
     const targets = [...this.listeners];
     setTimeout(() => {
       for (const listener of targets) {
-        listener(event);
+        // Skip listeners removed since the commit; one failing listener must not affect the others.
+        if (!this.listeners.has(listener)) {
+          continue;
+        }
+        try {
+          listener(event);
+        } catch {
+          // Isolated on purpose.
+        }
       }
     }, 0);
   }
