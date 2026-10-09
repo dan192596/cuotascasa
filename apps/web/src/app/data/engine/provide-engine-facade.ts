@@ -26,6 +26,7 @@ export function provideEngineFacade(): EnvironmentProviders {
           balances: inject(REPORTED_BALANCES_STORE),
           payments: inject(PAYMENTS_STORE),
           scenarios: inject(SCENARIOS_STORE),
+          // TODO(W3 close): W3-10 is not on main yet; switch to `clock: () => clock` with inject(CLOCK) to fail fast.
           clock: () => injector.get(CLOCK),
         });
       },

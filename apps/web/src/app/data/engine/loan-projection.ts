@@ -11,7 +11,8 @@ import {
   type Money,
   type Paths,
   type ScheduleRow,
-  validateAgainstReportedBalance,
+  type TrafficLight,
+  moneyIsZero,
   yearlySubtotals,
   ZERO_MONEY,
   compareLocalDate,
@@ -25,7 +26,7 @@ import type {
   PathYearlySubtotals,
   PercentString,
 } from '../api.ts';
-import { type Computation, computeProjection, type ProjectionInputs } from './compute-projection.ts';
+import { type Computation, computeProjection, type ProjectionInputs, validateAnchor } from './compute-projection.ts';
 import { currentInstallmentOf, percentPaidOf } from './derive.ts';
 
 /** The store signals one projection reads. */
@@ -156,7 +157,7 @@ export class LoanProjectionImpl implements LoanProjection {
     this.activeScenarioEndDate = computed(() => this.paths()?.scenario?.endDate ?? null);
     this.validation = computed(() => {
       const latest = okOf()?.latestAnchor ?? null;
-      return latest === null
+      return latest === null || latest.result === null
         ? UNVALIDATED
         : {
             status: latest.result.status,
@@ -173,7 +174,7 @@ export class LoanProjectionImpl implements LoanProjection {
       }
       return (
         compareLocalDate(this.asOf(), current.paths.real.endDate) > 0 ||
-        current.latestAnchor?.event.balance === ZERO_MONEY
+        (current.latestAnchor !== null && moneyIsZero(current.latestAnchor.event.balance))
       );
     });
     this.cutoffK = computed(() => this.paths()?.cutoffK ?? 0);
@@ -186,14 +187,12 @@ export class LoanProjectionImpl implements LoanProjection {
       if (current === null) {
         return NO_ANCHORS;
       }
-      // buildPaths already accepted every anchor, so validating each one against its own k cannot raise.
       return current.paths.realDelta.perAnchor.map((delta) => {
-        const result = validateAgainstReportedBalance({
-          terms: current.terms,
-          realEvents: current.realEvents,
-          reported: current.anchorsById.get(delta.eventId)!,
-        });
-        return { ...delta, status: result.status, cause: result.cause };
+        const result = validateAnchor(current.terms, current.realEvents, current.anchorsById.get(delta.eventId)!);
+        // Opus ruling (W3-01 triage, [ALG.VALIDATE] gap): a failing modeled path leaves the delta and has no status.
+        // api.ts types status as TrafficLight; the value 'UNVALIDATED' is out of that type and needs a contract card.
+        const status = result === null ? ('UNVALIDATED' as unknown as TrafficLight) : result.status;
+        return { ...delta, status, cause: result === null ? null : result.cause };
       });
     });
     this.realDeltaPerComponent = computed(() => okOf()?.paths.realDelta.perComponent ?? NO_COMPONENTS);

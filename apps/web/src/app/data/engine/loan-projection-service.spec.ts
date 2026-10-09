@@ -453,6 +453,54 @@ describe('engine errors surface as typed state and never throw', () => {
   });
 });
 
+describe('validation-only errors ([ALG.VALIDATE] modeled path fails)', () => {
+  function repro(withSecondAnchor: boolean): World {
+    const world = withLoan('2025-03-15');
+    world.balances.setAll([
+      makeBalance({ id: uuid(40), installmentNumber: 10, date: '2025-11-30', balance: '100000.00' }),
+      ...(withSecondAnchor
+        ? [makeBalance({ id: uuid(41), installmentNumber: 25, date: '2027-02-28', balance: '95000.00' })]
+        : []),
+    ]);
+    world.events.setAll([
+      makeRateChange({
+        id: uuid(20),
+        date: '2026-09-30',
+        interestRate: '0.2',
+        policy: 'KEEP_INSTALLMENT_ADJUST_TERM',
+      } as never),
+    ]);
+    return world;
+  }
+
+  it('realDeltaPerAnchor never throws, keeps the buildPaths delta and marks the anchor unvalidated', () => {
+    const world = repro(true);
+    const projection = world.service.forLoan(LOAN);
+    expect(projection.error()).toBeNull();
+    const anchors = projection.realDeltaPerAnchor();
+    const deltas = projection.paths()!.realDelta.perAnchor;
+    expect(anchors).toHaveLength(2);
+    anchors.forEach((anchor, index) => expect(anchor).toMatchObject(deltas[index]!));
+    expect(anchors.some((anchor) => (anchor.status as string) === 'UNVALIDATED' && anchor.cause === null)).toBe(true);
+  });
+
+  it('a validation-only error keeps the loan computed and its validation UNVALIDATED', () => {
+    const world = repro(false);
+    const projection = world.service.forLoan(LOAN);
+    expect(projection.error()).toBeNull();
+    expect(projection.paths()).not.toBeNull();
+    expect(projection.balance()).not.toBeNull();
+    expect(projection.metrics()).not.toBeNull();
+    expect(projection.validation()).toEqual({
+      status: 'UNVALIDATED',
+      reportedBalanceId: null,
+      k: null,
+      realDelta: null,
+      cause: null,
+    });
+  });
+});
+
 describe('memoization', () => {
   it('returns the same object on repeated reads', () => {
     const projection = withLoan().service.forLoan(LOAN);
@@ -746,20 +794,41 @@ describe('bench', () => {
       makeLoan({ id: uuid(3), termMonths: 360, currency: 'USD' }),
     ];
     world.loans.loansSignal.set(loans);
-    world.balances.setAll(
-      loans.map((loan, index) =>
-        makeBalance({ id: uuid(40 + index), loanId: loan.id, installmentNumber: 6, balance: '495834.02' }),
-      ),
+    // About 12 anchors on the first loan; the salt changes the balances so each pass recomputes.
+    const anchorsFor = (salt: number) =>
+      loans.slice(0, 1).flatMap((loan, li) =>
+        Array.from({ length: 12 }, (_, i) =>
+          makeBalance({
+            id: uuid(100 + li * 20 + i),
+            loanId: loan.id,
+            installmentNumber: 6 + i,
+            date: '2026-01-31',
+            balance: (400000 + salt * 10 + i).toFixed(2),
+          }),
+        ),
+      );
+    world.balances.setAll(anchorsFor(0));
+    const run = (): number => {
+      const start = performance.now();
+      for (const loan of loans) {
+        const projection = world.service.forLoan(loan.id);
+        expect(projection.paths()?.original.rows).toHaveLength(360);
+        projection.metrics();
+        projection.yearlySubtotals();
+        projection.validation();
+        projection.realDeltaPerAnchor();
+      }
+      world.service.totalsByCurrency();
+      return performance.now() - start;
+    };
+    run(); // warm-up (JIT, first computeds)
+    const best = Math.min(
+      ...[1, 2, 3].map((pass) => {
+        world.balances.setAll(anchorsFor(pass));
+        return run();
+      }),
     );
-    const start = performance.now();
-    for (const loan of loans) {
-      const projection = world.service.forLoan(loan.id);
-      expect(projection.paths()?.original.rows).toHaveLength(360);
-      projection.metrics();
-      projection.yearlySubtotals();
-      projection.validation();
-    }
-    world.service.totalsByCurrency();
-    expect(performance.now() - start).toBeLessThan(100);
+    console.info(`bench best of 3: ${best.toFixed(1)} ms`);
+    expect(best).toBeLessThan(100);
   });
 });

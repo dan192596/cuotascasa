@@ -35,7 +35,8 @@ export interface ProjectionInputs {
 /** The latest reported balance and its [ALG.VALIDATE] result. */
 export interface LatestAnchor {
   readonly event: ReportedBalanceEvent;
-  readonly result: TemplateValidationResult;
+  /** Null when the [ALG.VALIDATE] modeled path itself fails (a validation-only gap): UNVALIDATED, no cause. */
+  readonly result: TemplateValidationResult | null;
 }
 
 export type Computation =
@@ -70,6 +71,25 @@ export function toScenarioEvents(scenario: Scenario | null) {
   return live.length === 0 ? null : live.map(toHypotheticalEvent);
 }
 
+/**
+ * [ALG.VALIDATE] for one anchor. The modeled path keeps every later real event and can fail even when buildPaths
+ * succeeded; that case yields null (UNVALIDATED) and never an error of the loan.
+ */
+export function validateAnchor(
+  terms: LoanTerms,
+  realEvents: readonly DomainEvent[],
+  reported: ReportedBalanceEvent,
+): TemplateValidationResult | null {
+  try {
+    return validateAgainstReportedBalance({ terms, realEvents, reported });
+  } catch (error) {
+    if (error instanceof DomainError) {
+      return null;
+    }
+    throw error;
+  }
+}
+
 function latestAnchorResult(
   terms: LoanTerms,
   realEvents: readonly DomainEvent[],
@@ -86,7 +106,7 @@ function latestAnchorResult(
     return null;
   }
   const event = anchorsById.get(latest.id) as ReportedBalanceEvent;
-  return { event, result: validateAgainstReportedBalance({ terms, realEvents, reported: event }) };
+  return { event, result: validateAnchor(terms, realEvents, event) };
 }
 
 /** [ALG.PATHS] with the D27 split between «the scenario failed» and «the loan failed». */

@@ -47,7 +47,8 @@ export interface EngineFacadeDeps {
 /** Spec §9 «Proyecciones»: original, real and at most this many scenarios. */
 const MAX_COMPARED_SCENARIOS = 3;
 /** Id of the record of a dry run that has none yet. */
-const DRY_RUN_ID = 'dry-run';
+/** The nil UUID sorts before every UUID, so a draft never wins an id tie-break against a stored record. */
+const DRY_RUN_ID = '00000000-0000-0000-0000-000000000000';
 
 export class EngineFacade implements LoanProjectionService {
   readonly asOf: Signal<LocalDate>;
@@ -77,6 +78,10 @@ export class EngineFacade implements LoanProjectionService {
     return comparison;
   }
 
+  /**
+   * Returns null while the stores load or for an unknown loan. A loan that already has an engine error returns that
+   * error for any write. UI maps errors by type or code and never renders `.message`: domain messages contain amounts.
+   */
   checkRealWrite(loanId: Uuid, write: RealRecordWrite): DomainError | null {
     const inputs = untracked(this.implOf(loanId).inputs);
     if (inputs === null) {
