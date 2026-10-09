@@ -21,7 +21,7 @@ Para el **dueño del proyecto**. Se hace una sola vez, cuesta US$0 y deja a Cuot
 ## Antes de empezar
 
 - Una cuenta de Google personal.
-- El dominio ya comprado y el subdominio apuntando al despliegue de Cloudflare (ADR-0002; la ruta del subdominio la crea W3-17).
+- El dominio ya comprado y el subdominio apuntando al despliegue de Cloudflare (ADR-0002; la ruta del subdominio la crea W3-17). Si aún no lo activas, sigue primero [la guía de despliegue en Cloudflare](despliegue-cloudflare.md).
 - La página `/` y la página `/privacidad` **ya publicadas** en el subdominio. Google las abre durante la revisión de la marca. Si todavía no existen, haz primero los pasos 1 a 5 y vuelve a los pasos 6 a 8 cuando estén en línea.
 - Acceso a los DNS del dominio, para la verificación del paso 4.
 
