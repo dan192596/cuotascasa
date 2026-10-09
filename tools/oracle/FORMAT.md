@@ -386,10 +386,10 @@ Se ejecuta desde `tools/oracle`; las rutas son relativas al directorio de trabaj
 - En lugar de las tres líneas imprime solo la línea de la bitácora, con la fecha local de la corrida:
 
   ```text
-  AAAA-MM-DD · oráculo <sha> · préstamo <label> · todas las filas coinciden: sí/no · filas con diferencia <k> · dif. máx. <d>
+  AAAA-MM-DD · oráculo <sha> · préstamo <label> · todas las filas coinciden: sí|no
   ```
 
-  `<k>` es `mismatchedRows` y `<d>` es `maxAbsDiff`. Una corrida que pasa dice `todas las filas coinciden: sí · filas con diferencia 0 · dif. máx. 0.00`.
+  La línea registra solo si coincidieron todas las filas: no lleva `mismatchedRows` ni `maxAbsDiff`, porque en una corrida que falla podrían revelar el plazo real o un monto real (decisión del dueño, 2026-10-09). Las tres líneas de §8.3 no cambian y no salen de la terminal.
 - `private-compare` del arnés (W0-06) usa el mismo esquema, la misma salida y la misma línea, con `motor <sha>` en lugar de `oráculo <sha>`.
 
 ## 9. Esquema privado: `a-terms.json` y `a-expected.csv`

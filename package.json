@@ -25,8 +25,9 @@
     "oracle:diff": "cd tools/oracle && python3 -m cuotascasa_oracle regenerate --manifest fixtures/manifest.json && git diff --exit-code -- fixtures && test -z \"$(git status --porcelain --untracked-files=all -- fixtures)\"",
     "oracle:gen": "cd tools/oracle && python3 -m cuotascasa_oracle generate",
     "owns:check": "node tools/owns-check/check.mjs",
-    "test": "vitest run && pnpm run test:web",
-    "test:coverage": "vitest run --coverage",
+    "test": "vitest run --project '!sync-browser' && pnpm run test:web",
+    "test:browser": "vitest run --project sync-browser",
+    "test:coverage": "vitest run --project '!sync-browser' --coverage",
     "test:web": "if [ -f angular.json ]; then ng test --no-watch; else echo 'test:web: angular.json not created yet (W0-05), skipped'; fi",
     "typecheck": "tsc -p tsconfig.json && pnpm run typecheck:projects",
     "typecheck:projects": "for p in packages/domain/tsconfig.json packages/schema/tsconfig.json packages/persistence/tsconfig.json packages/sync/tsconfig.json packages/export/tsconfig.json tools/conformance/tsconfig.json apps/web/tsconfig.app.json apps/web/tsconfig.spec.json e2e/tsconfig.json; do if [ -f \"$p\" ]; then echo \"tsc -p $p\" && tsc -p \"$p\" || exit 1; else echo \"typecheck: $p not created yet, skipped\"; fi; done"
