@@ -7,7 +7,7 @@ import { buildPaths } from '../paths/index.ts';
 import { buildSchedule } from '../schedule/index.ts';
 import type { DomainEvent, HypotheticalEvent, PrepaymentEvent } from '../types/events.ts';
 import { InfeasibleGoalError } from '../types/primitives.ts';
-import type { GoalSeekRequest, Paths } from '../types/schedule.ts';
+import type { Goal, GoalSeekRequest, Paths } from '../types/schedule.ts';
 import { goalSeek } from './index.ts';
 import { loadGoalExampleCases } from './testing/examples.ts';
 
@@ -158,20 +158,23 @@ describe('same-date base events (trial goes after them)', () => {
 declare const performance: { now(): number };
 
 describe('bench', () => {
-  it('finishes a 360-month loan in under 200 ms (with a CI tolerance factor)', () => {
-    const [item] = cases;
-    const terms = { ...item!.terms, principal: m('800000.00'), termMonths: 360 };
-    const paths = buildPaths({ terms, realEvents: [] as DomainEvent[], scenarioEvents: null }, ctx);
-    const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
-    const factor = env?.['CI'] === undefined ? 1 : 5;
-    const started = performance.now();
-    const result = goalSeek(
-      paths,
-      { basePath: 'REAL', prepaymentDate: d('2026-01-15'), goal: { kind: 'FINISH_BY', date: d('2045-12-31') } },
-      ctx,
-    );
-    const elapsed = performance.now() - started;
-    expect(result.kind).toBe('FOUND');
-    expect(elapsed).toBeLessThan(200 * factor);
-  });
+  const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
+  const factor = env?.['CI'] === undefined ? 1 : 5;
+  const goals: Record<string, Goal> = {
+    FINISH_BY: { kind: 'FINISH_BY', date: d('2045-12-31') },
+    MAX_INSTALLMENT: { kind: 'MAX_INSTALLMENT', amount: m('4000.00') },
+  };
+
+  for (const [name, goal] of Object.entries(goals)) {
+    it(`${name} finishes a 360-month loan in under 200 ms (with a CI tolerance factor)`, () => {
+      const [item] = cases;
+      const terms = { ...item!.terms, principal: m('800000.00'), termMonths: 360 };
+      const paths = buildPaths({ terms, realEvents: [] as DomainEvent[], scenarioEvents: null }, ctx);
+      const started = performance.now();
+      const result = goalSeek(paths, { basePath: 'REAL', prepaymentDate: d('2026-01-15'), goal }, ctx);
+      const elapsed = performance.now() - started;
+      expect(result.kind).toBe('FOUND');
+      expect(elapsed).toBeLessThan(200 * factor);
+    });
+  }
 });

@@ -21,7 +21,7 @@ import { placeEvents } from '../schedule/placement.ts';
 import type { EngineContext, GoalSeekFn } from '../types/engine.ts';
 import type { DomainEvent, PrepaymentEvent } from '../types/events.ts';
 import type { LoanTerms } from '../types/loan.ts';
-import { InfeasibleGoalError, type LocalDate, type Money } from '../types/primitives.ts';
+import { InfeasibleGoalError, type LocalDate, type Money, NegativeAmortizationError } from '../types/primitives.ts';
 import type { Goal, GoalSeekRequest, Paths, Schedule } from '../types/schedule.ts';
 
 const CENT = parseMoney('0.01');
@@ -165,7 +165,7 @@ function nextProbe(lo: Money, hi: Money, samples: readonly Sample[], round: numb
   // centavo) por debajo de la estimación. Se retrocede esa ventana (×2, ×4… si siguen cumpliendo) y, ya dentro de ella,
   // se bisecta.
   const window = dec(CENT).div(slope.abs()).toDecimalPlaces(2, DomainDecimal.ROUND_CEIL).times(backoff);
-  const back = toMoney(window.lt(0.01) ? dec(CENT) : window);
+  const back = toMoney(window.lt(dec(CENT)) ? dec(CENT) : window);
   return compareMoney(moneySub(hi, lo), moneyAdd(back, back)) > 0 ? maxMoney(lo, moneySub(hi, back)) : mid;
 }
 
@@ -174,8 +174,18 @@ function nextProbe(lo: Money, hi: Money, samples: readonly Sample[], round: numb
  *
  * Monotonía: «La meta es monótona respecto del monto» ([ALG.GOAL], Método). Más monto aplicado en k deja un saldo
  * menor, y con `REDUCE_TERM` (`endDate`) o `REDUCE_INSTALLMENT` (cuota k+1) la meta no empeora; el tope
- * `min(amount, closing_k)` ([ALG.PREPAY.CAP]) la hace constante desde `closing_k`. Por eso el predicado `isMet` es un
- * escalón y el mínimo, al centavo, queda atrapado en `[lo, hi]`.
+ * `min(amount, closing_k)` ([ALG.PREPAY.CAP]) la hace constante desde `closing_k`. Por eso el predicado es un escalón y
+ * el mínimo, al centavo, queda atrapado en `[lo, hi]`. Salvedad: con una `BANK_INSTALLMENT` en k+1 la última fila puede
+ * cambiar un centavo de forma no monótona; solo importa si la base ya cumple la meta, y ese caso se resuelve antes
+ * como `ALREADY_MET`, sin bisección.
+ *
+ * Pruebas que lanzan (regla 1 de Opus, [ALG.GOAL] en el cierre de W3): con saldos residuales mínimos B′ cerca de
+ * `closing_k`, un evento heredado posterior (p. ej. `RateChange` con `KEEP_INSTALLMENT_ADJUST_TERM`) puede lanzar
+ * `NegativeAmortizationError` porque `level − cargo` escala con B′ salvo redondeos. Se busca sobre el predicado «la
+ * prueba cumple la meta o lanza `NegativeAmortizationError`», monótono no decreciente en el monto. Sea A su mínimo: si
+ * la prueba de A cumplió la meta, es `FOUND{A}`; si lanzó, ningún monto sin lanzar de A en adelante la cumple salvo la
+ * liquidación, así que es `FOUND{closing_k, isPayoff: true}` (la liquidación no tiene filas posteriores). Cualquier otro
+ * `DomainError` de una prueba se propaga.
  *
  * Costo: con N = closing_k × 100 centavos, una bisección pura haría ⌈log₂ N⌉ pruebas. Las primeras
  * `INTERPOLATED_PROBES` se eligen por interpolación (`nextProbe`) y el resto por punto medio; como cada prueba mantiene
@@ -213,8 +223,18 @@ export const goalSeek: GoalSeekFn = (paths, request, ctx) => {
     return buildSchedule(terms, [], ctx, { inheritedEvents: baseEvents, goalPrepayment });
   };
 
-  let best = trial(closingK);
-  if (!isMet(best, goal, k)) {
+  const trialOrNull = (amount: Money): Schedule | null => {
+    try {
+      return trial(amount);
+    } catch (error) {
+      if (error instanceof NegativeAmortizationError) {
+        return null;
+      }
+      throw error;
+    }
+  };
+  const payoff = trial(closingK);
+  if (!isMet(payoff, goal, k)) {
     return infeasible;
   }
   const finalInstallment = finalInstallmentOf(base, goal);
@@ -225,17 +245,19 @@ export const goalSeek: GoalSeekFn = (paths, request, ctx) => {
     samples.push({ amount: dec(ZERO_MONEY), gap: baseGap });
   }
   // Invariante: `hi` cumple la meta y `lo − 0.01` no (0.00 no la cumple: no es ALREADY_MET).
+  // `best` es el calendario de `hi` si cumplió la meta; `null` si esa prueba lanzó (el resultado es la liquidación).
+  let best: Schedule | null = payoff;
   let lo = CENT;
   let hi = closingK;
   let backoff = decInt(1);
   for (let round = 0; compareMoney(lo, hi) < 0; round += 1) {
     const probe = nextProbe(lo, hi, samples, round, backoff);
-    const schedule = trial(probe);
-    const gap = gapOf(schedule, goal, k, finalInstallment);
+    const schedule = trialOrNull(probe);
+    const gap = schedule === null ? null : gapOf(schedule, goal, k, finalInstallment);
     if (gap !== null) {
       samples.push({ amount: dec(probe), gap });
     }
-    if (isMet(schedule, goal, k)) {
+    if (schedule === null || isMet(schedule, goal, k)) {
       hi = probe;
       best = schedule;
       backoff = backoff.times(2);
@@ -243,6 +265,9 @@ export const goalSeek: GoalSeekFn = (paths, request, ctx) => {
       lo = moneyAdd(probe, CENT);
       backoff = decInt(1);
     }
+  }
+  if (best === null) {
+    return { kind: 'FOUND', amount: closingK, metrics: compareSchedules(base, payoff), isPayoff: true };
   }
   return {
     kind: 'FOUND',
