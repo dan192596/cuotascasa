@@ -1,6 +1,6 @@
 import { compareMoney, moneySub, moneySum, ZERO_MONEY } from '../money/index.ts';
 import type { PeriodState, ProjectCapitalFn, RemainingTermFn } from '../types/engine.ts';
-import type { Money } from '../types/primitives.ts';
+import { InvalidInputError, type Money } from '../types/primitives.ts';
 import { calculateInstallment } from './amounts.ts';
 
 /**
@@ -45,6 +45,9 @@ export const remainingTerm: RemainingTermFn = (state) => {
  * termina antes de k+n, suma las cuotas que existen.
  */
 export const projectCapital: ProjectCapitalFn = (state, n) => {
+  if (!Number.isSafeInteger(n) || n < 0) {
+    throw new InvalidInputError('INVALID_INTEGER', 'n must be an integer >= 0', { n });
+  }
   const capitals: Money[] = [];
   if (n >= 1) {
     simulate(state, (capital) => {

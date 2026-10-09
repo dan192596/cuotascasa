@@ -75,8 +75,9 @@ export function placeEvents(
     throw new InvalidInputError('INSTALLMENT_OUT_OF_RANGE', 'installmentNumber must be at least 1', { k });
   }
   for (const event of options.inheritedEvents ?? []) {
-    const k = installmentOf(terms, event);
-    if (Number.isSafeInteger(k) && k >= 1) {
+    // Los heredados nunca lanzan: sin cuota válida (incluido un ActualPayment sin installmentNumber) no se aplican.
+    const k = event.type === 'ActualPayment' ? explicitInstallment(event) : installmentOf(terms, event);
+    if (k !== undefined && Number.isSafeInteger(k) && k >= 1) {
       placed.push({ event, k, key: eventOrderKey(event, k), own: false });
     }
   }

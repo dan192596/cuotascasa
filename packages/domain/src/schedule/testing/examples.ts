@@ -119,6 +119,9 @@ export function loadCoreExampleCases(): readonly ExampleCase[] {
   for (const [file, content] of CORE_FILES) {
     const raw = content as RawFile;
     for (const item of raw.cases) {
+      if (item.operation !== 'buildSchedule' || item.events.length !== 0) {
+        throw new Error(`${file} / ${item.id}: core examples must be buildSchedule cases without events`);
+      }
       const { error, ...schedule } = item.expected;
       cases.push({
         file,

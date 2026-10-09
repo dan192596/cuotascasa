@@ -462,9 +462,39 @@ describe('[ALG.EVENTS.ANCHOR] own events (rules 1 and 3)', () => {
       total: m('1.00'),
     } as unknown as DomainEvent;
     expect(invalidInputCode(() => runSchedule(shortTerms(), [missing], ctx))).toBe('MISSING_INSTALLMENT_NUMBER');
-    expect(invalidInputCode(() => runSchedule(shortTerms(), [], ctx, { inheritedEvents: [missing] }))).toBe(
-      'MISSING_INSTALLMENT_NUMBER',
-    );
+  });
+
+  it('an inherited ActualPayment without installmentNumber is skipped, never thrown', () => {
+    const log: string[] = [];
+    const missing = {
+      type: 'ActualPayment',
+      id: 'x',
+      date: d('2026-02-28'),
+      total: m('1.00'),
+    } as unknown as DomainEvent;
+    const { schedule } = runSchedule(shortTerms(), [], recordingContext(log), { inheritedEvents: [missing] });
+    expect(log).toEqual([]);
+    expect(schedule.installmentCount).toBe(12);
+  });
+
+  it('the final row has exactly one of isLast or payoff, and no earlier row has either', () => {
+    const payoffCtx = recordingContext([], {
+      Prepayment: (input) => ({
+        state: { ...input.state, balance: m('0.00') },
+        rowEffect: { prepayment: (input.row as NonNullable<typeof input.row>).closing, payoff: true },
+      }),
+    });
+    const schedules = [
+      buildSchedule(shortTerms(), [], createEngineContext()),
+      buildSchedule(shortTerms(), [prepayment('pay-off', '2026-03-31')], payoffCtx),
+    ];
+    for (const schedule of schedules) {
+      const last = schedule.rows[schedule.rows.length - 1];
+      expect(Number(last?.isLast) + Number(last?.payoff)).toBe(1);
+      for (const row of schedule.rows.slice(0, -1)) {
+        expect(row.isLast || row.payoff).toBe(false);
+      }
+    }
   });
 
   it('an installmentNumber that is not an integer is a malformed event', () => {

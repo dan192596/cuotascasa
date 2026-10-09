@@ -78,4 +78,10 @@ describe('[ALG.TERM] projectCapital', () => {
     expect(projectCapital(state, 208)).toBe('469756.31');
     expect(projectCapital(state, 500)).toBe('469756.31');
   });
+
+  it('rejects a negative or non-integer n with INVALID_INTEGER', () => {
+    for (const n of [-1, 1.5, Number.NaN]) {
+      expect(thrownBy(() => projectCapital(stateAfter(12), n))).toMatchObject({ code: 'INVALID_INTEGER' });
+    }
+  });
 });
