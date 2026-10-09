@@ -1,9 +1,15 @@
 import 'fake-indexeddb/auto';
 import { IDBFactory } from 'fake-indexeddb';
 import { describe, expect, it, vi } from 'vitest';
-import type { ChangeEvent, DataStoreDeps } from '../ports.ts';
+import type { ChangeEvent, DataStoreDeps, DataStoreTransaction } from '../ports.ts';
 import { SnapshotNotFoundError } from '../ports.ts';
-import { createManualClock, createSequentialIds, type ManualClock, type SequentialIds } from '../contract/fakes.ts';
+import {
+  createManualClock,
+  createSequentialIds,
+  sequentialUuid,
+  type ManualClock,
+  type SequentialIds,
+} from '../contract/fakes.ts';
 import { samplePayment, sampleLoan } from '../contract/samples.ts';
 import { openDatabase } from './database.ts';
 import { createDexieDataStore, DEXIE_DB_NAME, DEXIE_DB_VERSION, DEXIE_SCHEMA_V1 } from './index.ts';
@@ -277,5 +283,151 @@ describe('Dexie notifications across instances', () => {
     expect(await b.loans.list()).toHaveLength(2);
     await a.close();
     await b.close();
+  });
+});
+
+describe('Dexie transaction repositories after the transaction ended', () => {
+  const ended = { code: 'CLOSED', message: 'The transaction has ended' };
+
+  async function capture(store: DexieDataStore, fail: boolean): Promise<DataStoreTransaction> {
+    let captured: DataStoreTransaction | undefined;
+    const work = store.transaction(async (tx) => {
+      captured = tx;
+      await tx.loans.get(sequentialUuid(500));
+      if (fail) {
+        throw new Error('abort');
+      }
+    });
+    await (fail ? expect(work).rejects.toThrow('abort') : work);
+    if (captured === undefined) {
+      throw new Error('transaction repositories were not captured');
+    }
+    return captured;
+  }
+
+  async function open(): Promise<{ store: DexieDataStore }> {
+    const factory = new IDBFactory();
+    const db = await openDatabase(DEXIE_DB_NAME, factory);
+    return { store: await DexieDataStore.attach(harness(), db, DEXIE_DB_NAME, factory) };
+  }
+
+  it('reject after commit, write nothing, count nothing and notify nobody', async () => {
+    const { store } = await open();
+    const events: ChangeEvent[] = [];
+    store.subscribe(collect(events));
+    const tx = await capture(store, false);
+    await expect(tx.loans.create(sampleLoan())).rejects.toMatchObject(ended);
+    await expect(tx.loans.list()).rejects.toMatchObject(ended);
+    await expect(tx.settings.saveSynced({ activeScenarioByLoan: {} })).rejects.toMatchObject(ended);
+    expect(await store.loans.list({ includeDeleted: true })).toEqual([]);
+    expect(await store.pendingChanges()).toBe(0);
+    await settle();
+    expect(events).toEqual([]);
+    await store.close();
+  });
+
+  it('reject after rollback', async () => {
+    const { store } = await open();
+    const tx = await capture(store, true);
+    await expect(tx.loans.create(sampleLoan())).rejects.toMatchObject(ended);
+    await store.close();
+  });
+
+  it('reject with the typed error after the store closed, not a raw Dexie error', async () => {
+    const { store } = await open();
+    const tx = await capture(store, false);
+    await store.close();
+    await expect(tx.loans.create(sampleLoan())).rejects.toMatchObject(ended);
+    await expect(tx.loans.get(sequentialUuid(1))).rejects.toMatchObject(ended);
+  });
+});
+
+describe('Dexie partial commits', () => {
+  it('keep records, counters and the stamp floor consistent when work awaits something that is not a tx call', async () => {
+    const factory = new IDBFactory();
+    const db = await openDatabase(DEXIE_DB_NAME, factory);
+    const store = await DexieDataStore.attach(harness(), db, DEXIE_DB_NAME, factory);
+    let first: { updatedAt: string } | undefined;
+    await expect(
+      store.transaction(async (tx) => {
+        first = await tx.loans.create(sampleLoan());
+        await new Promise((resolve) => {
+          setTimeout(resolve, 5);
+        });
+        await tx.loans.create({ ...sampleLoan(), name: 'Casa B' });
+      }),
+    ).rejects.toBeInstanceOf(Error);
+    const committed = await store.loans.list({ includeDeleted: true });
+    expect(committed).toHaveLength(1);
+    expect(await store.pendingChanges()).toBe(committed.length);
+    expect(await store.changesSinceBackup()).toBe(committed.length);
+    const floor = (await db.table('meta').get('stampFloor')) as { value: number };
+    expect(floor.value).toBeGreaterThanOrEqual(Date.parse(first?.updatedAt ?? ''));
+    await store.close();
+  });
+});
+
+describe('Dexie re-entrancy', () => {
+  it('rejects a store-level call made inside transaction(work) and does not hang the queue', async () => {
+    const store = await createDexieDataStore(harness(), new IDBFactory());
+    const outcome: unknown[] = [];
+    const result = await store.transaction(async (tx) => {
+      await store.loans.list().then(
+        () => outcome.push('resolved'),
+        (error: unknown) => outcome.push(error),
+      );
+      await tx.loans.create(sampleLoan());
+      return 'finished';
+    });
+    expect(result).toBe('finished');
+    expect(outcome).toHaveLength(1);
+    expect(outcome[0]).toMatchObject({
+      code: 'CLOSED',
+      message: 'Store-level call inside a transaction; use the tx repositories',
+    });
+    expect(await store.loans.list()).toHaveLength(1);
+    await store.close();
+  });
+});
+
+describe('Dexie listeners', () => {
+  it('skip a listener removed after the commit but before the notification runs', async () => {
+    const store = await createDexieDataStore(harness(), new IDBFactory());
+    const events: ChangeEvent[] = [];
+    const unsubscribe = store.subscribe(collect(events));
+    await store.loans.create(sampleLoan());
+    unsubscribe();
+    await settle();
+    expect(events).toEqual([]);
+    await store.close();
+  });
+
+  it('skip every listener when the store closes before the notification runs', async () => {
+    const store = await createDexieDataStore(harness(), new IDBFactory());
+    const events: ChangeEvent[] = [];
+    store.subscribe(collect(events));
+    await store.loans.create(sampleLoan());
+    await store.close();
+    await settle();
+    expect(events).toEqual([]);
+  });
+});
+
+describe('Dexie replaceAll input handling', () => {
+  it('always rejects: CLOSED on a closed store, the clone error for uncloneable data', async () => {
+    const store = await createDexieDataStore(harness(), new IDBFactory());
+    const data = await store.exportAll();
+    const uncloneable = { ...data, loans: [() => 1] } as unknown as typeof data;
+    let call: Promise<void> | undefined;
+    expect(() => {
+      call = store.replaceAll(uncloneable, { pending: 'keep', backedUpAt: 'keep' });
+    }).not.toThrow();
+    await expect(call).rejects.toMatchObject({ name: 'DataCloneError' });
+    await store.close();
+    let closedCall: Promise<void> | undefined;
+    expect(() => {
+      closedCall = store.replaceAll(uncloneable, { pending: 'keep', backedUpAt: 'keep' });
+    }).not.toThrow();
+    await expect(closedCall).rejects.toMatchObject({ code: 'CLOSED' });
   });
 });

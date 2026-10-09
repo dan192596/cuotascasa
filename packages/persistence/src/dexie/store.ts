@@ -1,4 +1,4 @@
-import type { Dexie, Table } from 'dexie';
+import { Dexie, type Table } from 'dexie';
 import {
   DEVICE_SETTINGS_ID,
   ENTITY_KEYS,
@@ -109,9 +109,14 @@ function closedError(): PersistenceError {
 class TxScope {
   readonly touched = new Set<EntityKey>();
   origin: ChangeOrigin = 'write';
+  /** Set once the Dexie transaction settled; the transaction's repositories then reject. */
+  done = false;
+  /** The Dexie transaction this scope runs in, to recognise store-level calls made from inside it. */
+  tx: unknown;
   private floor: number | undefined;
   private floorDirty = false;
   private counterState: Counters | undefined;
+  private counterDirty = false;
 
   readonly db: Dexie;
   private readonly clock: Clock;
@@ -161,11 +166,13 @@ class TxScope {
         sinceBackup: new Set(Array.isArray(sinceBackup) ? (sinceBackup as string[]) : []),
       };
     }
+    this.counterDirty = true;
     return this.counterState;
   }
 
   setCounters(counters: Counters): void {
     this.counterState = counters;
+    this.counterDirty = true;
   }
 
   async markChanged(entity: EntityKey, record: StoredRecord): Promise<void> {
@@ -175,13 +182,20 @@ class TxScope {
       counters.pending.add(changeKey(entity, record.id));
       counters.sinceBackup.add(changeKey(entity, record.id));
     }
+    await this.flush();
   }
 
+  /**
+   * Writes the stamp floor and the counters that changed. Called right after every record write, so whatever prefix
+   * IndexedDB commits keeps records, counters and floor consistent.
+   */
   async flush(): Promise<void> {
     if (this.floorDirty && this.floor !== undefined) {
+      this.floorDirty = false;
       await this.writeMeta(META_KEYS.stampFloor, this.floor);
     }
-    if (this.counterState !== undefined) {
+    if (this.counterState !== undefined && this.counterDirty) {
+      this.counterDirty = false;
       await this.writeMeta(META_KEYS.pending, [...this.counterState.pending]);
       await this.writeMeta(META_KEYS.sinceBackup, [...this.counterState.sinceBackup]);
     }
@@ -219,6 +233,7 @@ export class DexieDataStore implements DataStore {
   private readonly ids: IdGenerator;
   private readonly deviceId: Uuid;
   private closed = false;
+  private active: TxScope | undefined;
   private queue: Promise<unknown> = Promise.resolve();
   private readonly listeners = new Set<ChangeListener>();
   private readonly channel: BroadcastChannel | undefined;
@@ -266,7 +281,13 @@ export class DexieDataStore implements DataStore {
   }
 
   transaction<R>(work: (tx: DataStoreTransaction) => Promise<R>): Promise<R> {
-    return this.run('rw', (scope) => work(this.repositories((_mode, op) => op(scope))));
+    return this.run('rw', (scope) =>
+      work(
+        this.repositories((_mode, op) =>
+          scope.done ? Promise.reject(new PersistenceError('CLOSED', 'The transaction has ended')) : op(scope),
+        ),
+      ),
+    );
   }
 
   exportAll(): Promise<BackupData> {
@@ -280,16 +301,26 @@ export class DexieDataStore implements DataStore {
   }
 
   replaceAll(data: BackupData, options: ReplaceAllOptions): Promise<void> {
-    const copy = structuredClone(data);
+    if (this.closed) {
+      return Promise.reject(closedError());
+    }
+    let copy: BackupData;
+    try {
+      // Cloned at call time so later edits of the caller's object never reach the store.
+      copy = structuredClone(data);
+    } catch (error) {
+      return Promise.reject(error instanceof Error ? error : new Error(String(error)));
+    }
     return this.run('rw', async (scope) => {
       const parsed = backupDataSchema.safeParse(copy);
       if (!parsed.success) {
         throw new RecordValidationError('dataset', issuesOf(parsed.error));
       }
+      const valid = parsed.data as unknown as Readonly<Record<EntityKey, readonly StoredRecord[]>>;
       const localDevice = await scope.table('settings').get(DEVICE_SETTINGS_ID);
       const counted: string[] = [];
       for (const key of ENTITY_KEYS) {
-        const incoming = (copy[key] as readonly StoredRecord[]).filter((record) => !isDeviceSettings(key, record));
+        const incoming = valid[key].filter((record) => !isDeviceSettings(key, record));
         const table = scope.table(key);
         await table.clear();
         await table.bulkPut(incoming);
@@ -426,17 +457,29 @@ export class DexieDataStore implements DataStore {
     if (this.closed) {
       return Promise.reject(closedError());
     }
+    if (this.active !== undefined && !this.active.done && Dexie.currentTransaction === this.active.tx) {
+      return Promise.reject(
+        new PersistenceError('CLOSED', 'Store-level call inside a transaction; use the tx repositories'),
+      );
+    }
     const task = this.queue.then(async () => {
       const scope = new TxScope(this.db, this.clock);
-      const result = await this.db.transaction(mode, this.db.tables, async () => {
-        const value = await op(scope);
-        if (mode === 'rw') {
-          await scope.flush();
-        }
-        return value;
-      });
-      this.publish(scope);
-      return result;
+      this.active = scope;
+      try {
+        const result = await this.db.transaction(mode, this.db.tables, async () => {
+          scope.tx = Dexie.currentTransaction;
+          const value = await op(scope);
+          if (mode === 'rw') {
+            await scope.flush();
+          }
+          return value;
+        });
+        this.publish(scope);
+        return result;
+      } finally {
+        scope.done = true;
+        this.active = undefined;
+      }
     });
     this.queue = task.then(
       () => undefined,
@@ -462,6 +505,9 @@ export class DexieDataStore implements DataStore {
     const targets = [...this.listeners];
     setTimeout(() => {
       for (const listener of targets) {
+        if (this.closed || !this.listeners.has(listener)) {
+          continue;
+        }
         try {
           listener(event);
         } catch (error) {
