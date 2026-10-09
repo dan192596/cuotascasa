@@ -1,0 +1,37 @@
+/*
+ * Tailwind v4 entry (ADR-0012 decision 7: layout and utilities only). styles.scss loads it and
+ * apps/web/.postcssrc.json (@tailwindcss/postcss) compiles it. source('..') limits class detection to apps/web/src
+ * (relative to this directory), so the CSS does not depend on docs/ or packages/.
+ *
+ * D17: only the theme and utilities layers are imported, so there is no preflight reset. Utilities are `important`:
+ * Material's component styles are unlayered and would otherwise beat any `@layer utilities` rule.
+ */
+@layer theme, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities) important source('..');
+
+/* Maps the frozen design tokens (tokens.css) onto Tailwind. `inline` keeps utilities pointing at var(--cc-*), so
+   light-dark() and data-theme keep working. The default palette is dropped: only tokens exist. */
+@theme inline {
+  // Sass cannot parse a `*` in a custom property name, so the namespace resets go through interpolation.
+  #{'--color-*'}: initial;
+  #{'--font-*'}: initial;
+  --color-paper: var(--cc-color-paper);
+  --color-surface: var(--cc-color-surface);
+  --color-band: var(--cc-color-band);
+  --color-current-month: var(--cc-color-current-month);
+  --color-rule: var(--cc-color-rule);
+  --color-control-border: var(--cc-color-control-border);
+  --color-ink: var(--cc-color-ink);
+  --color-ink-muted: var(--cc-color-ink-muted);
+  --color-accent: var(--cc-color-accent);
+  --color-positive: var(--cc-color-positive);
+  --color-positive-fill: var(--cc-color-positive-fill);
+  --color-warning: var(--cc-color-warning);
+  --color-danger: var(--cc-color-danger);
+  --color-transparent: transparent;
+  --color-current: currentcolor;
+  --font-heading: var(--cc-font-heading);
+  --font-body: var(--cc-font-body);
+  --font-numeric: var(--cc-font-numeric);
+}
