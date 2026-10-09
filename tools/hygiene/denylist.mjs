@@ -2,35 +2,98 @@
 // pre-commit hook: refuses added staged lines that contain a term of the developer's private denylist (ADR-0015 §6).
 // The list lives outside the repo ($CUOTASCASA_DENYLIST or ~/.config/cuotascasa/denylist.txt). Output is limited to
 // file paths and line numbers: neither the list nor the matching text is ever printed.
+//
+// Comparación por palabra y número completos (enmienda de ADR-0015 §6, decisión del dueño, 2026-10-09):
+// - Texto y términos se normalizan igual: Unicode NFC y minúsculas; se quita el prefijo de moneda `Q` / `US$` (sin
+//   importar mayúsculas) cuando va justo antes de un número, con o sin espacio; y se quitan los separadores de miles
+//   dentro de un número (coma, espacio o NBSP entre grupos de tres dígitos). El punto decimal se conserva.
+// - Se tokeniza en palabras y números: letras Unicode (con tildes), dígitos y un punto decimal interno entre dígitos
+//   (`1234.50`). Todo lo demás separa (guiones, guiones bajos, comas sueltas, símbolos).
+// - Los números decimales se comparan en forma canónica: sin ceros finales en la parte decimal ni punto final, así que
+//   `1234.5`, `1234.50` y `Q 1,234.50` coinciden, pero `91234.5`, `1234.51` y `12345` no. Los ceros a la izquierda se
+//   conservan tal como se escriben (`007` ≠ `7`).
+// - Un término coincide cuando su secuencia de tokens aparece como una racha contigua de tokens completos de la línea:
+//   un nombre de dos palabras solo coincide con esas dos palabras seguidas, y una palabra corta nunca dentro de otra.
+//
+// Count mode for tooling: `--count-file <path>` or `--count-stdin` prints only the number of lines with at least one
+// hit. List problems (absent, broken symlink, inside the repo, unreadable) exit 1 without a number.
 import { existsSync, lstatSync, readFileSync, realpathSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, relative, isAbsolute, sep } from 'node:path';
 import { git } from './lib.mjs';
 
 /**
- * Lower-cases and drops commas, whitespace and currency symbols (also the Q / US$ prefix of an amount) so "Q 1,234,567.89" and "1234567.89" compare equal.
+ * NFC + lower case; drops the Q / US$ prefix of an amount and the thousands separators inside numbers.
+ * "Q 1,234,567.89", "1 234 567.89" and "1234567.89" all become "1234567.89".
  * @param {string} text
  * @returns {string}
  */
 export function normalize(text) {
   return text
+    .normalize('NFC')
     .toLowerCase()
-    .replace(/(?<![a-z0-9])(?:us\s*\$|q)\s*(?=\d)/g, '') // "Q 12", "US$ 12" -> "12"; plain words ending in q are untouched
-    .replace(/[,\s$€£¥]/g, '');
+    .replace(/(?<![\p{L}\p{M}\p{N}])(?:us\s*\$|q)\s*(?=\d)/gu, '') // "Q 12", "US$12" -> "12"; words ending in q stay
+    .replace(/(?<=\d)[,\s\u00a0](?=\d{3}(?:\D|$))/gu, ''); // "1,234" / "1 234" -> "1234"
 }
 
 /**
- * Parses the list file: one term per line, blank lines and `#` comments ignored, terms normalized.
- * @param {string} content
+ * Canonical form of a decimal number token: no trailing fractional zeros nor trailing point ("1234.50" -> "1234.5").
+ * @param {string} token
+ * @returns {string}
+ */
+function canonical(token) {
+  return /^\d+\.\d+$/.test(token) ? token.replace(/0+$/, '').replace(/\.$/, '') : token;
+}
+
+/**
+ * Splits text (normalized here) into whole words and numbers, numbers in canonical form.
+ * @param {string} text
  * @returns {string[]}
+ */
+export function tokenize(text) {
+  const matches = normalize(text).match(/[\p{L}\p{M}\p{N}]+(?:(?<=\d)\.(?=\d)[\p{L}\p{M}\p{N}]+)*/gu) ?? [];
+  return matches.map(canonical);
+}
+
+/**
+ * Parses the list file: one term per line, blank lines and `#` comments ignored, each term as its token sequence.
+ * @param {string} content
+ * @returns {string[][]}
  */
 export function parseTerms(content) {
   return content
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter((line) => line !== '' && !line.startsWith('#'))
-    .map(normalize)
-    .filter((term) => term !== '');
+    .map(tokenize)
+    .filter((term) => term.length > 0);
+}
+
+/**
+ * True when some term appears as a contiguous run of whole tokens of `text`.
+ * @param {string} text
+ * @param {string[][]} terms
+ * @returns {boolean}
+ */
+function lineHits(text, terms) {
+  const tokens = tokenize(text);
+  return terms.some((term) => {
+    for (let start = 0; start + term.length <= tokens.length; start += 1) {
+      if (term.every((token, offset) => tokens[start + offset] === token)) return true;
+    }
+    return false;
+  });
+}
+
+/**
+ * Number of lines of `text` with at least one hit.
+ * @param {string} text
+ * @param {string[][]} terms from parseTerms
+ * @returns {number}
+ */
+export function countHitLines(text, terms) {
+  if (text === '') return 0;
+  return text.split(/\r?\n/).filter((line) => lineHits(line, terms)).length;
 }
 
 /**
@@ -135,16 +198,15 @@ export function addedLines(diff) {
 }
 
 /**
- * Returns the `file:line` locations whose text contains any term. Terms are never part of the result.
+ * Returns the `file:line` locations of added lines with a hit. Terms are never part of the result.
  * @param {string} diff
- * @param {string[]} terms already normalized
+ * @param {string[][]} terms from parseTerms
  * @returns {string[]}
  */
 export function findHits(diff, terms) {
   const hits = new Set();
   for (const { file, line, text } of addedLines(diff)) {
-    const normalized = normalize(text);
-    if (terms.some((term) => normalized.includes(term))) hits.add(`${file}:${line}`);
+    if (lineHits(text, terms)) hits.add(`${file}:${line}`);
   }
   return [...hits];
 }
@@ -178,6 +240,34 @@ export function resolveList(cwd, env) {
 }
 
 /**
+ * Resolves and reads the list, or returns the fixed failure for a list problem. `absentCode` is 0 for the hook (an
+ * absent list passes with a notice) and 1 for count mode (a count without a list would be meaningless).
+ * @param {string} cwd
+ * @param {NodeJS.ProcessEnv} env
+ * @param {number} absentCode
+ * @returns {{ terms: string[][] } | { code: number, out: string[] }}
+ */
+function loadTerms(cwd, env, absentCode) {
+  const list = resolveList(cwd, env);
+  if (list.status === 'absent') {
+    return {
+      code: absentCode,
+      out: ['hygiene:denylist: no denylist found (set CUOTASCASA_DENYLIST); nothing checked.'],
+    };
+  }
+  if (list.status === 'broken') {
+    return { code: 1, out: ['hygiene:denylist: the denylist is a broken symlink; fix or remove it.'] };
+  }
+  if (list.status === 'inRepo') {
+    return {
+      code: 1,
+      out: ['hygiene:denylist: the denylist resolves inside the repository; keep it outside (ADR-0015 §6).'],
+    };
+  }
+  return { terms: parseTerms(readFileSync(list.path, 'utf8')) };
+}
+
+/**
  * Runs the hook. Returns the process exit code and the lines to print.
  * @param {string} cwd
  * @param {NodeJS.ProcessEnv} env
@@ -185,20 +275,8 @@ export function resolveList(cwd, env) {
  */
 export function run(cwd, env) {
   try {
-    const list = resolveList(cwd, env);
-    if (list.status === 'absent') {
-      return { code: 0, out: ['hygiene:denylist: no denylist found (set CUOTASCASA_DENYLIST); nothing checked.'] };
-    }
-    if (list.status === 'broken') {
-      return { code: 1, out: ['hygiene:denylist: the denylist is a broken symlink; fix or remove it.'] };
-    }
-    if (list.status === 'inRepo') {
-      return {
-        code: 1,
-        out: ['hygiene:denylist: the denylist resolves inside the repository; keep it outside (ADR-0015 §6).'],
-      };
-    }
-    const terms = parseTerms(readFileSync(list.path, 'utf8'));
+    const loaded = loadTerms(cwd, env, 0);
+    if (!('terms' in loaded)) return loaded;
     const diff = git(
       [
         '-c',
@@ -220,7 +298,7 @@ export function run(cwd, env) {
       ],
       cwd,
     );
-    const hits = findHits(diff, terms);
+    const hits = findHits(diff, loaded.terms);
     if (hits.length === 0) return { code: 0, out: [] };
     return {
       code: 1,
@@ -235,8 +313,43 @@ export function run(cwd, env) {
   }
 }
 
+/**
+ * Count mode: number of lines of the input with at least one hit. `stdout` carries only that integer.
+ * @param {string} cwd
+ * @param {NodeJS.ProcessEnv} env
+ * @param {() => string} readInput
+ * @returns {{ code: number, out: string[], stdout?: string }}
+ */
+export function runCount(cwd, env, readInput) {
+  try {
+    const loaded = loadTerms(cwd, env, 1);
+    if (!('terms' in loaded)) return loaded;
+    return { code: 0, out: [], stdout: String(countHitLines(readInput(), loaded.terms)) };
+  } catch {
+    // Fixed message on purpose: no path, stack or contents may leak.
+    return { code: 1, out: ['hygiene:denylist: could not read the denylist or the input'] };
+  }
+}
+
+/**
+ * @param {string[]} args
+ * @returns {{ code: number, out: string[], stdout?: string }}
+ */
+function main(args) {
+  if (args.length === 0) return run(process.cwd(), process.env);
+  if (args.length === 1 && args[0] === '--count-stdin') {
+    return runCount(process.cwd(), process.env, () => readFileSync(0, 'utf8'));
+  }
+  const path = args[1];
+  if (args.length === 2 && args[0] === '--count-file' && path !== undefined) {
+    return runCount(process.cwd(), process.env, () => readFileSync(path, 'utf8'));
+  }
+  return { code: 1, out: ['hygiene:denylist: usage: denylist.mjs [--count-file <path> | --count-stdin]'] };
+}
+
 if (import.meta.main) {
-  const { code, out } = run(process.cwd(), process.env);
+  const { code, out, stdout } = main(process.argv.slice(2));
   for (const line of out) console.error(line);
-  process.exit(code);
+  if (stdout !== undefined) console.log(stdout);
+  process.exitCode = code; // not process.exit(): let piped stdout/stderr drain
 }
