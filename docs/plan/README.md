@@ -246,7 +246,7 @@ Notas:
 Opus deja su revisión como comentario del PR. Las tarjetas Opus las revisa una sesión Opus nueva, sin el contexto de quien las escribió, con la misma lista.
 
 1. **Criterios:** cada criterio de aceptación tiene evidencia. Opus vuelve a correr en el worktree los comandos clave (`pnpm lint`, `pnpm typecheck`, `pnpm test` y los checks propios de la tarjeta). En el linaje del oráculo, los corre sobre la rama completa, junto con los hooks (sección 3, paso 3).
-2. **owns-check en verde,** y una lectura de la lista de rutas del diff: nada fuera de `owns` y ningún archivo de `docs/plan/frozen-files.json`, salvo que la tarjeta figure en su `editableBy`.
+2. **owns-check en verde,** y una lectura de la lista de rutas del diff: nada fuera de `owns` y ningún archivo de `docs/plan/frozen-files.json`, salvo que la tarjeta figure en su `editableBy`. El check del PR corre el código de owns-check de la propia rama; por eso Opus corre además el de `main`, desde un checkout de `main` al día: `node tools/owns-check/check.mjs --base origin/main --head origin/<rama> --branch <rama>`. Un cambio de una tarjeta bajo `.github/`, `tools/owns-check/`, `.gitleaks.toml` o `tools/plan/` sin figurar en su `editableBy` se rechaza.
 3. **Sin datos reales:**
    - fixtures con `synthetic: true`;
    - valores tomados de los ejemplos sintéticos o generados con semilla;
@@ -288,7 +288,7 @@ Opus deja su revisión como comentario del PR. Las tarjetas Opus las revisa una 
 1. **Orden de dependencias:** solo se fusiona una tarjeta cuyas `depends_on` ya están en `main`. Entre varias listas, primero el gate de la ola y luego la que desbloquea más.
 2. **Rebase** sobre `main`: `git -C .worktrees/<ID> rebase main`, o `origin/main` una vez que existe el remoto. CI debe quedar verde otra vez.
 3. **Squash** con mensaje convencional terminado en el id:
-   `gh pr merge <N> --squash --delete-branch --subject "feat(domain): núcleo del calendario (W1-01)"`.
+   `gh pr merge <N> --squash --subject "feat(domain): núcleo del calendario (W1-01)"`.
    En W0, antes del primer push, Opus fusiona en local con `git merge --squash` y usa el mismo formato de mensaje.
 4. **Limpieza:**
 
@@ -312,7 +312,8 @@ Un **contrato** es un archivo congelado (`frozen-files.json`), compartido o excl
 3. **Registro, antes de crear su rama,** en una rama `opus/register-<ID>`, exenta de owns-check:
    - En `plan.json`, Opus agrega la tarjeta con el siguiente número libre de la ola en curso (por ejemplo `W2-14`). Campos: ejecutor `opus`, tamaño `S`, `owns` explícitos (los archivos del contrato y sus specs de contrato), `depends_on`, requisitos y una nota que diga qué tarjeta la pidió.
    - Regenera `cards/`, `traceability.md`, `waves.md`, `cards.json` y `frozen-files.json` (sección 8). Cada archivo congelado lleva `editableBy`, con las tarjetas que pueden editarlo; así owns-check deja pasar a la micro-tarjeta.
-   - Fusiona la rama en `main`.
+   - Si cambia una ruta de `frozen_files`, regenera `.github/CODEOWNERS` con el script de la Task W0-06.12, Step 3; el job `docs` lo comprueba.
+   - Fusiona la rama en `main` por PR (desde W0-06, `main` está protegida: checks `verify`, `secrets` y `docs` y PR obligatorio).
 4. **Implementación:**
    - Rama `card/<ID>-<slug>`.
    - Cambio mínimo, con la spec de contrato actualizada y su ADR si es una decisión.
@@ -345,7 +346,7 @@ Un **contrato** es un archivo congelado (`frozen-files.json`), compartido o excl
 
 **Tarjetas de corrección.** Los defectos que aparecen tarde siguen el mismo registro con `owns` explícitos: por ejemplo, los que encuentra W7-01 antes del tag.
 
-**Cambios a `docs/algorithm.md`.** Solo Opus, en W3-01 o en una micro-tarjeta de docs. Siempre siguen dos pasos: regenerar el oráculo y avisar a ambos linajes.
+**Cambios a `docs/algorithm.md`.** Solo Opus, en W3-01 o en una micro-tarjeta de docs. Siempre siguen dos pasos: regenerar el oráculo y avisar a ambos linajes. Un id `[ALG.*]` nuevo lleva su fila en `docs/glossary.md` en el mismo PR: el job `docs` lo exige.
 
 ## 6. Compuertas del oráculo
 
@@ -456,7 +457,7 @@ El presupuesto es US$0 salvo el dominio.
 ## 8. Cómo actualizar el plan
 
 - **La fuente es `plan.json`.** De él salen `cards/<ID>.md`, `waves.md` y `traceability.md`, y desde W0-06 también `cards.json` y `frozen-files.json`, que usa owns-check. Cada entrada de `frozen-files.json` lleva `editableBy`: las tarjetas que pueden editar ese archivo.
-- **El generador es `tools/plan/render_plan.py`** (lo corre solo Opus). Valida `plan.json` y regenera `cards/`, `traceability.md` y `waves.md`; con `--check` solo valida, sin escribir, y sale con código 1 si encuentra problemas. W0-06 lo extiende para que emita también `cards.json` y `frozen-files.json` (con `editableBy`), así que regenerar todo es un solo comando.
+- **El generador es `tools/plan/render_plan.py`** (lo corre solo Opus). Valida `plan.json` y regenera `cards/`, `traceability.md` y `waves.md`; con `--check` no escribe: valida y sale con código 1 si encuentra problemas o si alguna vista generada está desactualizada o sobra. W0-06 lo extiende para que emita también `cards.json` y `frozen-files.json` (con `editableBy`), así que regenerar todo es un solo comando.
 - No edites a mano las vistas generadas: el próximo regenerado las pisa. Esta guía (`README.md`) sí se edita a mano.
 - Todo `docs/plan/` es de Opus. Los cambios van en una rama `opus/…` y se fusionan **antes** de lanzar las tarjetas afectadas.
 
@@ -468,7 +469,8 @@ El presupuesto es US$0 salvo el dominio.
    - dependencias existentes, sin ciclos y sin apuntar a una ola posterior;
    - W0 solo con tarjetas de Opus;
    - ningún par de tarjetas sin dependencia transitiva con `owns` superpuestos;
-   - R1–R28 cubiertos.
+   - R1–R28 cubiertos;
+   - cada entrada de `frozen_files` con una ruta segura y un `editableBy` de tarjetas existentes, sin duplicados, y ninguna tarjeta dueña de una ruta congelada sin figurar en su `editableBy`.
 
    Además, Opus verifica que W7-01 dependa de todas las demás.
 4. Si el cambio afecta tarjetas en vuelo, avisar y hacer rebase como en la sección 5.
