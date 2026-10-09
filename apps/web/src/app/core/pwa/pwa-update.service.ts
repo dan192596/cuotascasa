@@ -1,6 +1,7 @@
 import { DOCUMENT } from '@angular/common';
-import { computed, inject, Injectable, InjectionToken, signal } from '@angular/core';
-import { SwUpdate } from '@angular/service-worker';
+import { computed, EnvironmentInjector, inject, Injectable, InjectionToken, signal } from '@angular/core';
+import type { SwUpdate } from '@angular/service-worker';
+import { PWA_ENABLED } from './pwa-config.ts';
 
 /** Reloads the page; replaced in specs. */
 export const RELOAD_PAGE = new InjectionToken<() => void>('CC_RELOAD_PAGE', {
@@ -13,20 +14,37 @@ export const RELOAD_PAGE = new InjectionToken<() => void>('CC_RELOAD_PAGE', {
   },
 });
 
+/** Loads `SwUpdate` on demand (null when the worker is off); replaced in specs. */
+export const SW_UPDATE = new InjectionToken<() => Promise<SwUpdate | null>>('CC_SW_UPDATE', {
+  providedIn: 'root',
+  factory: () => {
+    const injector = inject(EnvironmentInjector);
+    const enabled = inject(PWA_ENABLED);
+    return async () => {
+      const runtime = await import('./pwa-runtime.ts');
+      return runtime.loadSwUpdate(injector, enabled);
+    };
+  },
+});
+
 /** Tracks the Angular service worker's `VERSION_READY` and applies it (activate, then reload). */
 @Injectable({ providedIn: 'root' })
 export class PwaUpdateService {
-  // Optional: specs and pages without provideAppPwa() have no SwUpdate; the service is then inert.
-  private readonly swUpdate = inject(SwUpdate, { optional: true });
   private readonly reload = inject(RELOAD_PAGE);
   private readonly ready = signal(false);
+  private swUpdate: SwUpdate | null = null;
 
   readonly updateReady = computed(() => this.ready());
 
   constructor() {
-    this.swUpdate?.versionUpdates.subscribe((event) => {
-      if (event.type === 'VERSION_READY') this.ready.set(true);
-    });
+    inject(SW_UPDATE)()
+      .then((swUpdate) => {
+        this.swUpdate = swUpdate;
+        swUpdate?.versionUpdates.subscribe((event) => {
+          if (event.type === 'VERSION_READY') this.ready.set(true);
+        });
+      })
+      .catch(() => undefined);
   }
 
   /** Activates the waiting version and reloads. Reloads even if activation fails: the worker may have swapped already. */

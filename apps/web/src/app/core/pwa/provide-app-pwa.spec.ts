@@ -1,9 +1,8 @@
-import { ErrorHandler, Injectable } from '@angular/core';
+import { ErrorHandler } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { describe, expect, it, vi } from 'vitest';
-import { provideAppPwa } from './provide-app-pwa.ts';
-import { SwRegistrar } from './sw-registrar.ts';
+import { provideAppPwa, REGISTER_WORKER } from './provide-app-pwa.ts';
 
 const routes = ['', 'privacidad', 'app', 'app/ajustes', 'app/prestamos/nuevo'].map((path) => ({
   path,
@@ -12,16 +11,12 @@ const routes = ['', 'privacidad', 'app', 'app/ajustes', 'app/prestamos/nuevo'].m
 
 function setup(enabled: boolean, register: () => Promise<void> = () => Promise.resolve()) {
   const spy = vi.fn(register);
-  @Injectable()
-  class FakeRegistrar {
-    register = spy;
-  }
   const handleError = vi.fn();
   TestBed.configureTestingModule({
     providers: [
       provideRouter(routes),
       provideAppPwa({ enabled }),
-      { provide: SwRegistrar, useClass: FakeRegistrar },
+      { provide: REGISTER_WORKER, useValue: spy },
       { provide: ErrorHandler, useValue: { handleError } },
     ],
   });

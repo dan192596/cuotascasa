@@ -32,11 +32,6 @@ export const TRUSTED_TYPES = new InjectionToken<TrustedTypesLike | null>('CC_TRU
   },
 });
 
-/** True for `/app` and everything under it (`/app/…`, `/app?…`, `/app#…`); false for `/application`, `/` and the rest. */
-export function isAppUrl(url: string): boolean {
-  return url === '/app' || url.startsWith('/app/') || url.startsWith('/app?') || url.startsWith('/app#');
-}
-
 /**
  * Registers the Angular service worker by hand (ADR-0023). `navigator.serviceWorker.register()` is a Trusted Types
  * sink, so the URL goes through the `cc-sw-loader` policy, created lazily the first time it is needed and only once
