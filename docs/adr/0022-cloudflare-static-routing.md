@@ -1,6 +1,6 @@
 # ADR-0022: Enrutamiento estático en Cloudflare Workers (assets, rewrites acotados y 404)
 
-Estado: Propuesto
+Estado: Aceptado (con enmiendas de W2-02)
 
 Fecha: 2026-10-09
 
@@ -82,3 +82,18 @@ Otros hechos: las reglas de `_headers` se evalúan contra la **URL pedida**, no 
 - ADR-0002, ADR-0011, ADR-0016, ADR-0017, ADR-0021 (reservado), ADR-0023 (reservado).
 - Tarjeta W1-09; W2-02, W3-14 y W3-17.
 - Cloudflare Workers, activos estáticos: https://developers.cloudflare.com/workers/static-assets/
+
+## Enmiendas
+
+### 2026-10-09, W2-02 (Opus): aceptado
+
+Se acepta la decisión tal como está. Las precisiones de abajo no la cambian.
+
+1. **Cómo sale la 404 del build.** `app.routes.server.ts` prerenderiza la ruta comodín `'**'` con `getPrerenderParams: () => [{ '**': '404' }]` y `fallback: PrerenderFallback.Client`. Así, `pnpm build` emite `404/index.html` con el título «Página no encontrada · CuotasCasa» sin tocar `app.routes.ts`. El resto de URLs desconocidas siguen en modo cliente. Una ruta de servidor `'404'` sin ruta de aplicación propia la rechaza Angular, aunque exista `'**'` (medido).
+2. **La 404 en la raíz** (`/404.html`) la produce el paso posterior al build de ADR-0021 (W2-10), que ya tiene que correr después de cada build para escribir los hashes en `dist/_headers`. Ese paso mueve `404/index.html` a `404.html` y borra `404/`, para que `/404` no responda 200, y calcula los hashes sobre el `404.html` resultante. El prerender siempre escribe `<ruta>/index.html`, así que ninguna opción de `angular.json` produce `404.html` en la raíz. Mientras ese paso no esté conectado a `pnpm build`, `tools/edge/serve.mjs` sigue promoviendo `404/index.html` en su copia temporal, y `pnpm build && pnpm edge:check` pasa con la 404 real de Angular.
+3. **`ngsw-config.json` e `index`.** El builder reemplaza el `index` de `ngsw-config.json` por `/index.csr.html`. El service worker acepta el 307 a `/index.csr` al instalar y sirve el shell sin conexión (ADR-0023, hecho 2). El riesgo abierto de la «Acción para W2-02», punto 2, queda cerrado.
+4. **`_headers`:**
+   - `wrangler dev --local` respeta `! Nombre-De-Cabecera` para quitar en una regla específica una cabecera puesta por `/*`; queda una sola CSP por respuesta (medido). ADR-0021 usa ese mecanismo para la CSP por ruta.
+   - `/index.csr` debe llevar la CSP de la app, porque el service worker sirve el shell de `/app` con las cabeceras guardadas de esa respuesta (ADR-0023, hecho 4).
+5. Los marcadores no cambian: la 404 prerenderizada lleva `nghm`, como la landing, y la tabla de `edge:check` solo pide el título en las filas 404.
+
