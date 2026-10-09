@@ -1,0 +1,39 @@
+{
+  "graphs": [
+    {
+      "name": "landing (/)",
+      "roots": ["apps/web/src/main.ts", "apps/web/src/app/public/landing/landing-page.component.ts"],
+      "budgetGzipBytes": 92160,
+      "forbidden": [
+        { "id": "dexie", "pattern": "/dexie/" },
+        { "id": "persistence", "pattern": "packages/persistence/|@cuotascasa/persistence" },
+        { "id": "sync", "pattern": "packages/sync/|@cuotascasa/sync" },
+        { "id": "export", "pattern": "packages/export/|@cuotascasa/export" },
+        { "id": "write-excel-file", "pattern": "/write-excel-file/" },
+        { "id": "jspdf", "pattern": "/jspdf" },
+        { "id": "chart.js", "pattern": "/chart\\.js/" },
+        { "id": "ng2-charts", "pattern": "/ng2-charts/" },
+        { "id": "google-gis", "pattern": "google-drive|google\\.accounts|accounts\\.google\\.com|gsi/client" },
+        { "id": "app-area-routes", "pattern": "app/app-area\\.routes\\.ts$" },
+        { "id": "data-implementations", "pattern": "app/data/(providers|stores|engine|backup|sync)/" }
+      ]
+    },
+    {
+      "name": "app initial (/app)",
+      "roots": [
+        "apps/web/src/main.ts",
+        "apps/web/src/app/app-area.routes.ts",
+        "apps/web/src/app/core/shell/app-shell.component.ts",
+        "apps/web/src/app/features/dashboard/dashboard.routes.ts",
+        "apps/web/src/app/features/dashboard/dashboard-page.component.ts"
+      ],
+      "forbidden": [
+        { "id": "write-excel-file", "pattern": "/write-excel-file/" },
+        { "id": "jspdf", "pattern": "/jspdf" },
+        { "id": "chart.js", "pattern": "/chart\\.js/" },
+        { "id": "ng2-charts", "pattern": "/ng2-charts/" },
+        { "id": "google-drive", "pattern": "packages/sync/src/google-drive|accounts\\.google\\.com|gsi/client" }
+      ]
+    }
+  ]
+}
