@@ -1,0 +1,22 @@
+.cc-theme-toggle {
+  display: inline-flex;
+  border: 1px solid var(--cc-color-control-border);
+  border-radius: 6px;
+  background: var(--cc-color-surface);
+}
+
+button {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--cc-color-ink);
+  font: inherit;
+  cursor: pointer;
+
+  &[aria-pressed='true'] {
+    background: var(--cc-color-accent);
+    color: var(--cc-color-paper);
+  }
+}
