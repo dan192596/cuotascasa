@@ -3,16 +3,18 @@
 from __future__ import annotations
 
 import calendar
+import re
 from datetime import date
 
 from .errors import InvalidInputError
 
 END_OF_MONTH = "END_OF_MONTH"
+_DATE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", re.ASCII)
 
 
 def parse_date(text: object) -> date:
     """AAAA-MM-DD estricto."""
-    if not isinstance(text, str) or len(text) != 10 or text[4] != "-" or text[7] != "-":
+    if not isinstance(text, str) or not _DATE.fullmatch(text):
         raise InvalidInputError("ALG.TERMS", "fecha inválida")
     try:
         return date(int(text[0:4]), int(text[5:7]), int(text[8:10]))

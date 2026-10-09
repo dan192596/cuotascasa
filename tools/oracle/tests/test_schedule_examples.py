@@ -46,3 +46,22 @@ def test_example_is_reproduced(name, case):
     assert result["anchors"] == [] and result["payments"] == []
     if "yearly" in expected:
         assert yearly_subtotals(result["rows"]) == expected["yearly"]
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "+202-01-01",
+        " 026-01-01",
+        "2026-01-01 ",
+        "２０２６-01-01",
+        "0000-01-01",
+        "2026-1-001",
+        "2026/01/01",
+    ],
+)
+def test_parse_date_is_strict(text):
+    from cuotascasa_oracle.dates import parse_date
+
+    with pytest.raises(InvalidInputError):
+        parse_date(text)

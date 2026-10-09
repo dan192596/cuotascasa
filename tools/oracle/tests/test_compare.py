@@ -291,3 +291,60 @@ def test_compare_agrees_with_a_generated_fixture(tmp_path, capsys):
         str(tmp_path / "a-expected.csv"),
     ]
     assert run(argv, capsys)[0] == 0
+
+
+@pytest.mark.parametrize("bad_events", [None, 0, "", {}, False, "x", 1])
+def test_non_list_events_are_terms_invalid(private, capsys, bad_events):
+    argv = private()
+    (private.tmp_path / "a-terms.json").write_text(
+        json.dumps({"terms": TERMS, "events": bad_events}), encoding="utf-8"
+    )
+    assert run(argv, capsys) == (2, "", "error: terms-invalid\n")
+
+
+@pytest.mark.parametrize("bad_events", [None, 0, "", {}, False, [{"id": "ev-01"}]])
+def test_build_schedule_rejects_non_list_or_non_empty_events(bad_events):
+    from cuotascasa_oracle.errors import InvalidInputError
+    from cuotascasa_oracle.schedule import build_schedule
+
+    with pytest.raises(InvalidInputError):
+        build_schedule(TERMS, bad_events)
+
+
+def test_log_line_survives_a_non_utf8_stdout(private):
+    argv = private()
+    env = {
+        "LC_ALL": "C",
+        "PYTHONUTF8": "0",
+        "PYTHONCOERCECLOCALE": "0",
+        "PYTHONIOENCODING": "ascii",
+    }
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "cuotascasa_oracle",
+            *argv,
+            "--log-line",
+            "--sha",
+            SHA,
+            "--label",
+            "a",
+        ],
+        cwd=ORACLE_DIR,
+        env=env,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    out = result.stdout.decode("utf-8")
+    assert re.fullmatch(
+        r"\d{4}-\d{2}-\d{2} · oráculo 0123abc · préstamo a · todas las filas coinciden: sí\n", out
+    )
+
+
+def test_abbreviated_options_are_usage_errors(tmp_path, capsys):
+    argv = ["generate", "--prof", "core", "--seed", "1", "--out", str(tmp_path / "o")]
+    assert run(argv, capsys) == (2, "", "error: usage\n")
+    compare_argv = ["compare", "--ter", "x", "--expected", "y"]
+    assert run(compare_argv, capsys) == (2, "", "error: usage\n")

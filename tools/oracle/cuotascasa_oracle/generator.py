@@ -21,10 +21,19 @@ SEED_MAX = 4294967295
 _FILE = re.compile(r"(?P<profile>[a-z]+)-(?P<index>[0-9]{4})\.json")
 
 INTEREST_GRID = tuple(fmt_rate(Decimal("0.0540") + Decimal("0.0020") * step) for step in range(23))
-PRINCIPAL_RANGE = {"GTQ": (150000, 2500000), "USD": (20000, 330000)}
+# Todos los rangos de dinero van en centavos enteros (nunca float).
+PRINCIPAL_RANGE = {"GTQ": (15_000_000, 250_000_000), "USD": (2_000_000, 33_000_000)}
 CHARGE_RANGES = {
-    "GTQ": {"IUSI": (25, 600), "Seguro de daños": (15, 250), "Seguro adicional": (10, 100)},
-    "USD": {"IUSI": (3, 80), "Seguro de daños": (2, 35), "Seguro adicional": (1.5, 15)},
+    "GTQ": {
+        "IUSI": (2_500, 60_000),
+        "Seguro de daños": (1_500, 25_000),
+        "Seguro adicional": (1_000, 10_000),
+    },
+    "USD": {
+        "IUSI": (300, 8_000),
+        "Seguro de daños": (200, 3_500),
+        "Seguro adicional": (150, 1_500),
+    },
 }
 CHARGE_LABELS = {
     "F0": [],
@@ -32,6 +41,21 @@ CHARGE_LABELS = {
     "F2": ["IUSI", "Seguro de daños"],
 }
 INSURANCE = {"FHA": ["0.01", "0.0026"], "NONE": []}
+
+
+class ManifestError(Exception):
+    """El manifiesto no tiene la forma de FORMAT.md §5."""
+
+
+def read_manifest(path: Path) -> dict:
+    """Lee un manifiesto y valida su forma básica: objeto con `profiles` objeto."""
+    try:
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as error:
+        raise ManifestError("unreadable") from error
+    if not isinstance(manifest, dict) or not isinstance(manifest.get("profiles"), dict):
+        raise ManifestError("profiles")
+    return manifest
 
 
 @dataclass(frozen=True)
@@ -84,9 +108,9 @@ def rng(profile: str, seed: int, loan_index: int) -> random.Random:
     return random.Random(subseed(profile, seed, loan_index))
 
 
-def _cents(generator: random.Random, low: float, high: float) -> str:
-    """Uniforme en centavos [low, high], con 2 decimales (§6.2)."""
-    cents = generator.randint(round(low * 100), round(high * 100))
+def _cents(generator: random.Random, low: int, high: int) -> str:
+    """Uniforme en centavos [low, high] (enteros), con 2 decimales (§6.2)."""
+    cents = generator.randint(low, high)
     return f"{cents // 100}.{cents % 100:02d}"
 
 
@@ -164,6 +188,10 @@ def _write(path: Path, text: str) -> None:
 def generate(profile: str, seed: int, out: Path) -> None:
     """FORMAT.md §8.1: escribe los fixtures, borra los sobrantes y combina el manifiesto."""
     spec = PROFILES[profile]
+    manifest_path = out / "manifest.json"
+    manifest = {"synthetic": True, "profiles": {}}
+    if manifest_path.exists():
+        manifest = read_manifest(manifest_path)  # antes de escribir nada
     out.mkdir(parents=True, exist_ok=True)
     with calc_context():
         for index in range(1, spec.count + 1):
@@ -172,12 +200,8 @@ def generate(profile: str, seed: int, out: Path) -> None:
         match = _FILE.fullmatch(path.name)
         if match and match["profile"] == profile and int(match["index"]) > spec.count:
             path.unlink()
-    manifest_path = out / "manifest.json"
-    manifest = {"synthetic": True, "profiles": {}}
-    if manifest_path.exists():
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     manifest["synthetic"] = True
-    manifest.setdefault("profiles", {})[profile] = {
+    manifest["profiles"][profile] = {
         "count": spec.count,
         "generatorVersion": GENERATOR_VERSION,
         "seed": seed,

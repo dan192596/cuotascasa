@@ -124,3 +124,66 @@ def test_regenerate_errors_exit_2_without_touching_anything(tmp_path, capsys):
         assert (out / "core-0002.json").read_text(encoding="utf-8") == "{}\n"
         assert manifest_path.read_bytes() == before_manifest
     assert before  # el directorio tenía contenido
+
+
+@pytest.mark.parametrize(
+    "content", ["{not json", "[]", '"x"', '{"profiles": []}', '{"profiles": 3}']
+)
+def test_generate_with_a_bad_manifest_is_a_manifest_error(tmp_path, capsys, content):
+    out = tmp_path / "fx"
+    out.mkdir()
+    (out / "manifest.json").write_text(content, encoding="utf-8")
+    code, stdout, stderr = run(
+        ["generate", "--profile", "core", "--seed", "1", "--out", str(out)], capsys
+    )
+    assert (code, stdout, stderr) == (2, "", "error: manifest\n")
+    assert (out / "manifest.json").read_text(encoding="utf-8") == content
+    assert not list(out.glob("core-*"))
+
+
+@pytest.mark.parametrize(
+    "entry",
+    [
+        {"count": 15, "generatorVersion": 1, "seed": True},
+        {"count": 15, "generatorVersion": 1, "seed": -1},
+        {"count": 15, "generatorVersion": 1, "seed": 4294967296},
+        {"count": 15, "generatorVersion": 1, "seed": "7"},
+        {"count": True, "generatorVersion": 1, "seed": 7},
+        {"count": "15", "generatorVersion": 1, "seed": 7},
+        {"count": 15, "generatorVersion": True, "seed": 7},
+        {"count": 15, "generatorVersion": 1.0, "seed": 7},
+        {"count": 15, "generatorVersion": 1},
+        [],
+    ],
+)
+def test_regenerate_validates_every_entry_before_writing(tmp_path, capsys, entry):
+    out = tmp_path / "fx"
+    out.mkdir()
+    manifest = {"synthetic": True, "profiles": {"core": entry}}
+    (out / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    code, stdout, stderr = run(["regenerate", "--manifest", str(out / "manifest.json")], capsys)
+    assert (code, stdout, stderr) == (2, "", "error: manifest\n")
+    assert [p.name for p in out.iterdir()] == ["manifest.json"]
+
+
+def test_pruning_leaves_other_profiles_files_untouched(tmp_path, capsys):
+    out = tmp_path / "fx"
+    out.mkdir()
+    (out / "full-0041.json").write_text("{}\n", encoding="utf-8")
+    (out / "core-0016.json").write_text("{}\n", encoding="utf-8")
+    assert run(["generate", "--profile", "core", "--seed", "1", "--out", str(out)], capsys)[0] == 0
+    assert (out / "full-0041.json").read_text(encoding="utf-8") == "{}\n"
+    assert not (out / "core-0016.json").exists()
+
+
+def test_generator_money_uses_no_floats():
+    import ast
+
+    from helpers import ORACLE_DIR
+
+    tree = ast.parse((ORACLE_DIR / "cuotascasa_oracle" / "generator.py").read_text("utf-8"))
+    floats = [
+        n for n in ast.walk(tree) if isinstance(n, ast.Constant) and isinstance(n.value, float)
+    ]
+    calls = [n for n in ast.walk(tree) if isinstance(n, ast.Name) and n.id == "float"]
+    assert not floats and not calls

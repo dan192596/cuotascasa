@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 import re
 import sys
 from datetime import date
@@ -12,6 +11,7 @@ from pathlib import Path
 from . import GENERATOR_VERSION, generator
 from .compare import CompareError, compare
 from .errors import OracleError
+from .generator import ManifestError
 
 _SHA = re.compile(r"[0-9a-f]{7,40}")
 _LABEL = re.compile(r"[a-z]{1,8}")
@@ -31,15 +31,15 @@ class _Parser(argparse.ArgumentParser):
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = _Parser(prog="python -m cuotascasa_oracle", add_help=True)
+    parser = _Parser(prog="python -m cuotascasa_oracle", add_help=True, allow_abbrev=False)
     sub = parser.add_subparsers(dest="command", required=True, parser_class=_Parser)
-    gen = sub.add_parser("generate")
+    gen = sub.add_parser("generate", allow_abbrev=False)
     gen.add_argument("--profile", required=True)
     gen.add_argument("--seed", required=True, type=int)
     gen.add_argument("--out", required=True, type=Path)
-    regen = sub.add_parser("regenerate")
+    regen = sub.add_parser("regenerate", allow_abbrev=False)
     regen.add_argument("--manifest", required=True, type=Path)
-    cmp_ = sub.add_parser("compare")
+    cmp_ = sub.add_parser("compare", allow_abbrev=False)
     cmp_.add_argument("--terms", required=True, type=Path)
     cmp_.add_argument("--expected", required=True, type=Path)
     cmp_.add_argument("--log-line", action="store_true")
@@ -55,25 +55,39 @@ def _today() -> str:
 def _generate(args: argparse.Namespace) -> int:
     if args.profile not in generator.PROFILES or not 0 <= args.seed <= generator.SEED_MAX:
         raise CliError("usage")
-    generator.generate(args.profile, args.seed, args.out)
+    try:
+        generator.generate(args.profile, args.seed, args.out)
+    except ManifestError as error:
+        raise CliError("manifest") from error
     return 0
+
+
+def _entry_int(entry: object, key: str, low: int = 0, high: int | None = None) -> int:
+    value = entry.get(key) if isinstance(entry, dict) else None
+    if isinstance(value, bool) or not isinstance(value, int) or value < low:
+        raise ManifestError(key)
+    if high is not None and value > high:
+        raise ManifestError(key)
+    return value
 
 
 def _regenerate(args: argparse.Namespace) -> int:
     try:
-        manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
-        profiles = manifest["profiles"]
+        manifest = generator.read_manifest(args.manifest)
         plan = [
-            (name, entry["seed"], entry["generatorVersion"]) for name, entry in profiles.items()
+            (
+                name,
+                _entry_int(entry, "seed", 0, generator.SEED_MAX),
+                _entry_int(entry, "generatorVersion"),
+            )
+            for name, entry in manifest["profiles"].items()
         ]
-    except (OSError, ValueError, KeyError, TypeError, AttributeError) as error:
+        for entry in manifest["profiles"].values():
+            _entry_int(entry, "count")
+    except ManifestError as error:
         raise CliError("manifest") from error
     for name, _seed, version in plan:
-        if (
-            name not in generator.PROFILES
-            or not isinstance(version, int)
-            or version > GENERATOR_VERSION
-        ):
+        if name not in generator.PROFILES or version > GENERATOR_VERSION:
             raise CliError("manifest")
     for name, seed, version in plan:
         if version < GENERATOR_VERSION:
@@ -111,6 +125,9 @@ def _compare(args: argparse.Namespace) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8")
     try:
         args = _build_parser().parse_args(argv)
         handlers = {"generate": _generate, "regenerate": _regenerate, "compare": _compare}

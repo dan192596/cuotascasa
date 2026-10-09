@@ -5,6 +5,7 @@ from __future__ import annotations
 from decimal import Decimal
 
 from . import dates
+from .errors import InvalidInputError
 from .money import ZERO, calc_context, fmt_amount, half_up_2
 from .terms import Terms, parse_terms
 
@@ -63,12 +64,12 @@ def _last_period(terms: Terms, balance: Decimal):
     return interest, _split_insurance(insurance, rates, f)
 
 
-def build_schedule(raw_terms: dict, events: list | None = None) -> dict:
+def build_schedule(raw_terms: dict, events: object = ()) -> dict:
     """Calendario del camino real sin eventos. Devuelve {rows, anchors, payments, summary}."""
-    if events:
+    if isinstance(events, tuple) and not events:
+        events = []
+    if not isinstance(events, list) or events:
         # Fuera del alcance de W1-02 (los eventos llegan con W2-06).
-        from .errors import InvalidInputError
-
         raise InvalidInputError("ALG.EVENTS", "eventos fuera del alcance de este perfil")
     terms = parse_terms(raw_terms)
     with calc_context():

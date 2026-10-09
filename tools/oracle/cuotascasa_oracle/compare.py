@@ -53,7 +53,11 @@ def read_terms(path: Path) -> dict:
         raw = json.loads(path.read_text(encoding="utf-8"))
     except (UnicodeDecodeError, ValueError) as error:
         raise CompareError("terms-invalid") from error
-    if not isinstance(raw, dict) or set(raw) != {"terms", "events"}:
+    if (
+        not isinstance(raw, dict)
+        or set(raw) != {"terms", "events"}
+        or not isinstance(raw["events"], list)
+    ):
         raise CompareError("terms-invalid")
     return raw
 
