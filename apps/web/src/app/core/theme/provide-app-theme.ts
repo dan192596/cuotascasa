@@ -1,11 +1,7 @@
-import { type EnvironmentProviders, InjectionToken, makeEnvironmentProviders } from '@angular/core';
+import { type EnvironmentProviders, makeEnvironmentProviders } from '@angular/core';
+import { ThemeService } from './theme.service.ts';
 
-/** Inert W0-05 stub; W3-05 replaces this file (same export) and deletes stub.spec.ts. */
-export const CC_STUB = 'CC_STUB:W3-05';
-
-const STUB_MARKER = new InjectionToken<string>(CC_STUB);
-
-/** W3-05: ThemeService (system | light | dark). The stub sets no theme: the page follows the system. */
+/** Root ThemeService (system | light | dark). It does not see SETTINGS_STORE: cc-theme-toggle feeds it under /app. */
 export function provideAppTheme(): EnvironmentProviders {
-  return makeEnvironmentProviders([{ provide: STUB_MARKER, useValue: CC_STUB }]);
+  return makeEnvironmentProviders([ThemeService]);
 }
