@@ -29,7 +29,7 @@ Cada ADR documenta una decisión importante: su contexto, la decisión, las alte
 | [0019](0019-proceso-con-agentes.md) | Proceso de desarrollo con agentes | Aceptado | 2026-10-04 |
 | [0020](0020-fase-multiusuario-diferida.md) | Fase multiusuario diferida (diseño Supabase archivado) | Diferido | 2026-10-04 |
 | 0021 | `0021-csp-trusted-types-gis.md`: CSP por ruta, Trusted Types y carga de GIS | Reservado (lo escribe W2-02) | — |
-| 0022 | `0022-cloudflare-static-routing.md`: enrutamiento estático en Cloudflare | Reservado (lo redacta W1-09; W2-02 lo acepta o enmienda) | — |
+| [0022](0022-cloudflare-static-routing.md) | Enrutamiento estático en Cloudflare | Propuesto (W1-09; W2-02 lo acepta o enmienda) | 2026-10-09 |
 | 0023 | `0023-pwa-registration-scope.md`: alcance de registro del service worker | Reservado (lo escribe W2-02) | — |
 | [0024](0024-sync-merge-order.md) | Orden total de la combinación en la sincronización | Aceptado | 2026-10-05 |
 

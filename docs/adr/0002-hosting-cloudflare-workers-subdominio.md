@@ -20,7 +20,7 @@ La v1 no tiene backend (ADR-0001): el producto es un conjunto de archivos estát
 
 1. **Cloudflare Workers con activos estáticos**, en el plan gratuito, como un Worker sin código propio (solo assets) configurado en `wrangler.jsonc`. El directorio publicado es `dist/apps/web/browser`, con `html_handling` y `not_found_handling: "404-page"`.
 2. **Un subdominio del dominio que compra el dueño.** El dominio raíz queda libre para otros usos del portafolio.
-3. **Rewrites acotados.** `_redirects` contiene solo `/app` y `/app/*` → `/index.csr.html` con estado 200. **Nunca** se usa un comodín `/*`, para que las rutas desconocidas den 404 y no la app.
+3. **Rewrites acotados.** `_redirects` contiene solo `/app` y `/app/*` → `/index.csr` con estado 200 (sin `.html`: con `html_handling` la plataforma responde 307 de `/index.csr.html` a `/index.csr`; evidencia en ADR-0022 §4). **Nunca** se usa un comodín `/*`, para que las rutas desconocidas den 404 y no la app.
 4. **Cabeceras en `_headers`, por ruta:**
    - CSP propia de cada área.
    - `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy` y `frame-ancestors`.
@@ -58,7 +58,7 @@ La v1 no tiene backend (ADR-0001): el producto es un conjunto de archivos estát
 
 - `pnpm edge:check` (`tools/edge/check-routing.mjs`, W1-09) sobre `wrangler dev --local` comprueba:
   - `/` y `/privacidad` responden 200 con su contenido;
-  - `/app` y `/app/prestamos/x/tabla` responden 200 con `index.csr.html`;
+  - `/app` y `/app/prestamos/x/tabla` responden 200 con el contenido de `index.csr.html` (servido como `/index.csr`);
   - `/application` y `/nope` responden 404 con la página 404;
   - las cabeceras de caché son las esperadas.
 - La misma herramienta corre con `--base-url` contra el subdominio desplegado desde W3-17.

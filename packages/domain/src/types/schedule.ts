@@ -35,7 +35,10 @@ export interface ScheduleRow {
   readonly closingAfterPrepayment: Money;
   /** Cuota nivelada vigente en k (sin cargos fijos). */
   readonly level: Money;
-  /** Última fila del calendario ([ALG.LAST]). */
+  /**
+   * Fila calculada por [ALG.LAST]. Una liquidación anticipada termina el calendario con
+   * `isLast: false` y `payoff: true`: la fila terminal es la que tiene `isLast || payoff`.
+   */
   readonly isLast: boolean;
   /** Un abono de la fase 3 liquidó el préstamo en k ([ALG.PREPAY.CAP]). */
   readonly payoff: boolean;
