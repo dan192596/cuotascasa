@@ -24,6 +24,10 @@ export const prepaymentHandler: EventHandler<'Prepayment'> = ({ ctx, event, stat
     return { state, rowEffect: { prepayment: ZERO_MONEY, commission: ZERO_MONEY, payoff: false } };
   }
   const applied = minMoney(event.amount, state.balance);
+  // [ALG.PREPAY.CAP] / RowEffect: un abono aplicado de 0.00 (o negativo) no cobra comisión ni cambia el estado.
+  if (compareMoney(applied, ZERO_MONEY) <= 0) {
+    return { state, rowEffect: { prepayment: ZERO_MONEY, commission: ZERO_MONEY, payoff: false } };
+  }
   const balance = moneySub(state.balance, applied);
   const rowEffect = {
     prepayment: applied,

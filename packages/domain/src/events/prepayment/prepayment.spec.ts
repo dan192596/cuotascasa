@@ -226,6 +226,16 @@ describe('[ALG.PREPAY.CAP]', () => {
     expect(rowEffect).toEqual({ prepayment: '0.00', commission: '0.00', payoff: false });
   });
 
+  it('an amount of 0.00 with a FLAT commission applies 0.00, charges nothing and leaves the state unchanged', () => {
+    const event = withOptions(prepayment('p1', '2026-03-31', '0.00'), {
+      commission: { kind: 'FLAT', amount: m('5.00') },
+    });
+    const state = stateAfter(3, '900.00');
+    const { state: next, rowEffect } = prepaymentHandler(input(event, state));
+    expect(next).toBe(state);
+    expect(rowEffect).toEqual({ prepayment: '0.00', commission: '0.00', payoff: false });
+  });
+
   it('a second prepayment in the same k after a payoff applies 0.00', () => {
     const events = [
       withOptions(prepayment('p1', '2026-03-30', '99999.00'), {}),

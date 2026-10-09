@@ -82,8 +82,20 @@ describe('[ALG.ADVANCE] AdvanceInstallments(n)', () => {
     expect(next.balance).toBe('0.00');
   });
 
-  it('still shortens a FIXED term by n when the projected capital is 0.00 on a positive balance', () => {
+  it('a projection of exactly 0.00 on a positive balance applies 0.00 and still drops a FIXED term by n', () => {
+    // level 0.01 = the financial charge of 0.50, so the simulated capital is exactly 0.00.
+    const state = stateAfter(3, '0.50', { level: m('0.01') });
+    expect(projectCapital(state, 2)).toBe('0.00');
+    const { state: next, rowEffect } = advanceInstallmentsHandler(input(advance('a1', '2026-03-31', 2), state));
+    expect(next.term).toBe(10);
+    expect(next.balance).toBe('0.50');
+    expect(rowEffect).toEqual({ prepayment: '0.00', commission: '0.00', payoff: false });
+  });
+
+  it('a negative projection (level below the charge) is clamped to 0.00 and the FIXED term still drops by n', () => {
+    // Opus ruling A: see the comment in index.ts.
     const state = stateAfter(3, '900.00', { level: m('0.00') });
+    expect(projectCapital(state, 2).startsWith('-')).toBe(true);
     const { state: next, rowEffect } = advanceInstallmentsHandler(input(advance('a1', '2026-03-31', 2), state));
     expect(next.term).toBe(10);
     expect(next.balance).toBe('900.00');

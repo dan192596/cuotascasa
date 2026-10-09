@@ -18,7 +18,8 @@ export const advanceInstallmentsHandler: EventHandler<'AdvanceInstallments'> = (
   if (compareMoney(state.balance, ZERO_MONEY) <= 0) {
     return { state, rowEffect: { prepayment: ZERO_MONEY, commission: ZERO_MONEY, payoff: false } };
   }
-  // Un capital proyectado negativo (level 0.00) no es un abono: se acota a 0.00.
+  // Dictamen A de Opus (provisional, pendiente de [ALG.ADVANCE]): con proyección negativa (solo si level < charge,
+  // p. ej. tras un ancla al alza) el abono aplicado se acota a 0.00 y, en plazo fijo, `term` baja igualmente en N.
   const applied = maxMoney(ZERO_MONEY, minMoney(ctx.projectCapital(state, count), state.balance));
   const balance = moneySub(state.balance, applied);
   const payoff = compareMoney(balance, ZERO_MONEY) <= 0;
