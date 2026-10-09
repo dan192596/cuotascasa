@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { thrownBy } from '../../test/support/errors.ts';
 import { createEngineContext } from '../engine-context.ts';
-import { moneySub, parseMoney } from '../money/index.ts';
+import { moneySub, moneySum, parseMoney } from '../money/index.ts';
 import { buildSchedule } from '../schedule/index.ts';
 import { prepayment, shortTerms } from '../schedule/testing/builders.ts';
 import { CurrencyMismatchError } from '../types/primitives.ts';
@@ -80,11 +80,8 @@ describe('compareSchedules ([ALG.METRICS])', () => {
   });
 });
 
+/** Independent check: Σ(interest + insurance) row by row, base minus scenario. */
 function expectedInterestSaved(base: Schedule, scenario: Schedule): string {
-  const total = (schedule: Schedule) =>
-    schedule.rows.reduce(
-      (sum, row) => sum + Math.round(Number(row.interest) * 100) + Math.round(Number(row.insurance) * 100),
-      0,
-    );
-  return ((total(base) - total(scenario)) / 100).toFixed(2);
+  const cost = (schedule: Schedule) => moneySum(schedule.rows.flatMap((row) => [row.interest, row.insurance]));
+  return moneySub(cost(base), cost(scenario));
 }

@@ -23,6 +23,15 @@ const withBreakdown = (id: string, k: number, date: string, parts: readonly [str
     breakdown: { capital: m(parts[0]), interest: m(parts[1]), insurance: m(parts[2]), fixedCharges: m(parts[3]) },
   }) satisfies ActualPaymentEvent;
 
+/** A malformed payment, as it could arrive from a boundary: no installmentNumber. */
+const withoutNumber = (id: string): ActualPaymentEvent =>
+  ({
+    type: 'ActualPayment',
+    id,
+    date: actualPayment(id, '2026-02-28', 2).date,
+    total: m('1.00'),
+  }) as unknown as ActualPaymentEvent;
+
 describe('actualPaymentHandler ([ALG.ACTUAL], phase 4)', () => {
   const row = plain.rows[2] as ScheduleRow;
   const state: PeriodState = {
@@ -122,14 +131,12 @@ describe('ActualPayment inside the period loop', () => {
       code: 'INSTALLMENT_OUT_OF_RANGE',
       k: 13,
     });
-    const { installmentNumber: _omitted, ...withoutNumber } = actualPayment('a', '2026-02-28', 2);
-    const bad = withoutNumber as unknown as ActualPaymentEvent;
+    const bad = withoutNumber('a');
     expect(thrownBy(() => buildSchedule(terms, [bad], ctx))).toMatchObject({ code: 'MISSING_INSTALLMENT_NUMBER' });
   });
 
   it('inherited payments are not re-checked: out of range or without a number they are skipped', () => {
-    const { installmentNumber: _omitted, ...withoutNumber } = actualPayment('b', '2026-02-28', 2);
-    const inherited = [actualPayment('a', '2026-02-28', 99), withoutNumber as unknown as ActualPaymentEvent];
+    const inherited = [actualPayment('a', '2026-02-28', 99), withoutNumber('b')];
     expect(buildSchedule(terms, [], ctx, { inheritedEvents: inherited })).toEqual(plain);
   });
 
