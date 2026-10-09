@@ -1,0 +1,70 @@
+<div
+  #grid
+  class="grid"
+  role="grid"
+  [attr.aria-label]="label()"
+  [attr.aria-rowcount]="rows().length + 1"
+  [attr.aria-colcount]="columns().length"
+>
+  <div class="row head" role="row" aria-rowindex="1">
+    @for (column of columns(); track column.key; let ci = $index) {
+      <div
+        class="cell"
+        role="columnheader"
+        [class.end]="column.align === 'end'"
+        [class.sticky]="offsets()[ci] !== null"
+        [style.left]="offsets()[ci]"
+        [attr.aria-colindex]="ci + 1"
+      >
+        {{ column.header }}
+      </div>
+    }
+  </div>
+  @for (vm of view(); track vm.row.key) {
+    <div
+      class="row"
+      role="row"
+      [class.band]="vm.band"
+      [class.current]="vm.row.current"
+      [class.subtotal]="vm.subtotal"
+      [attr.aria-rowindex]="vm.ri + 2"
+      [attr.aria-roledescription]="vm.subtotal ? 'subtotal' : null"
+      [attr.aria-current]="vm.row.current ? 'true' : null"
+    >
+      @for (cell of vm.cells; track cell.column.key) {
+        <div
+          class="cell"
+          [class.end]="cell.column.align === 'end'"
+          [class.sticky]="cell.left !== null"
+          [style.left]="cell.left"
+          [attr.role]="cell.role"
+          [attr.aria-colindex]="cell.ci + 1"
+          [attr.aria-readonly]="!cell.editable && cell.role === 'gridcell' && cell.column.editable ? 'true' : null"
+          [attr.data-editable]="cell.editable ? 'true' : null"
+          [attr.data-r]="vm.ri"
+          [attr.data-c]="cell.ci"
+          [attr.tabindex]="activeCell().r === vm.ri && activeCell().c === cell.ci ? 0 : -1"
+        >
+          @if (isEditing(vm.ri, cell.ci)) {
+            <input
+              #editor
+              class="editor"
+              type="text"
+              inputmode="decimal"
+              autocomplete="off"
+              [value]="editing()?.draft"
+              [attr.aria-label]="cell.column.header + ' de ' + (vm.row.label ?? vm.row.key)"
+              [attr.aria-invalid]="editing()?.invalid ? 'true' : null"
+              (input)="onEditorInput($event)"
+              (keydown)="onEditorKeydown($event)"
+              (blur)="onEditorBlur()"
+            />
+          } @else {
+            {{ cell.text }}
+          }
+        </div>
+      }
+    </div>
+  }
+</div>
+<div class="sr-only" role="status" aria-live="polite">{{ status() }}</div>
