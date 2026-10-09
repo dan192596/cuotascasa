@@ -121,15 +121,31 @@ export async function installGoogleMock(
 }
 
 /**
- * Loads accounts.google.com/gsi/client into the page the way the app does (a script element), resolving when it ran.
- * Unlike page.addScriptTag it is not rejected by CSP report-only notices. Needs installGoogleMock on the context.
+ * Loads accounts.google.com/gsi/client into the page the way the production loader does (ADR-0021 decision 3): a
+ * script element whose `src` comes from the Trusted Types policy `cc-gis-loader`, accepting only the GIS URL. It
+ * therefore also works on real pages with Trusted Types enforced. Resolves when the script ran. Unlike
+ * page.addScriptTag it is not rejected by CSP notices. Needs installGoogleMock on the context.
  */
 export async function loadGisScript(page: Page): Promise<void> {
   await page.evaluate(
     () =>
       new Promise<void>((resolve, reject) => {
+        const url = 'https://accounts.google.com/gsi/client';
+        type Factory = { createPolicy(name: string, rules: { createScriptURL(input: string): string }): unknown };
+        const factory = (window as unknown as { trustedTypes?: Factory }).trustedTypes;
         const script = document.createElement('script');
-        script.src = 'https://accounts.google.com/gsi/client';
+        script.async = true;
+        if (factory === undefined) {
+          script.src = url;
+        } else {
+          const policy = factory.createPolicy('cc-gis-loader', {
+            createScriptURL: (input) => {
+              if (input !== url) throw new TypeError('cc-gis-loader only allows the GIS URL');
+              return input;
+            },
+          }) as { createScriptURL(input: string): string };
+          (script as unknown as { src: unknown }).src = policy.createScriptURL(url);
+        }
         script.onload = () => resolve();
         script.onerror = () => reject(new Error('gsi/client did not load'));
         document.head.append(script);

@@ -1,7 +1,8 @@
 import type { Page } from '@playwright/test';
-import { expectNoExternalRequests } from './expectations.ts';
+import { expectNoConsoleErrors, expectNoCspViolations, expectNoExternalRequests } from './expectations.ts';
 import { loadGisScript } from './google-mock.ts';
 import { expect, test } from './test.ts';
+import { openHarness } from './harness.ts';
 
 const SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
 
@@ -60,7 +61,7 @@ test.describe('Google mock', () => {
     page,
     googleMock,
   }) => {
-    await page.goto('/privacidad');
+    await openHarness(page);
     googleMock.drive.seed({ name: 'cuotascasa-sync.json', content: '{"synthetic":true}' });
 
     const outcome = await requestToken(page);
@@ -75,7 +76,7 @@ test.describe('Google mock', () => {
   });
 
   test('queued user actions and injected Drive failures reach the page', async ({ page, googleMock }) => {
-    await page.goto('/privacidad');
+    await openHarness(page);
     googleMock.gis.queueUserActions('deny', 'close-popup', 'approve');
     expect((await requestToken(page)).error).toBe('access_denied');
     expect((await requestToken(page)).error).toBe('popup_closed');
@@ -89,7 +90,7 @@ test.describe('Google mock', () => {
   });
 
   test('a Google URL the mock does not serve is blocked, not sent', async ({ page, googleMock }) => {
-    await page.goto('/privacidad');
+    await openHarness(page);
     await requestToken(page);
     expect(googleMock.gis.requests).toHaveLength(1);
     const failures: string[] = [];
@@ -100,6 +101,25 @@ test.describe('Google mock', () => {
     await expect.poll(() => failures.length).toBeGreaterThan(0);
     expect(failures.join('\n')).toMatch(/oauth2\.googleapis\.com\/x .*(BLOCKED_BY_CLIENT|blocked)/i);
     // Served-by-mock hosts are still flagged as external, which is what tests of the real app must never see.
+    expect(() => expectNoExternalRequests(page)).toThrow(/accounts\.google\.com/);
+  });
+
+  test('loads GIS and talks to Drive on a real /app page under the final CSP with zero violations', async ({
+    page,
+    googleMock,
+  }) => {
+    googleMock.drive.seed({ name: 'cuotascasa-sync.json', content: '{"synthetic":true}' });
+    await page.goto('/app');
+    await expect(page.getByTestId('page-dashboard')).toBeVisible();
+
+    const outcome = await requestToken(page);
+    expect(outcome.token).toMatch(/^gis-fake-token-/);
+    expect(await listFiles(page, outcome.token)).toEqual({ status: 200, names: ['cuotascasa-sync.json'] });
+    await page.waitForLoadState('networkidle');
+
+    expectNoCspViolations(page);
+    expectNoConsoleErrors(page);
+    // Only the two Google hosts, both answered by the mock.
     expect(() => expectNoExternalRequests(page)).toThrow(/accounts\.google\.com/);
   });
 });
