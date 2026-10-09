@@ -43,7 +43,14 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck && pnpm exec tsc -p tools/lint-fixtures/tsconfig.json
       - name: Playwright browsers for Vitest browser projects (Chromium and WebKit)
-        run: pnpm exec playwright install --with-deps chromium webkit
+        # A stalled download used to hang until the 30-minute job timeout: cap each attempt and retry.
+        timeout-minutes: 16
+        run: |
+          for attempt in 1 2 3; do
+            timeout 300 pnpm exec playwright install --with-deps chromium webkit && exit 0
+            echo "playwright install attempt $attempt failed or stalled; retrying"
+          done
+          exit 1
       - name: Unit tests with coverage
         run: pnpm test:coverage
       - name: Browser unit tests (Chromium and WebKit)

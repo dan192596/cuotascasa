@@ -362,6 +362,7 @@ Se ejecuta desde `tools/oracle`; las rutas son relativas al directorio de trabaj
 
 - Por cada perfil del manifiesto: si su `generatorVersion` es igual a `GENERATOR_VERSION`, ejecuta `generate` con su semilla y `--out` = el directorio del manifiesto; si es menor, imprime `regeneration pending: <perfil>` y no lo toca; si es mayor, o el perfil no existe en el código, sale con código 2.
 - Los perfiles que existen en el código pero no en el manifiesto se ignoran.
+- Un manifiesto ilegible o mal formado (JSON inválido, `profiles` que no es objeto, o una entrada con `seed`, `count` o `generatorVersion` que no sea entero) imprime `error: manifest` y sale con código 2 antes de escribir nada. `generate` aplica la misma regla al manifiesto que actualiza.
 - CI (`oracle-diff`, W2-01) corre `regenerate` y luego `git diff --exit-code`.
 
 ### 8.3 `compare --terms RUTA/a-terms.json --expected RUTA/a-expected.csv`
@@ -378,7 +379,7 @@ Se ejecuta desde `tools/oracle`; las rutas son relativas al directorio de trabaj
   ```
 
 - **Nunca** imprime el total de filas, montos, fechas ni condiciones, ni siquiera en la terminal o en un error.
-- **Códigos de salida:** 0 si coinciden todas las filas, 1 si no, 2 ante un error de uso o de formato. Un error imprime una sola línea `error: <código>`, con código `usage`, `terms-invalid`, `csv-header` o `csv-row`, sin valores ni números de fila.
+- **Códigos de salida:** 0 si coinciden todas las filas, 1 si no, 2 ante un error de uso o de formato. Un error imprime una sola línea `error: <código>`, con código `usage`, `terms-invalid`, `csv-header` o `csv-row`, sin valores ni números de fila. Un archivo que falta o no se puede leer da `usage`. Hasta W2-06, un `events` que no sea una lista vacía da `terms-invalid` (el oráculo aún no aplica eventos).
 
 ### 8.4 `compare … --log-line --sha <sha> --label <label>`
 

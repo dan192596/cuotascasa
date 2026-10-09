@@ -81,6 +81,15 @@ Criterios de W1-07:
 
 Además: W2-08 (nunca sube texto en claro), W4-08 (respaldo cifrado de ida y vuelta, con el sobre generado en la prueba) y W1-10 (ningún sobre cifrado queda bajo un directorio de fixtures, porque no lleva `synthetic: true`).
 
+## Adenda (2026-10-09, W1-07)
+
+Decisiones que fijó la implementación y aceptó Opus tras la revisión de seguridad:
+
+- **Frase en NFC.** La frase se normaliza a NFC antes de PBKDF2, para que una «ñ» compuesta y una descompuesta deriven la misma clave en todos los dispositivos. Es permanente: cambiarla cambiaría todas las claves derivadas.
+- **Topes.** `PBKDF2_ITERATIONS` es 600000 y el piso de `decrypt`. El techo es `MAX_PBKDF2_ITERATIONS = 10 000 000`: un sobre que declare más se rechaza con `WeakParams` antes de cualquier llamada a `subtle`, y las funciones de derivación rechazan más con un `RangeError` fijo, para que un archivo hostil de Drive no cuelgue la pestaña (W4-09 lee las iteraciones del sobre). La sal mide al menos 16 bytes y, codificada, a lo sumo 64 caracteres.
+- **Códigos.** Lo que no es un sobre da `InvalidRemote` (código ya existente en `ports.ts`). Un `v` distinto de 1 o un nombre de KDF o cifrado desconocido dan `UnsupportedVersion`. Un sobre v1 mal formado da `WrongPassphraseOrTamper`. Iteraciones fuera de rango o una sal corta dan `WeakParams`. Una sal distinta de la de la clave da `KeyMismatch`. Todo se revisa antes de descifrar, y cada mensaje es el código, sin causa ni datos.
+- **AAD.** Cubre la cabecera completa en JSON canónico: formato, versión, KDF (nombre, iteraciones, sal) y cifrado (nombre, IV).
+
 ## Referencias
 
 - ADR-0007, ADR-0008, ADR-0015, ADR-0016, ADR-0021 (reservado).
