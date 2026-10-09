@@ -153,13 +153,13 @@ describe('analyze', () => {
   });
 
   it('fails when a root entry point is missing', () => {
-    const cfg = { graphs: [{ name: 'g', roots: ['src/gone.ts'], forbidden: [] }] };
+    const cfg = { graphs: [{ id: 'g', name: 'g', roots: ['src/gone.ts'], forbidden: [] }] };
     const { violations } = analyze(ok(), cfg, gzip);
     expect(violations[0]).toMatchObject({ graph: 'g', rule: 'missing-root' });
   });
 
   it('rejects an invalid pattern in the config', () => {
-    const cfg = { graphs: [{ name: 'g', roots: ['src/main.ts'], forbidden: [{ id: 'bad', pattern: '(' }] }] };
+    const cfg = { graphs: [{ id: 'g', name: 'g', roots: ['src/main.ts'], forbidden: [{ id: 'bad', pattern: '(' }] }] };
     expect(() => analyze(ok(), cfg, gzip)).toThrow(/bad/);
   });
 });
