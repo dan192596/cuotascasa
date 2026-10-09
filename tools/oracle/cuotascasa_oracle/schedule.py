@@ -105,7 +105,9 @@ class _Loan:
                 return
             yield amort, False
             balance -= amort
-        raise InvalidInputError("ALG.TERM", "el plazo derivado no termina")
+        # Guarda de seguridad que NO es una regla de la especificación: ninguna entrada válida
+        # de los perfiles la alcanza; evita un ciclo infinito si la amortización es de centavos.
+        raise InvalidInputError("ALG.TERMS", "el plazo derivado no termina")
 
     def remaining_term(self, first_k: int) -> int:
         """`remainingTerm`: número de cuotas `first_k … última` ([ALG.TERM])."""

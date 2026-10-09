@@ -525,3 +525,22 @@ def test_compare_round_trips_a_full_fixture_through_the_private_schema(full, tmp
     ]
     assert main(argv) == 0
     assert capsys.readouterr().out == "allRowsMatched: yes\nmismatchedRows: 0\nmaxAbsDiff: 0.00\n"
+
+
+def test_actual_payment_after_the_last_row_is_rejected_not_an_index_error():
+    from cuotascasa_oracle import full_profile
+
+    ctx = full_profile._Context(
+        generator.rng("full", 1, 1), generator.build_fixture("full", 1, 35)["inputs"]["terms"]
+    )
+    with pytest.raises(full_profile._Reject):
+        full_profile._actual_payment(ctx, 5, [], "ev-01", ("AP", False, False))
+
+
+def test_validator_fails_cleanly_on_an_installment_number_past_the_rows(full):
+    import copy
+
+    broken = copy.deepcopy(full[16])
+    broken["inputs"]["events"][0]["installmentNumber"] = 5000
+    with pytest.raises(ValueError):
+        validate_fixture(broken)

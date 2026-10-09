@@ -402,6 +402,20 @@ def test_compare_applies_the_events_of_a_private_terms_file(private, capsys):
                 "interestRate": "0.9000",
             }
         ],
+        # `type` que no es texto: no debe escapar un TypeError.
+        [{"id": "ev-01", "type": ["x"], "date": "2030-01-01"}],
+        [{"id": "ev-01", "type": {"a": 1}, "date": "2030-01-01"}],
+        ["no-es-un-objeto", 3, None],
+        # installmentNumber fuera de 1..1200.
+        [
+            {
+                "id": "ev-01",
+                "type": "ReportedBalance",
+                "date": "2030-01-01",
+                "balance": "1.00",
+                "installmentNumber": 1201,
+            }
+        ],
         # ActualPayment sin installmentNumber.
         [{"id": "ev-01", "type": "ActualPayment", "paidDate": "2027-03-10", "total": "1.00"}],
     ],

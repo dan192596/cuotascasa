@@ -9,14 +9,15 @@ Orden de los sorteos de un préstamo (cambiarlo cambia bytes y obliga a subir
 2. Por cada ranura de eventos (k₁, k₂, k₃), hasta que el intento sea válido (muestreo por
    rechazo): la cuota (k₁ uniforme; k₂ = k₁ + j, j en [6, 12]; k₃ = k₂ + j', j' en [1, 12]) y luego
    los sorteos de cada evento de la ranura, en el orden de la lista. Dentro de un evento:
-   - fecha: el desfase `o` en [0, 20] (en `AP`, el de §6.4);
+   - fecha: el desfase `o` en [0, 20], antes que el resto de los sorteos del evento, salvo en
+     `ADV` (primero N, luego `o`); en `AP`, el desfase de §6.4;
    - `RC`: Δ, signo (y se repiten juntos mientras la tasa salga de la grilla o dé
      `NegativeAmortizationError`) y, con `BANK_INSTALLMENT`, los centavos extra en [0, 50.00],
      dentro de esa repetición;
    - `FCC`: los montos nuevos en el orden de las etiquetas;
    - `PP`: monto y luego la comisión; `PAYOFF`: solo la comisión (el monto es `principal`);
-   - `ADV(1–12)`: N; `RB`: el desvío en centavos; `RB×2`: `o`, desvío, segundo `o` (se repite
-     hasta que difiera del primero) y segundo desvío;
+   - `ADV(1–12)`: N (antes de `o`); `RB`: el desvío en centavos; `RB×2`: `o`, desvío, segundo
+     `o` (se repite hasta que difiera del primero) y segundo desvío;
    - `AP`: `o` y luego, con desglose, capital, interés, seguros y cargos fijos, o un solo desvío
      sin desglose.
 """
@@ -289,6 +290,8 @@ def _two_anchors(ctx: _Context, k: int, trace: dict, ids: tuple[str, str]) -> li
 
 def _actual_payment(ctx: _Context, k: int, rows: list[dict], eid: str, recipe: Recipe) -> dict:
     _, late, breakdown = recipe
+    if k > len(rows):
+        raise _Reject
     if late:
         paid = ctx.due(k) + timedelta(days=ctx.gen.randint(1, 20))
     else:

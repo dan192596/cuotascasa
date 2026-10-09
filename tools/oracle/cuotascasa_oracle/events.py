@@ -22,6 +22,7 @@ POLICIES = (
 )
 MODES = ("REDUCE_TERM", "REDUCE_INSTALLMENT")
 MAX_EVENTS = 60
+MAX_INSTALLMENT = 1200
 _ID = re.compile(r"[a-z0-9][a-z0-9-]{0,63}", re.ASCII)
 
 # (fase, rangoDeTipo) de [ALG.EVENTS.ORDER].
@@ -160,7 +161,11 @@ def parse_events(raw: object) -> list[Event]:
     events: list[Event] = []
     seen: set[str] = set()
     for item in raw:
-        if not isinstance(item, dict) or item.get("type") not in ORDER:
+        if (
+            not isinstance(item, dict)
+            or not isinstance(item.get("type"), str)
+            or item["type"] not in ORDER
+        ):
             raise _bad("tipo de evento")
         kind = item["type"]
         required, optional = _FIELDS[kind]
@@ -205,9 +210,9 @@ def plan_events(terms: Terms, events: list[Event]) -> list[Planned]:
     """Cuota efectiva de cada evento y orden total. `installmentNumber < 1` es un error tipado
     con la menor `k` de las que fallan ([ALG.ERRORS], «Varios errores»)."""
     bad = [e.installment_number for e in events if e.installment_number is not None]
-    bad = [n for n in bad if n < 1]
+    bad = [n for n in bad if not 1 <= n <= MAX_INSTALLMENT]  # FORMAT.md §3.4: 1 a 1200
     if bad:
-        raise InvalidInputError("ALG.EVENTS.ANCHOR", "installmentNumber menor que 1", k=min(bad))
+        raise InvalidInputError("ALG.EVENTS.ANCHOR", "installmentNumber fuera de rango", k=min(bad))
     planned = [
         Planned(
             event,

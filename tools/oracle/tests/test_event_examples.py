@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
+
 import pytest
 from helpers import (
     comparison_metrics,
@@ -33,7 +35,7 @@ def test_every_real_path_event_example_is_collected():
     }
 
 
-def _by_event(items, key_names):
+def _by_event(items):
     return {item["eventId"]: item for item in items}
 
 
@@ -66,13 +68,27 @@ def test_example_is_reproduced(name, case):
     assert summary["totalCommissions"] == totals["commissions"]
     assert summary["totalPaid"] == totals["totalPaid"]
     delta = expected.get("realDelta", {"perAnchor": [], "perComponent": []})
-    assert _by_event(result["anchors"], "") == {
+    assert _by_event(result["anchors"]) == {
         item["eventId"]: {k: item[k] for k in ("eventId", "k", "realDelta")}
         for item in delta["perAnchor"]
     }
-    without_breakdown = [p for p in result["payments"] if p["componentDeltas"] is None]
-    assert all(p["k"] >= 1 for p in without_breakdown)
-    assert _by_event([p for p in result["payments"] if p["componentDeltas"]], "") == {
+    plain = [
+        {"eventId": e["id"], "k": e["installmentNumber"], "componentDeltas": None}
+        for e in events
+        if e["type"] == "ActualPayment" and "breakdown" not in e
+    ]
+    assert [p for p in result["payments"] if p["componentDeltas"] is None] == plain
+    assert Decimal(summary["totalPaid"]) == sum(
+        (Decimal(r["total"]) for r in result["rows"]), Decimal(0)
+    ) + Decimal(totals["prepayments"]) + Decimal(totals["commissions"])
+    assert sum((Decimal(r["total"]) for r in result["rows"]), Decimal(0)) == Decimal(
+        totals["total"]
+    )
+    balances = {e["id"]: e["balance"] for e in events if e["type"] == "ReportedBalance"}
+    for item in delta["perAnchor"]:
+        assert item["reported"] == balances[item["eventId"]]
+        assert Decimal(item["projected"]) == Decimal(item["reported"]) - Decimal(item["realDelta"])
+    assert _by_event([p for p in result["payments"] if p["componentDeltas"]]) == {
         item["eventId"]: {
             "eventId": item["eventId"],
             "k": item["k"],

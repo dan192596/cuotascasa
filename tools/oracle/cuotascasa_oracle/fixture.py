@@ -139,7 +139,10 @@ def compute_traits(terms: dict, rows: list[dict], events: list[dict] | None = No
     effective = []
     for event in events:
         if event["type"] == "ActualPayment":
-            if event["paidDate"] > rows[event["installmentNumber"] - 1]["dueDate"]:
+            number = event["installmentNumber"]
+            if not 1 <= number <= len(rows):
+                _fail("ActualPayment: installmentNumber fuera de las filas")
+            if event["paidDate"] > rows[number - 1]["dueDate"]:
                 traits.append("latePayment")
         elif event["type"] == "ReportedBalance":
             by_date = installment_for_date(parsed, date.fromisoformat(event["date"]))

@@ -254,6 +254,15 @@ def test_trace_exposes_the_state_at_phase_one():
         lambda e: e.update(commission={"kind": "PERCENT", "rate": "0.00"}),
         lambda e: e.update(date="2026-13-01"),
         lambda e: e.pop("amount"),
+        lambda e: e.update(type=["x"]),
+        lambda e: e.update(type={"a": 1}),
+        lambda e: e.update(type=None),
+        lambda e: e.update(id=["ev-01"]),
+        lambda e: e.update(date=["2026-01-15"]),
+        lambda e: e.update(amount=["1.00"]),
+        lambda e: e.update(commission=["FLAT"]),
+        lambda e: e.update(commission={"kind": ["FLAT"], "amount": "1.00"}),
+        lambda e: e.update(mode=["REDUCE_TERM"]),
     ],
 )
 def test_malformed_events_are_invalid_input(mutate):
@@ -293,3 +302,32 @@ def test_input_terms_and_events_are_not_mutated():
     snapshot = copy.deepcopy((terms, events))
     build_schedule(terms, events)
     assert (terms, events) == snapshot
+
+
+@pytest.mark.parametrize("bad", [["x"], {"a": 1}, 3, None, "text"])
+def test_non_object_events_are_invalid_input(bad):
+    with pytest.raises(InvalidInputError):
+        build_schedule(BASE, [bad])
+
+
+@pytest.mark.parametrize("number", [1201, 10**6])
+def test_installment_number_above_1200_is_invalid(number):
+    with pytest.raises(InvalidInputError) as info:
+        build_schedule(BASE, [anchor("b", "2026-01-20", "1.00", installmentNumber=number)])
+    assert (info.value.rule, info.value.k) == ("ALG.EVENTS.ANCHOR", number)
+
+
+def test_unhashable_policy_mode_or_kind_values_are_invalid_input():
+    bad = [
+        {
+            "id": "r",
+            "type": "RateChange",
+            "date": "2026-01-20",
+            "policy": ["x"],
+            "interestRate": "0.07",
+        },
+        {"id": "p", "type": "Prepayment", "date": "2026-01-20", "amount": "1.00", "mode": {}},
+    ]
+    for event in bad:
+        with pytest.raises(InvalidInputError):
+            build_schedule(BASE, [event])
