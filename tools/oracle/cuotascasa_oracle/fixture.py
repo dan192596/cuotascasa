@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import date
 from decimal import Decimal
 
 from .errors import InvalidInputError
+from .events import installment_for_date, parse_events
 from .money import ZERO, calc_context
 from .terms import parse_terms
 
@@ -67,6 +69,7 @@ TRAITS = (
     "zeroInsurance",
 )
 _AMOUNT = re.compile(r"(0|[1-9][0-9]*)\.[0-9]{2}")
+_SIGNED = re.compile(r"-?(0|[1-9][0-9]*)\.[0-9]{2}")
 _DATE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 _ID = re.compile(r"(core|full)-[0-9]{4}")
 _TOP = {
@@ -96,8 +99,35 @@ def has_last_row_trait(rows: list[dict], term_months: int) -> bool:
     return differs or len(rows) < term_months
 
 
-def compute_traits(terms: dict, rows: list[dict]) -> list[str]:
-    """Rasgos de un fixture sin eventos, en el orden de §4.2."""
+def compute_features(events: list[dict], rows: list[dict]) -> list[str]:
+    """Etiquetas de función (§4.1), en el orden de la lista cerrada."""
+    found = {"core"}
+    for event in events:
+        kind = event["type"]
+        if kind == "RateChange":
+            found.add(f"rateChange:{event['policy']}")
+        elif kind == "FixedChargeChange":
+            found.add("fixedChargeChange")
+        elif kind == "Prepayment":
+            found.add(f"prepayment:{event['mode']}")
+            if "commission" in event:
+                found.add(f"commission:{event['commission']['kind']}")
+        elif kind == "AdvanceInstallments":
+            found.add("advance")
+        elif kind == "ReportedBalance":
+            found.add("anchor")
+        elif kind == "ActualPayment":
+            found.add("actualPayment")
+    last = rows[-1]
+    with calc_context():
+        if Decimal(last["prepayment"]) > 0 and last["prepayment"] == last["closing"]:
+            found.add("payoff")
+    return sorted(found, key=FEATURES.index)
+
+
+def compute_traits(terms: dict, rows: list[dict], events: list[dict] | None = None) -> list[str]:
+    """Rasgos (§4.2), en el orden de la lista cerrada."""
+    events = events or []
     traits = [
         f"roundingProfile:{terms['roundingProfile']}",
         "paymentDay:EOM" if terms["paymentDay"] == "END_OF_MONTH" else "paymentDay:numeric",
@@ -105,6 +135,19 @@ def compute_traits(terms: dict, rows: list[dict]) -> list[str]:
     ]
     if has_last_row_trait(rows, terms["termMonths"]):
         traits.append("lastRow")
+    parsed = parse_terms(terms)
+    effective = []
+    for event in events:
+        if event["type"] == "ActualPayment":
+            if event["paidDate"] > rows[event["installmentNumber"] - 1]["dueDate"]:
+                traits.append("latePayment")
+        elif event["type"] == "ReportedBalance":
+            by_date = installment_for_date(parsed, date.fromisoformat(event["date"]))
+            effective.append(event.get("installmentNumber", by_date))
+            if event.get("installmentNumber", by_date) != by_date:
+                traits.append("explicitKAnchor")
+    if len(effective) != len(set(effective)):
+        traits.append("sameKAnchors")
     with calc_context():
         interest = Decimal(terms["interestRate"])
         insurance = sum((Decimal(rate) for rate in terms["insuranceRates"]), ZERO)
@@ -112,9 +155,7 @@ def compute_traits(terms: dict, rows: list[dict]) -> list[str]:
         traits.append("zeroRate")
     elif terms["roundingProfile"] == "FHA_GT_V1" and insurance == 0:
         traits.append("zeroInsurance")
-    # El grupo 1-2/3-4/5-6 va primero y el resto sigue el orden de §4.2.
-    traits.sort(key=TRAITS.index)
-    return traits
+    return sorted(set(traits), key=TRAITS.index)
 
 
 def _fail(message: str) -> None:
@@ -157,25 +198,56 @@ def validate_fixture(fixture: object) -> None:
         _fail("inputs")
     try:
         parse_terms(inputs["terms"])
+        parse_events(inputs["events"])
     except InvalidInputError as error:
-        _fail(f"inputs.terms: {error}")
+        _fail(f"inputs: {error}")
     if set(expected) != {"rows", "anchors", "payments", "summary"}:
         _fail("expected")
     rows = expected["rows"]
     if not rows:
         _fail("rows vacío")
+    anchors = _validate_outputs(inputs["events"], expected)
     with calc_context():
-        _validate_rows(rows)
+        _validate_rows(rows, anchors)
         _validate_summary(rows, expected["summary"])
-    if not inputs["events"] and (expected["anchors"] or expected["payments"]):
-        _fail("anchors y payments deben estar vacíos sin eventos")
     if ("lastRow" in traits) != has_last_row_trait(rows, inputs["terms"]["termMonths"]):
         _fail("rasgo lastRow inconsistente")
-    if traits != compute_traits(inputs["terms"], rows) and not inputs["events"]:
-        _fail("traits inconsistentes con las condiciones")
+    if traits != compute_traits(inputs["terms"], rows, inputs["events"]):
+        _fail("traits inconsistentes con las condiciones y los eventos")
+    if features != compute_features(inputs["events"], rows):
+        _fail("features inconsistentes con los eventos")
 
 
-def _validate_rows(rows: list[dict]) -> None:
+def _is_difference(value: object) -> bool:
+    """Diferencia de §1: monto con signo opcional, nunca `-0.00`."""
+    return isinstance(value, str) and value != "-0.00" and _SIGNED.fullmatch(value) is not None
+
+
+def _validate_outputs(events: list[dict], expected: dict) -> set[int]:
+    """`anchors` y `payments` (§3.5): una entrada por evento, en el orden de `inputs.events`.
+    Devuelve las cuotas re-ancladas."""
+    anchors = [e["id"] for e in events if e["type"] == "ReportedBalance"]
+    payments = [e["id"] for e in events if e["type"] == "ActualPayment"]
+    if [a.get("eventId") for a in expected["anchors"]] != anchors:
+        _fail("anchors")
+    if [p.get("eventId") for p in expected["payments"]] != payments:
+        _fail("payments")
+    for anchor in expected["anchors"]:
+        if set(anchor) != {"eventId", "k", "realDelta"} or not _is_difference(anchor["realDelta"]):
+            _fail("anchors: campos")
+    for payment in expected["payments"]:
+        deltas = payment.get("componentDeltas")
+        if set(payment) != {"eventId", "k", "componentDeltas"}:
+            _fail("payments: campos")
+        if deltas is not None and (
+            set(deltas) != {"capital", "interest", "insurance", "fixedCharges"}
+            or not all(_is_difference(v) for v in deltas.values())
+        ):
+            _fail("payments: componentDeltas")
+    return {anchor["k"] for anchor in expected["anchors"]}
+
+
+def _validate_rows(rows: list[dict], anchored: set[int]) -> None:
     previous = None
     for position, row in enumerate(rows, start=1):
         if set(row) != set(ROW_FIELDS) or row["k"] != position:
@@ -205,11 +277,12 @@ def _validate_rows(rows: list[dict]) -> None:
             _fail(f"fila {position}: closing")
         if (
             previous is not None
+            and position not in anchored
             and previous["closing"] - previous["prepayment"] != amounts["opening"]
         ):
             _fail(f"fila {position}: opening no encadena")
         previous = amounts
-    if previous["closing"] != 0:
+    if previous["closing"] - previous["prepayment"] != 0:
         _fail("la última fila no liquida el saldo")
 
 
