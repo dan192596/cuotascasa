@@ -2,7 +2,7 @@
 // Usage: node tools/bundle-check/check.mjs [--dist <dir>] [--config <file>] [--budget-landing <bytes>]
 //   --dist            build output (default dist/apps/web); reads browser-stats.json and browser/<chunks>
 //   --config          rules (default tools/bundle-check/config.json)
-//   --budget-landing  overrides the gzip budget, in bytes, of the first graph (landing)
+//   --budget-landing  overrides the gzip budget, in bytes, of the graph with id "landing"
 import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -21,7 +21,9 @@ try {
   const budget = flag('--budget-landing');
   if (budget !== undefined) {
     if (!/^\d+$/.test(budget)) throw new Error(`--budget-landing must be a number of bytes, got "${budget}"`);
-    config.graphs[0].budgetGzipBytes = Number(budget);
+    const landing = config.graphs.find((/** @type {{ id?: string }} */ g) => g.id === 'landing');
+    if (landing === undefined) throw new Error('--budget-landing needs a graph with "id": "landing" in the config');
+    landing.budgetGzipBytes = Number(budget);
   }
   const metafile = JSON.parse(readFileSync(join(dist, 'browser-stats.json'), 'utf8'));
   const { violations, report } = analyze(metafile, config, (file) =>

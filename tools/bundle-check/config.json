@@ -1,6 +1,7 @@
 {
   "graphs": [
     {
+      "id": "landing",
       "name": "landing (/)",
       "roots": ["apps/web/src/main.ts", "apps/web/src/app/public/landing/landing-page.component.ts"],
       "budgetGzipBytes": 92160,
@@ -19,6 +20,7 @@
       ]
     },
     {
+      "id": "app",
       "name": "app initial (/app)",
       "roots": [
         "apps/web/src/main.ts",

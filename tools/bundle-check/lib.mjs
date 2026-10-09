@@ -4,7 +4,7 @@ import { gzipSync } from 'node:zlib';
 
 /**
  * @typedef {{ id: string, pattern: string }} ForbiddenRule
- * @typedef {{ name: string, roots: string[], forbidden: ForbiddenRule[], budgetGzipBytes?: number }} GraphConfig
+ * @typedef {{ id: string, name: string, roots: string[], forbidden: ForbiddenRule[], budgetGzipBytes?: number }} GraphConfig
  * @typedef {{ graphs: GraphConfig[] }} Config
  * @typedef {{ graph: string, rule: string, message: string }} Violation
  * @typedef {{ imports?: { path: string, kind: string, external?: boolean }[], inputs?: Record<string, unknown>, entryPoint?: string }} MetaOutput
@@ -27,7 +27,9 @@ export function resolveGraph(metafile, roots) {
   const stack = [];
   for (const root of roots) {
     const matches = Object.entries(metafile.outputs)
-      .filter(([, out]) => out.entryPoint !== undefined && out.entryPoint.endsWith(root))
+      .filter(
+        ([, out]) => out.entryPoint !== undefined && (out.entryPoint === root || out.entryPoint.endsWith(`/${root}`)),
+      )
       .map(([file]) => file);
     if (matches.length === 0) missing.push(root);
     stack.push(...matches);

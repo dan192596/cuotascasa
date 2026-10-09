@@ -1,7 +1,8 @@
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 import { analyze, resolveGraph } from './lib.mjs';
 
@@ -29,9 +30,12 @@ function metafile(outputs: Record<string, Out>) {
   };
 }
 
+const CLI = resolve(dirname(fileURLToPath(import.meta.url)), 'check.mjs');
+
 const CONFIG = {
   graphs: [
     {
+      id: 'landing',
       name: 'landing',
       roots: ['src/main.ts', 'src/landing.ts'],
       budgetGzipBytes: 5000,
@@ -42,6 +46,7 @@ const CONFIG = {
       ],
     },
     {
+      id: 'app',
       name: 'app',
       roots: ['src/main.ts', 'src/area.ts'],
       forbidden: [{ id: 'chart', pattern: '/chart\\.js/' }],
@@ -80,6 +85,17 @@ describe('resolveGraph', () => {
   it('follows static imports and skips dynamic imports', () => {
     const files = resolveGraph(ok(), ['src/main.ts', 'src/landing.ts']).files;
     expect([...files].sort()).toEqual(['landing.js', 'main.js', 'shared.js']);
+  });
+
+  it('matches roots on a path boundary', () => {
+    const m = metafile({
+      'a.js': { entryPoint: 'src/xapp-area.routes.ts' },
+      'b.js': { entryPoint: 'src/app-area.routes.ts' },
+    });
+    expect([...resolveGraph(m, ['app-area.routes.ts']).files]).toEqual(['b.js']);
+    const only = metafile({ 'a.js': { entryPoint: 'src/xapp-area.routes.ts' } });
+    expect(resolveGraph(only, ['app-area.routes.ts']).missing).toEqual(['app-area.routes.ts']);
+    expect([...resolveGraph(only, ['xapp-area.routes.ts']).files]).toEqual(['a.js']);
   });
 
   it('reports a root that matches no entry point', () => {
@@ -154,7 +170,7 @@ describe('check.mjs CLI', () => {
     for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true });
   });
 
-  function run(m: unknown, extra: string[] = []) {
+  function run(m: unknown, extra: string[] = [], config: unknown = CONFIG) {
     const dir = mkdtempSync(join(tmpdir(), 'bundle-check-'));
     dirs.push(dir);
     mkdirSync(join(dir, 'browser'));
@@ -162,8 +178,8 @@ describe('check.mjs CLI', () => {
     for (const f of ['main.js', 'shared.js', 'landing.js', 'area.js', 'heavy.js'])
       writeFileSync(join(dir, 'browser', f), 'x'.repeat(200));
     const cfg = join(dir, 'config.json');
-    writeFileSync(cfg, JSON.stringify(CONFIG));
-    return spawnSync(process.execPath, ['tools/bundle-check/check.mjs', '--dist', dir, '--config', cfg, ...extra], {
+    writeFileSync(cfg, JSON.stringify(config));
+    return spawnSync(process.execPath, [CLI, '--dist', dir, '--config', cfg, ...extra], {
       encoding: 'utf8',
     });
   }
@@ -189,8 +205,24 @@ describe('check.mjs CLI', () => {
     expect(r.stderr).toContain('budget');
   });
 
+  it('applies --budget-landing to the graph with id "landing" even when reordered', () => {
+    const reordered = { graphs: [...CONFIG.graphs].reverse() };
+    const r = run(ok(), ['--budget-landing', '1'], reordered);
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain('landing: [budget]');
+    expect(r.stderr).not.toContain('app: [budget]');
+  });
+
+  it('fails when --budget-landing is given but no graph has id "landing"', () => {
+    const r = run(ok(), ['--budget-landing', '1'], {
+      graphs: [{ id: 'x', name: 'x', roots: ['src/main.ts'], forbidden: [] }],
+    });
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain('landing');
+  });
+
   it('exits 1 when the metafile is missing', () => {
-    const r = spawnSync(process.execPath, ['tools/bundle-check/check.mjs', '--dist', '/nonexistent-dist'], {
+    const r = spawnSync(process.execPath, [CLI, '--dist', '/nonexistent-dist'], {
       encoding: 'utf8',
     });
     expect(r.status).toBe(1);
