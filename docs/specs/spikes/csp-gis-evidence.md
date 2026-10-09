@@ -74,7 +74,7 @@ Un flujo completo (cargar, `initTokenClient`, abrir el popup con un clic real, D
 
 - No hubo peticiones a `gsi/style`, ni iframes: el flujo de token no dibuja interfaz de GIS. La CSP candidata deja `frame-src 'none'` y no incluye `gsi/style`.
 - Drive respondió **403**, no 401, a la llamada sin token (ambos motores). La llamada completó (hay respuesta), así que `connect-src` la permitió.
-- `requestAccessToken` abrió el popup en 66 de las 66 celdas en que el flujo llegó hasta ahí (las 12 restantes no llegaron a `init`). El `error_callback` de GIS recibió `popup_closed` al cerrar el popup, como se espera.
+- `requestAccessToken` abrió el popup en 66 de las 66 celdas en que el flujo llegó hasta ahí (las 12 restantes no llegaron a `init`). Lo que recibió el `error_callback` de GIS al cerrar el popup no quedó registrado en `results.json`.
 - GIS **no crea ninguna política de Trusted Types** (`trustedTypes.createPolicy` no se invocó desde el código de GIS en ningún motor). Bajo TT `enforced`, GIS funcionó con una lista `trusted-types` que solo contenía los nombres de Angular y los del cargador de la prueba. Las únicas políticas creadas fueron las del cargador (`cc-gis-loader` o `default`).
 - GIS inyecta un **bloque `<style>` inline** al cargarse. Es la única violación que provoca por sí mismo: `style-src-elem` (1 por celda). Su hash fue el mismo en ambos motores: `sha256-RU4sU0AaS8IBGZx8XrGt/pa9A5SLA3dQszGeqT5L3Kw=` (Google controla ese contenido; puede cambiar sin aviso).
 
@@ -90,7 +90,7 @@ Un flujo completo (cargar, `initTokenClient`, abrir el popup con un clic real, D
 Notas:
 
 - La política `default` afecta a **todo** sumidero de la página (también a Angular y a otras librerías), no solo a GIS.
-- Con `'strict-dynamic'` (estrategia `autocsp`) un script creado por un script de confianza hereda la confianza: GIS cargó con `direct`, `policy` y `default` sin que `script-src` mencione `accounts.google.com`. El cargador inline de la prueba es el que falla bajo TT `enforced` (misma causa que en la parte (b)), así que bajo `autocsp` + `enforced` no se llega a medir GIS.
+- Con `'strict-dynamic'` (estrategia `autocsp`) un script creado por un script de confianza hereda la confianza. `results.json` lo respalda solo con TT `off`: GIS cargó y completó el flujo con `direct`, `policy` y `default` en las celdas `strict` de `autocsp`, sin que `script-src` mencione `accounts.google.com` (cada una con su violación `style-src-elem`). Con TT `report-only` también cargó, pero con reportes de TT. Bajo TT `enforced` el cargador inline de la prueba falla (misma causa que en la parte (b)) y GIS no llega a medirse.
 - SRI no es una opción (ADR-0016): Google no publica versiones fijas.
 
 ### 3.3 Estilo inline de GIS en `/app`
@@ -152,8 +152,8 @@ Corren en cada ejecución; el resultado está en `negativeChecks` de `results.js
 
 | Comprobación | Resultado |
 |---|---|
-| Ningún `script-src` de las 48 cabeceras candidatas contiene `'unsafe-inline'` ni `'unsafe-eval'` | Pasa |
-| Ninguna directiva de `/`, `/privacidad` ni 404 contiene un origen externo (en las 36 cabeceras de esas rutas) | Pasa |
+| Ningún `script-src` de los 48 valores de cabecera candidatos (3 estrategias x 3 modos de TT x 4 rutas, donde `report-only` emite dos valores por combinación) contiene `'unsafe-inline'` ni `'unsafe-eval'` | Pasa |
+| Ninguna directiva de `/`, `/privacidad` ni 404 contiene un origen externo (en los 36 valores de cabecera de esas rutas) | Pasa |
 | `/` bloquea un `fetch` a un origen externo (TT `off` y `enforced`, ambos motores) | Pasa: el `fetch` se rechaza con `TypeError`, hay 1 violación `connect-src` y no se observa ninguna petición externa |
 
 Hallazgo de la comprobación estática sobre la salida del builder: el `<meta>` que genera `autoCsp` contiene `script-src 'strict-dynamic' 'sha256-...' 'sha256-...' https: 'unsafe-inline'`, es decir, **sí incluye `'unsafe-inline'`** (como respaldo para navegadores sin CSP3, ignorado cuando `strict-dynamic` se entiende) y `https:`. La cabecera candidata de `autocsp` no lo copia, pero el `<meta>` queda en el HTML y se intersecta con la cabecera. Un `<meta>` tampoco admite `frame-ancestors`.
