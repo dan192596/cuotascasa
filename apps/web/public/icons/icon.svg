@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="CuotasCasa">
+  <rect width="512" height="512" rx="96" fill="#1d4e89"/>
+  <path d="M256 104 92 240h44v152h240V240h44z" fill="#fbf8f1"/>
+  <rect x="216" y="288" width="80" height="104" fill="#1d4e89"/>
+</svg>
