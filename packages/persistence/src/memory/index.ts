@@ -1,8 +1,7 @@
-import { NotImplementedError } from '@cuotascasa/schema';
 import type { DataStore, DataStoreDeps } from '../ports.ts';
+import { createStore } from './in-memory-data-store.ts';
 
-/** Stub owned by W1-04: the in-memory DataStore used in development, unit tests and worktrees. */
+/** The in-memory DataStore: default adapter for development, unit tests and worktrees (ADR-0006). */
 export function createInMemoryDataStore(deps: DataStoreDeps): Promise<DataStore> {
-  void deps;
-  throw new NotImplementedError('W1-04');
+  return createStore(deps);
 }
