@@ -2,7 +2,6 @@
 // commit-msg hook (lefthook): enforces Conventional Commits, as CLAUDE.md and ADR-0018 §12 require.
 // Usage: node tools/hygiene/commit-msg.mjs <path-to-commit-message-file>
 import { readFileSync } from 'node:fs';
-import { pathToFileURL } from 'node:url';
 
 export const COMMIT_TYPES = [
   'build',
@@ -20,7 +19,7 @@ export const COMMIT_TYPES = [
 ];
 const MAX_HEADER_LENGTH = 100;
 const CONVENTIONAL = new RegExp(`^(?:${COMMIT_TYPES.join('|')})(?:\\([A-Za-z0-9._/-]+\\))?!?: \\S`);
-const GIT_GENERATED = /^(?:Merge |Revert "|fixup! |squash! |amend! )/;
+const GIT_GENERATED = /^(?:Merge |Revert "|Reapply "|fixup! |squash! |amend! )/;
 
 /**
  * Returns null when the message is acceptable, or the error to print.
@@ -39,7 +38,7 @@ export function checkCommitMessage(message) {
   return null;
 }
 
-if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (import.meta.main) {
   const file = process.argv[2];
   if (file === undefined) {
     console.error('usage: node tools/hygiene/commit-msg.mjs <commit-message-file>');
