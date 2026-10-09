@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
@@ -79,7 +80,11 @@ describe('cc-confirm-dialog', () => {
           new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
         );
       }
-      if (trigger === 'backdrop') (root.querySelector('[data-testid="confirm-backdrop"]') as HTMLElement).click();
+      if (trigger === 'backdrop') {
+        const backdrop = root.querySelector('[data-testid="confirm-backdrop"]') as HTMLElement;
+        backdrop.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+        backdrop.click();
+      }
       await fixture.whenStable();
     }
     expect(host.log).toEqual(['cancelled', 'cancelled', 'cancelled']);
@@ -92,6 +97,42 @@ describe('cc-confirm-dialog', () => {
     (root.querySelector('[role="alertdialog"]') as HTMLElement).click();
     await fixture.whenStable();
     expect(host.log).toEqual([]);
+  });
+
+  it('cancels on Escape wherever focus is, after clicking the message text', async () => {
+    const { fixture, host, root } = await mount();
+    host.open.set(true);
+    await fixture.whenStable();
+    const message = root.querySelector('.message') as HTMLElement;
+    message.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    message.click();
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await fixture.whenStable();
+    expect(host.log).toEqual(['cancelled']);
+  });
+
+  it('ignores Escape while closed', async () => {
+    const { host } = await mount();
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(host.log).toEqual([]);
+  });
+
+  it('does not close when a press starts inside the dialog and is released on the backdrop', async () => {
+    const { fixture, host, root } = await mount();
+    host.open.set(true);
+    await fixture.whenStable();
+    (root.querySelector('.message') as HTMLElement).dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    (root.querySelector('[data-testid="confirm-backdrop"]') as HTMLElement).click();
+    await fixture.whenStable();
+    expect(host.log).toEqual([]);
+  });
+
+  it('styles the destructive button with danger text and border on the surface, not paper on danger', () => {
+    const source = readFileSync('apps/web/src/app/ui/feedback/confirm-dialog.component.ts', 'utf8');
+    const block = source.match(/\.destructive\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(block).toMatch(/color:\s*var\(--cc-color-danger\)/);
+    expect(block).toMatch(/border-color:\s*var\(--cc-color-danger\)/);
+    expect(block).toMatch(/background:\s*var\(--cc-color-surface\)/);
   });
 
   it('returns focus to the previously focused element on close', async () => {

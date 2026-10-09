@@ -24,9 +24,17 @@ describe('cc-status-chip', () => {
     expect(root.querySelector('[data-testid="chip"]')?.getAttribute('data-status')).toBe(status);
   });
 
-  it('is announced as a status to screen readers', async () => {
+  it('is not a live region by default, so tables do not create dozens of them', async () => {
     const root = await render('AMBER');
-    expect(root.querySelector('[role="status"]')).not.toBeNull();
+    expect(root.querySelector('[role="status"]')).toBeNull();
+  });
+
+  it('becomes a status live region when live is enabled', async () => {
+    const fixture = TestBed.createComponent(StatusChipComponent);
+    fixture.componentRef.setInput('status', 'AMBER');
+    fixture.componentRef.setInput('live', true);
+    await fixture.whenStable();
+    expect((fixture.nativeElement as HTMLElement).querySelector('[role="status"]')).not.toBeNull();
   });
 
   it('reflects a status change', async () => {

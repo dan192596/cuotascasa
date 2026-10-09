@@ -24,7 +24,13 @@ let nextId = 0;
   imports: [CdkTrapFocus],
   template: `
     @if (open()) {
-      <div class="backdrop" role="presentation" data-testid="confirm-backdrop" (click)="cancelled.emit()">
+      <div
+        class="backdrop"
+        role="presentation"
+        data-testid="confirm-backdrop"
+        (mousedown)="pressTarget = $event.target"
+        (click)="onBackdropClick($event)"
+      >
         <div
           class="dialog"
           role="alertdialog"
@@ -34,7 +40,6 @@ let nextId = 0;
           [attr.aria-labelledby]="titleId"
           [attr.aria-describedby]="messageId"
           (click)="$event.stopPropagation()"
-          (keydown.escape)="cancelled.emit()"
         >
           <h2 class="title" [id]="titleId">{{ heading() }}</h2>
           <p class="message" [id]="messageId">{{ message() }}</p>
@@ -105,13 +110,15 @@ let nextId = 0;
     }
     .destructive {
       border-color: var(--cc-color-danger);
-      background: var(--cc-color-danger);
+      background: var(--cc-color-surface);
+      color: var(--cc-color-danger);
     }
     .button:focus-visible {
       outline: 2px solid var(--cc-color-control-border);
       outline-offset: 2px;
     }
   `,
+  host: { '(document:keydown.escape)': 'onEscape()' },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ConfirmDialogComponent {
@@ -120,7 +127,7 @@ export class ConfirmDialogComponent {
   readonly message = input.required<string>();
   readonly confirmLabel = input('Confirmar');
   readonly cancelLabel = input('Cancelar');
-  /** Paints the confirm button in the danger colour (its text stays paper). */
+  /** Paints the confirm button with danger text and border on the surface. */
   readonly destructive = input(false);
 
   readonly confirmed = output<void>();
@@ -131,6 +138,19 @@ export class ConfirmDialogComponent {
   private readonly id = nextId++;
   protected readonly titleId = `cc-confirm-title-${this.id}`;
   protected readonly messageId = `cc-confirm-message-${this.id}`;
+
+  /** Where the current mouse press started; a drag from inside the dialog must not close it. */
+  protected pressTarget: EventTarget | null = null;
+
+  protected onEscape(): void {
+    if (this.open()) this.cancelled.emit();
+  }
+
+  protected onBackdropClick(event: MouseEvent): void {
+    const startedOnBackdrop = this.pressTarget === event.currentTarget;
+    this.pressTarget = null;
+    if (event.target === event.currentTarget && startedOnBackdrop) this.cancelled.emit();
+  }
 
   constructor() {
     // Start on the safe action once the dialog is in the DOM (the trap restores focus to the opener on close).

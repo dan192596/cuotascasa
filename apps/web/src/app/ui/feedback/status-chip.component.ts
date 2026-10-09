@@ -14,7 +14,7 @@ const CHIPS: Record<ValidationStatus, { readonly label: string; readonly icon: s
 @Component({
   selector: 'cc-status-chip',
   template: `
-    <span class="chip" role="status" data-testid="chip" [attr.data-status]="status()">
+    <span class="chip" [attr.role]="live() ? 'status' : null" data-testid="chip" [attr.data-status]="status()">
       <span class="icon" aria-hidden="true" data-testid="chip-icon">{{ chip().icon }}</span>
       <span data-testid="chip-label">{{ chip().label }}</span>
     </span>
@@ -52,5 +52,7 @@ const CHIPS: Record<ValidationStatus, { readonly label: string; readonly icon: s
 })
 export class StatusChipComponent {
   readonly status = input.required<ValidationStatus>();
+  /** Opt in to a `role="status"` live region; off by default so tables do not create dozens of them. */
+  readonly live = input(false);
   protected readonly chip = computed(() => CHIPS[this.status()]);
 }

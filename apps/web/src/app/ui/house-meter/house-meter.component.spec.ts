@@ -49,10 +49,31 @@ describe('cc-house-meter', () => {
     ['140', '100'],
     ['abc', '0'],
     ['', '0'],
+    ['1e2', '0'],
+    ['0x10', '0'],
+    [' 50 ', '0'],
+    ['12.', '0'],
   ])('clamps or ignores out-of-range input %j', async (input, shown) => {
     const { meter, fill } = await render(input);
     expect(meter.getAttribute('aria-valuenow')).toBe(shown);
     expect(fill.style.transform).toBe(`scaleY(${Number(shown) / 100})`);
+  });
+
+  it('shows at most 2 decimals and keeps aria values consistent with the text', async () => {
+    const { meter, root, fill } = await render('33.3333');
+    expect(meter.getAttribute('aria-valuenow')).toBe('33.33');
+    expect(meter.getAttribute('aria-valuetext')).toBe('33.33 % capital pagado');
+    expect(root.querySelector('[data-testid="house-text"]')?.textContent).toContain('33.33 %');
+    expect(fill.style.transform).toBe('scaleY(0.3333)');
+  });
+
+  it('declares a first-render fill-in keyframe that runs only without a reduced-motion preference', () => {
+    const source = readFileSync('apps/web/src/app/ui/house-meter/house-meter.component.ts', 'utf8');
+    expect(source).toMatch(/@keyframes fill-in/);
+    const noPref = source.match(/@media \(prefers-reduced-motion: no-preference\)\s*\{[\s\S]*?\}\s*\}/)?.[0] ?? '';
+    expect(noPref).toMatch(/animation:\s*fill-in/);
+    const outside = source.replace(/@media \(prefers-reduced-motion: [a-z-]+\)\s*\{[\s\S]*?\}\s*\}/g, '');
+    expect(outside).not.toMatch(/animation\s*:/);
   });
 
   it('accepts a custom label', async () => {

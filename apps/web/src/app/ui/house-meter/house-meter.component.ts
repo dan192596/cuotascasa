@@ -2,13 +2,13 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 
 let nextId = 0;
 
-/** Parses a 0-100 percent string; anything unreadable counts as 0 and the result is clamped to the range. */
+const PERCENT = /^\d+(\.\d+)?$/;
+
+/** Parses a 0-100 percent string; anything not plain decimal counts as 0. Clamped, at most 2 decimals. */
 function clampPercent(raw: string): number {
-  const text = raw.trim();
-  if (text === '') return 0;
-  const value = Number(text);
-  if (!Number.isFinite(value)) return 0;
-  return Math.min(100, Math.max(0, value));
+  if (!PERCENT.test(raw)) return 0;
+  const value = Math.min(100, Math.max(0, Number(raw)));
+  return Number(value.toFixed(2));
 }
 
 /**
@@ -102,13 +102,20 @@ function clampPercent(raw: string): number {
       font-size: 0.875rem;
       color: var(--cc-color-ink-muted);
     }
+    @keyframes fill-in {
+      from {
+        transform: scaleY(0);
+      }
+    }
     @media (prefers-reduced-motion: no-preference) {
       .fill {
+        animation: fill-in 600ms ease-out;
         transition: transform 600ms ease-out;
       }
     }
     @media (prefers-reduced-motion: reduce) {
       .fill {
+        animation: none;
         transition: none;
       }
     }
