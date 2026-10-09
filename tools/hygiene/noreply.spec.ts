@@ -43,6 +43,14 @@ describe('noreply.mjs CLI', () => {
     expect(newRepo('x@users.noreply.github.com.evil.test').run('noreply.mjs').status).toBe(1);
   });
 
+  it('fails when the local part is empty', () => {
+    expect(newRepo('@users.noreply.github.com').run('noreply.mjs').status).toBe(1);
+  });
+
+  it('fails when the address has a second @ before the noreply domain', () => {
+    expect(newRepo('x@evil.com@users.noreply.github.com').run('noreply.mjs').status).toBe(1);
+  });
+
   it('fails when no identity can be determined', () => {
     const repo = newRepo('');
     const result = repo.run('noreply.mjs', { GIT_AUTHOR_NAME: 'N', GIT_COMMITTER_NAME: 'N', EMAIL: '' });

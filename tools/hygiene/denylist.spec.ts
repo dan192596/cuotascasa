@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -129,10 +129,131 @@ describe('denylist.mjs CLI', () => {
     const result = repo.run('denylist.mjs', { CUOTASCASA_DENYLIST: link });
     expect(result.status).toBe(1);
     expect(result.stderr).toContain('inside the repository');
+
+    const outside = listOutsideRepo('needle\n');
+    const okLink = join(dir, 'ok-link.txt');
+    symlinkSync(outside, okLink);
+    repo.stage('b.txt', 'a needle b\n');
+    const accepted = repo.run('denylist.mjs', { CUOTASCASA_DENYLIST: okLink });
+    expect(accepted.status).toBe(1);
+    expect(accepted.stderr).toContain('b.txt:1');
+    expect(accepted.stderr).not.toContain('inside the repository');
+  });
+
+  it('fails closed on a dangling symlink instead of treating the list as absent', () => {
+    const repo = newRepo();
+    const dir = mkdtempSync(join(tmpdir(), 'denylist-dangling-'));
+    dirs.push(dir);
+    const link = join(dir, 'link.txt');
+    symlinkSync(join(dir, 'missing-target.txt'), link);
+    repo.stage('a.txt', 'harmless\n');
+    const result = repo.run('denylist.mjs', { CUOTASCASA_DENYLIST: link });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('hygiene:denylist: the denylist is a broken symlink');
+  });
+
+  it.skipIf(process.getuid?.() === 0)('fails closed with a fixed message when the list is unreadable', () => {
+    const repo = newRepo();
+    const list = listOutsideRepo('needle\n');
+    chmodSync(list, 0o000);
+    try {
+      repo.stage('a.txt', 'harmless\n');
+      const result = repo.run('denylist.mjs', { CUOTASCASA_DENYLIST: list });
+      expect(result.status).toBe(1);
+      expect(result.stderr.trim()).toBe('hygiene:denylist: could not read the denylist or the staged diff');
+    } finally {
+      chmodSync(list, 0o600);
+    }
+  });
+
+  it('fails closed with a fixed message when git cannot produce the staged diff', () => {
+    const repo = newRepo();
+    const list = listOutsideRepo('needle\n');
+    repo.stage('a.txt', 'harmless\n');
+    writeFileSync(join(repo.dir, '.git', 'index'), 'corrupt');
+    const result = repo.run('denylist.mjs', { CUOTASCASA_DENYLIST: list });
+    expect(result.status).toBe(1);
+    expect(result.stderr.trim()).toBe('hygiene:denylist: could not read the denylist or the staged diff');
+  });
+});
+
+describe('denylist.mjs CLI: diff parsing cannot fail open', () => {
+  function check(path: string, content: string, configure?: (repo: TempRepo) => void) {
+    const repo = newRepo();
+    configure?.(repo);
+    const list = listOutsideRepo('zzz-synthetic-term\n');
+    repo.stage(path, content);
+    return repo.run('denylist.mjs', { CUOTASCASA_DENYLIST: list });
+  }
+
+  it('catches a hit in a file with a non-ASCII name', () => {
+    const result = check('caf\u00e9.txt', 'x zzz-synthetic-term y\n');
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('caf\u00e9.txt:1');
+  });
+
+  it('catches a hit in a file whose name contains a space', () => {
+    const result = check('my notes.txt', 'x zzz-synthetic-term y\n');
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('my notes.txt:1');
+  });
+
+  it('catches a hit on a line that itself starts with "++ " (diff line "+++ ...")', () => {
+    const result = check('a.txt', 'first\n++ zzz-synthetic-term\n');
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('a.txt:2');
+  });
+
+  it('catches a hit after a "++ " line in the same hunk, attributing it to the right file', () => {
+    const result = check('a.txt', '++ clean\nzzz-synthetic-term\n');
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('a.txt:2');
+  });
+
+  it('catches a hit when diff.noprefix is set', () => {
+    const result = check('a.txt', 'zzz-synthetic-term\n', (repo) => repo.git('config', 'diff.noprefix', 'true'));
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('a.txt:1');
+  });
+
+  it('catches a hit when diff.mnemonicPrefix is set', () => {
+    const result = check('a.txt', 'zzz-synthetic-term\n', (repo) => repo.git('config', 'diff.mnemonicPrefix', 'true'));
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('a.txt:1');
   });
 });
 
 describe('denylist helpers', () => {
+  it('unquotes C-style quoted file names (octal bytes, tab, newline, quote, backslash)', () => {
+    const diff = [
+      'diff --git "a/caf\\303\\251.txt" "b/caf\\303\\251.txt"',
+      '--- /dev/null',
+      '+++ "b/caf\\303\\251 \\t\\n\\"\\\\.txt"',
+      '@@ -0,0 +1 @@',
+      '+hit',
+    ].join('\n');
+    expect(addedLines(diff)).toEqual([{ file: 'caf\u00e9 \t\n"\\.txt', line: 1, text: 'hit' }]);
+  });
+
+  it('strips the trailing tab git adds after paths with spaces', () => {
+    const diff = ['--- /dev/null', '+++ b/my notes.txt\t', '@@ -0,0 +1 @@', '+hit'].join('\n');
+    expect(addedLines(diff)).toEqual([{ file: 'my notes.txt', line: 1, text: 'hit' }]);
+  });
+
+  it('never treats lines inside a hunk as headers', () => {
+    const diff = ['+++ b/f', '@@ -0,0 +1,3 @@', '+a', '+++ b/other', '++ c'].join('\n');
+    expect(addedLines(diff)).toEqual([
+      { file: 'f', line: 1, text: 'a' },
+      { file: 'f', line: 2, text: '++ b/other' },
+      { file: 'f', line: 3, text: '+ c' },
+    ]);
+  });
+
+  it('fails closed when an added line has no determinable file', () => {
+    expect(() => addedLines(['+++ x', '@@ -0,0 +1 @@', '+hit'].join('\n'))).toThrow();
+    expect(() => addedLines(['+++ /dev/null', '@@ -0,0 +1 @@', '+hit'].join('\n'))).toThrow();
+  });
+
   it('normalizes case, commas, whitespace and currency symbols', () => {
     expect(normalize('US$ 1,234.56')).toBe('1234.56');
     expect(normalize(' Q 1 234,5 ')).toBe('12345');

@@ -4,6 +4,7 @@
 import { git } from './lib.mjs';
 
 export const NOREPLY_SUFFIX = '@users.noreply.github.com';
+const NOREPLY_ADDRESS = /^[^@\s]+@users\.noreply\.github\.com$/i;
 
 /**
  * Extracts the e-mail from a `git var` identity line: "Name <email> timestamp tz".
@@ -31,7 +32,7 @@ export function check(cwd) {
       errors.push(`hygiene:noreply: could not determine ${variable}; set user.email to your noreply address.`);
       continue;
     }
-    if (email === null || !email.toLowerCase().endsWith(NOREPLY_SUFFIX)) {
+    if (email === null || !NOREPLY_ADDRESS.test(email)) {
       errors.push(
         `hygiene:noreply: ${variable} is not an address ending in ${NOREPLY_SUFFIX}; run: git config user.email <id>+<user>${NOREPLY_SUFFIX}`,
       );
