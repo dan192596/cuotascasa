@@ -132,7 +132,9 @@ export function createGoogleDriveProvider(options: GoogleDriveProviderOptions): 
     const attempt = (async () => {
       const gis = await ensureOAuth2();
       const response = await new Promise<GisTokenResponse>((resolve, reject) => {
+        let timedOut = false;
         const timer = setTimeout(() => {
+          timedOut = true;
           reject(new SyncError('AuthError'));
         }, options.tokenTimeoutMs ?? DEFAULT_TOKEN_TIMEOUT_MS);
         const settle = <T>(done: (value: T) => void) => {
@@ -145,7 +147,15 @@ export function createGoogleDriveProvider(options: GoogleDriveProviderOptions): 
           const client: GisTokenClient = gis.initTokenClient({
             client_id: options.clientId,
             scope: DRIVE_APPDATA_SCOPE,
-            callback: settle(resolve),
+            callback: (late) => {
+              if (timedOut) {
+                if ('access_token' in late && late.access_token !== '') {
+                  gis.revoke(late.access_token);
+                }
+                return;
+              }
+              settle(resolve)(late);
+            },
             error_callback: settle(() => {
               reject(new SyncError('AuthError'));
             }),
@@ -163,7 +173,7 @@ export function createGoogleDriveProvider(options: GoogleDriveProviderOptions): 
         gis.revoke(response.access_token);
         throw new SyncError('AuthError');
       }
-      if (!response.scope.split(' ').includes(DRIVE_APPDATA_SCOPE)) {
+      if (typeof response.scope !== 'string' || !response.scope.split(' ').includes(DRIVE_APPDATA_SCOPE)) {
         throw new SyncError('AuthError');
       }
       const seconds = Number(response.expires_in);

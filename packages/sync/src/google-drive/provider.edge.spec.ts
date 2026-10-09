@@ -209,6 +209,11 @@ describe('token response validation', () => {
     await expectCode(providerWith(oauth2).connect(), 'AuthError');
   });
 
+  it('a response without a string scope -> AuthError, not a TypeError', async () => {
+    const { oauth2 } = stubGis(() => ({ access_token: 't', expires_in: 3599, token_type: 'Bearer' }) as never);
+    await expectCode(providerWith(oauth2).connect(), 'AuthError');
+  });
+
   it('an empty access_token -> AuthError', async () => {
     const { oauth2 } = stubGis(() => ({ ...goodToken(), access_token: '' }));
     await expectCode(providerWith(oauth2).connect(), 'AuthError');
@@ -278,6 +283,66 @@ describe('odd Drive answers', () => {
     const content = 'x\r\n--cuotascasa-part-0\r\ny --cuotascasa-part-1 z';
     const file = await env.provider.createFile('cuotascasa.json', content);
     expect(await env.provider.downloadFile(file)).toBe(content);
+  });
+});
+
+describe('late token after a timeout', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('is revoked, not installed', async () => {
+    vi.useFakeTimers();
+    const gis = createGisFake();
+    let deliver: () => void = () => undefined;
+    const oauth2: GisOAuth2 = {
+      initTokenClient: (config) => ({
+        requestAccessToken: () => {
+          deliver = () => {
+            gis.oauth2.initTokenClient({ ...config, callback: config.callback }).requestAccessToken();
+          };
+        },
+      }),
+      revoke: gis.oauth2.revoke,
+    };
+    const provider = providerWith(oauth2, { tokenTimeoutMs: 1_000 });
+    const pending = expectCode(provider.connect(), 'AuthError');
+    await vi.advanceTimersByTimeAsync(1_000);
+    await pending;
+    deliver();
+    await vi.advanceTimersByTimeAsync(10);
+    expect(gis.issuedTokens).toHaveLength(1);
+    expect(gis.revokedTokens).toEqual(gis.issuedTokens);
+    expect(provider.isAuthorized()).toBe(false);
+  });
+});
+
+describe('late error after a timeout', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('is ignored (nothing to revoke)', async () => {
+    vi.useFakeTimers();
+    const revoked: string[] = [];
+    let late: () => void = () => undefined;
+    const oauth2: GisOAuth2 = {
+      initTokenClient: (config) => ({
+        requestAccessToken: () => {
+          late = () => {
+            config.callback({ error: 'access_denied' });
+          };
+        },
+      }),
+      revoke: (token) => revoked.push(token),
+    };
+    const provider = providerWith(oauth2, { tokenTimeoutMs: 10 });
+    const pending = expectCode(provider.connect(), 'AuthError');
+    await vi.advanceTimersByTimeAsync(10);
+    await pending;
+    late();
+    expect(revoked).toEqual([]);
+    expect(provider.isAuthorized()).toBe(false);
   });
 });
 

@@ -201,4 +201,16 @@ describe('script load timeout', () => {
     await vi.advanceTimersByTimeAsync(1_000);
     await expect(pending).resolves.toBe(env.gis.oauth2);
   });
+
+  it('after a timeout, a retry resolves without a second script when the old one ran late', async () => {
+    vi.useFakeTimers();
+    const env = setup();
+    const load = createGisLoader(env.deps);
+    const pending = load().catch((caught: unknown) => caught);
+    await vi.advanceTimersByTimeAsync(30_000);
+    await pending;
+    env.gis.install(env.target);
+    await expect(load()).resolves.toBe(env.gis.oauth2);
+    expect(env.scripts).toHaveLength(1);
+  });
 });

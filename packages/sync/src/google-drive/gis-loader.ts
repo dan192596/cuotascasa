@@ -110,7 +110,13 @@ export function createGisLoader(deps?: GisLoaderDeps): () => Promise<GisOAuth2> 
 
   return () => {
     if (loaded === null) {
-      const attempt = inject(deps ?? browserDeps());
+      const resolvedDeps = deps ?? browserDeps();
+      const present = resolvedDeps.getOAuth2();
+      if (present !== undefined) {
+        loaded = Promise.resolve(present);
+        return loaded;
+      }
+      const attempt = inject(resolvedDeps);
       loaded = attempt;
       attempt.catch(() => {
         loaded = null;
