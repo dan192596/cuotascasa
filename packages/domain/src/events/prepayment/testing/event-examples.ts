@@ -2,7 +2,7 @@ import ex00 from '../../../../../../docs/specs/algorithm-examples/events/ex00-ba
 import ex06 from '../../../../../../docs/specs/algorithm-examples/events/ex06-commissions-payoff.json' with { type: 'json' };
 import { parseLocalDate, parsePaymentDay } from '../../../dates/index.ts';
 import { parseMoney, parseRate } from '../../../money/index.ts';
-import type { AdvanceInstallmentsEvent, DomainEvent, PrepaymentEvent } from '../../../types/events.ts';
+import type { AdvanceInstallmentsEvent, PrepaymentEvent } from '../../../types/events.ts';
 import type { LoanTerms } from '../../../types/loan.ts';
 import { CURRENCIES, RATE_TYPES, ROUNDING_PROFILES } from '../../../types/primitives.ts';
 
@@ -84,7 +84,10 @@ function toTerms(raw: RawTerms): LoanTerms {
 
 function toEvent(raw: RawEvent): PrepaymentEvent | AdvanceInstallmentsEvent {
   if (raw.type === 'AdvanceInstallments') {
-    return { type: 'AdvanceInstallments', id: raw.id, date: parseLocalDate(raw.date), count: Number(raw.count) };
+    if (typeof raw.count !== 'number') {
+      throw new Error(`AdvanceInstallments ${raw.id} needs a numeric count`);
+    }
+    return { type: 'AdvanceInstallments', id: raw.id, date: parseLocalDate(raw.date), count: raw.count };
   }
   if (raw.type !== 'Prepayment') {
     throw new Error(`Unexpected event type: ${raw.type}`);
@@ -113,14 +116,17 @@ const FILES: ReadonlyArray<readonly [string, unknown]> = [
 /** Casos `buildSchedule` de los ejemplos con solo `Prepayment` y `AdvanceInstallments` (W2-04). */
 export function loadPrepaymentExampleCases(): readonly EventExampleCase[] {
   return FILES.flatMap(([file, content]) =>
-    (content as { cases: readonly RawCase[] }).cases.map((item) => ({
-      file,
-      id: item.id,
-      terms: toTerms(item.terms),
-      events: item.events.map(toEvent),
-      expected: item.expected,
-    })),
+    (content as { cases: readonly RawCase[] }).cases.map((item) => {
+      if (item.operation !== 'buildSchedule' || 'error' in item.expected) {
+        throw new Error(`${file} / ${item.id}: expected a buildSchedule case that returns a schedule`);
+      }
+      return {
+        file,
+        id: item.id,
+        terms: toTerms(item.terms),
+        events: item.events.map(toEvent),
+        expected: item.expected,
+      };
+    }),
   );
 }
-
-export type { DomainEvent };

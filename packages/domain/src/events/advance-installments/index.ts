@@ -1,4 +1,4 @@
-import { compareMoney, moneySub, minMoney, ZERO_MONEY } from '../../money/index.ts';
+import { compareMoney, moneySub, minMoney, maxMoney, ZERO_MONEY } from '../../money/index.ts';
 import type { EventHandler, PeriodState } from '../../types/engine.ts';
 import { InvalidInputError } from '../../types/primitives.ts';
 
@@ -15,10 +15,11 @@ export const advanceInstallmentsHandler: EventHandler<'AdvanceInstallments'> = (
     });
   }
   // [ALG.PREPAY.CAP] closing_k − abonos ya aplicados en k = state.balance.
-  const applied = minMoney(ctx.projectCapital(state, count), state.balance);
-  if (compareMoney(applied, ZERO_MONEY) <= 0) {
+  if (compareMoney(state.balance, ZERO_MONEY) <= 0) {
     return { state, rowEffect: { prepayment: ZERO_MONEY, commission: ZERO_MONEY, payoff: false } };
   }
+  // Un capital proyectado negativo (level 0.00) no es un abono: se acota a 0.00.
+  const applied = maxMoney(ZERO_MONEY, minMoney(ctx.projectCapital(state, count), state.balance));
   const balance = moneySub(state.balance, applied);
   const payoff = compareMoney(balance, ZERO_MONEY) <= 0;
   const reduced: PeriodState = { ...state, balance };

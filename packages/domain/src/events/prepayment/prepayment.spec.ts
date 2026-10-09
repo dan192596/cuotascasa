@@ -65,9 +65,15 @@ describe('[ALG.EVENTS.ANCHOR] prepayment k', () => {
     expect(appliedK(dayFifteen, '2026-03-14')).toBe(3);
   });
 
-  it('crosses a month boundary: dated the 16th of December applies after the January installment', () => {
+  it('crosses a month boundary: dated the 16th applies after the next month installment', () => {
     expect(appliedK(dayFifteen, '2026-02-16')).toBe(3);
     expect(appliedK(dayFifteen, '2026-04-01')).toBe(4);
+  });
+
+  it('crosses a year boundary: dated 2026-12-16 applies after installment 13 (2027-01-15)', () => {
+    const long = shortTerms({ paymentDay: 15, firstDueDate: d('2026-01-15'), termMonths: 24, principal: m('2400.00') });
+    expect(appliedK(long, '2026-12-16')).toBe(13);
+    expect(appliedK(long, '2026-12-15')).toBe(12);
   });
 
   it('END_OF_MONTH: the last day applies to that month, the next day to the following one', () => {
@@ -138,6 +144,24 @@ describe('[ALG.PREPAY] modes', () => {
     const schedule = buildSchedule(shortTerms(), [event], ctx);
     expect(schedule.installmentCount).toBe(12);
     expect(schedule.rows[3]?.level).not.toBe(schedule.rows[2]?.level);
+  });
+});
+
+describe('[ALG.PREPAY.REDUCE_TERM] monthsSaved = -1', () => {
+  it('a tiny REDUCE_TERM on a fixed schedule with a larger last installment ends one installment later', () => {
+    const terms = shortTerms({
+      principal: m('500000.00'),
+      termMonths: 240,
+      firstDueDate: d('2025-02-28'),
+      disbursementDate: d('2025-01-31'),
+      interestRate: parseRate('0.0725'),
+      insuranceRates: [parseRate('0.01'), parseRate('0.0026')],
+    });
+    const base = buildSchedule(terms, [], ctx);
+    const last = base.rows[base.rows.length - 1];
+    expect(last?.capital).not.toBe(base.rows[base.rows.length - 2]?.capital);
+    const schedule = buildSchedule(terms, [prepayment('p1', '2026-01-15', '0.01')], ctx);
+    expect(schedule.installmentCount).toBe(base.installmentCount + 1);
   });
 });
 

@@ -20,10 +20,10 @@ function commissionOf(commission: Commission | undefined, applied: Money): Money
  *   `term = k + remainingTerm` del estado antes de restar el abono ([ALG.TERM]).
  */
 export const prepaymentHandler: EventHandler<'Prepayment'> = ({ ctx, event, state }) => {
-  const applied = minMoney(event.amount, state.balance);
-  if (compareMoney(applied, ZERO_MONEY) <= 0) {
+  if (compareMoney(state.balance, ZERO_MONEY) <= 0) {
     return { state, rowEffect: { prepayment: ZERO_MONEY, commission: ZERO_MONEY, payoff: false } };
   }
+  const applied = minMoney(event.amount, state.balance);
   const balance = moneySub(state.balance, applied);
   const rowEffect = {
     prepayment: applied,
