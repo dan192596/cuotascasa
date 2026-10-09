@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { thrownBy } from '../../../test/support/errors.ts';
 import { parseLocalDate } from '../../dates/index.ts';
 import { createEngineContext } from '../../engine-context.ts';
-import { parseMoney, parseRate, periodicRate } from '../../money/index.ts';
+import { compareMoney, parseMoney, parseRate, periodicRate } from '../../money/index.ts';
 import { buildSchedule } from '../../schedule/index.ts';
 import { recordingContext, shortTerms } from '../../schedule/testing/builders.ts';
 import type { PeriodState } from '../../types/engine.ts';
@@ -65,7 +65,7 @@ describe('ex03 RateChange policies reproduce to the cent', () => {
     const last = schedule.rows[schedule.rows.length - 1] as ScheduleRow;
     expect(last.isLast).toBe(true);
     expect(last.closing).toBe('0.00');
-    expect(parseMoney(last.capital) <= parseMoney(last.level)).toBe(true);
+    expect(compareMoney(last.capital, last.level)).toBeLessThanOrEqual(0);
   });
 });
 
@@ -121,6 +121,22 @@ describe('rateChangeHandler', () => {
     }).state;
     expect(next.termMode).toBe('FIXED');
     expect(next.term).toBe(derived.k + remaining);
+    expect(next.level).toBe(
+      ctx.levelPayment(derived.balance, periodicRate(parseRate('0.2'), derived.insuranceRates), next.term - derived.k),
+    );
+  });
+
+  it('RECALC in derived-term mode throws [ALG.TERM] when the old level does not cover installment k', () => {
+    const uncovered: PeriodState = { ...state, termMode: 'DERIVED', term: 999, level: parseMoney('5.00') };
+    const error = thrownBy(() =>
+      rateChangeHandler({
+        ...base,
+        state: uncovered,
+        event: event({ policy: 'RECALC_INSTALLMENT_KEEP_TERM', interestRate: parseRate('0.2') }),
+      }),
+    );
+    expect(error).toBeInstanceOf(NegativeAmortizationError);
+    expect(error).toMatchObject({ rule: 'ALG.TERM', k });
   });
 
   it('KEEP_INSTALLMENT_ADJUST_TERM keeps level and derives the term', () => {
