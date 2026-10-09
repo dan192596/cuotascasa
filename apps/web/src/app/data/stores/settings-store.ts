@@ -1,5 +1,5 @@
 import { computed, type Signal } from '@angular/core';
-import type { DeviceSettingsValues, ThemePreference } from '@cuotascasa/schema';
+import { DEFAULT_DEVICE_SETTINGS_VALUES, type DeviceSettingsValues, type ThemePreference } from '@cuotascasa/schema';
 import type { SettingsStore } from '../api.ts';
 import type { StoresRuntime } from './store-runtime.ts';
 
@@ -21,7 +21,16 @@ export class SettingsStoreImpl implements SettingsStore {
     await this.runtime.write(['settings'], (store) => store.settings.saveDevice(values));
   }
 
-  setTheme(theme: ThemePreference): Promise<void> {
-    return this.saveDevice({ ...this.runtime.device(), theme });
+  /** Reads the current device settings inside the queued write, so a concurrent saveDevice is never overwritten. */
+  async setTheme(theme: ThemePreference): Promise<void> {
+    await this.runtime.write(['settings'], (store) =>
+      store.transaction(async (tx) => {
+        const current = await tx.settings.getDevice();
+        const values: DeviceSettingsValues = current
+          ? { theme: current.theme, driveSyncEnabled: current.driveSyncEnabled }
+          : DEFAULT_DEVICE_SETTINGS_VALUES;
+        await tx.settings.saveDevice({ ...values, theme });
+      }),
+    );
   }
 }

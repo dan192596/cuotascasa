@@ -24,14 +24,18 @@ export class ScenariosStoreImpl extends ChildStore<Scenario> implements Scenario
   activeScenarioId(loanId: Uuid): Signal<Uuid | null> {
     let signal = this.activeSignals.get(loanId);
     if (!signal) {
-      signal = computed(() => this.runtime.synced()?.activeScenarioByLoan[loanId] ?? null);
+      signal = computed(() => {
+        const pointer = this.runtime.synced()?.activeScenarioByLoan[loanId] ?? null;
+        const live = this.runtime.scenarios().some((scenario) => scenario.id === pointer && scenario.loanId === loanId);
+        return live ? pointer : null;
+      });
       this.activeSignals.set(loanId, signal);
     }
     return signal;
   }
 
   async setActiveScenario(loanId: Uuid, scenarioId: Uuid | null): Promise<void> {
-    await this.runtime.write(['settings'], (store) =>
+    await this.runtime.writeIfChanged(['settings'], (store) =>
       store.transaction(async (tx) => {
         if (scenarioId !== null) {
           const scenario = await tx.scenarios.get(scenarioId);
@@ -40,10 +44,15 @@ export class ScenariosStoreImpl extends ChildStore<Scenario> implements Scenario
           }
         }
         const current = await tx.settings.getSynced();
-        const others = withoutKey(current?.activeScenarioByLoan ?? {}, loanId);
+        const pointers = current?.activeScenarioByLoan ?? {};
+        if ((pointers[loanId] ?? null) === scenarioId) {
+          return { result: undefined, wrote: false };
+        }
+        const others = withoutKey(pointers, loanId);
         await tx.settings.saveSynced({
           activeScenarioByLoan: scenarioId === null ? others : { ...others, [loanId]: scenarioId },
         });
+        return { result: undefined, wrote: true };
       }),
     );
   }

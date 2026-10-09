@@ -7,7 +7,7 @@ import type {
   RecordUpdate,
 } from '@cuotascasa/persistence';
 import type { BaseRecord, Uuid } from '@cuotascasa/schema';
-import type { LoanChildStore } from '../api.ts';
+import { DataError, type LoanChildStore } from '../api.ts';
 import type { StoresRuntime } from './store-runtime.ts';
 
 export type ChildRecord = BaseRecord & { readonly loanId: Uuid };
@@ -45,11 +45,29 @@ export class ChildStore<T extends ChildRecord> implements LoanChildStore<T, NewR
   }
 
   create(draft: NewRecord<T>): Promise<T> {
-    return this.runtime.write([this.entity], (store) => this.repository(store).create(draft));
+    return this.runtime.write([this.entity], (store) =>
+      store.transaction(async (tx) => {
+        if (!(await tx.loans.get(draft.loanId))) {
+          throw new DataError('VALIDATION');
+        }
+        return this.repository(tx).create(draft);
+      }),
+    );
   }
 
   update(update: RecordUpdate<T>): Promise<T> {
-    return this.runtime.write([this.entity], (store) => this.repository(store).update(update));
+    return this.runtime.write([this.entity], (store) =>
+      store.transaction(async (tx) => {
+        const current = await this.repository(tx).get(update.id);
+        if (!current) {
+          throw new DataError('NOT_FOUND');
+        }
+        if (current.loanId !== update.loanId) {
+          throw new DataError('VALIDATION');
+        }
+        return this.repository(tx).update(update);
+      }),
+    );
   }
 
   async delete(id: Uuid): Promise<void> {

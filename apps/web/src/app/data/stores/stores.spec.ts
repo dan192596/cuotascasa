@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { TestBed } from '@angular/core/testing';
 import type { DataStore } from '@cuotascasa/persistence';
 import { createInMemoryDataStore } from '@cuotascasa/persistence/memory';
@@ -12,7 +13,7 @@ import {
   sampleScenario,
 } from '@cuotascasa/persistence/contract';
 import type { Uuid } from '@cuotascasa/schema';
-import { afterAll, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { type AnchorDraft, DataError, type StorageHealth } from '../api.ts';
 import { DATA_STORE } from '../data-layer.tokens.ts';
 import {
@@ -25,15 +26,26 @@ import {
   STORAGE_HEALTH,
 } from '../tokens.ts';
 import { provideStores } from './provide-stores.ts';
+import { StoresRuntime } from './store-runtime.ts';
 
-/** Records every member read from a store, to compare with the members declared in data/api.ts. */
+/**
+ * Records the members used through a store, to compare with the members declared in data/api.ts: a method counts only
+ * when it is invoked, a signal member when it is read.
+ */
 const touched = new Set<string>();
 function track<T extends object>(name: string, store: T): T {
   return new Proxy(store, {
     get(target, property, receiver) {
-      if (typeof property === 'string') touched.add(`${name}.${property}`);
       const value: unknown = Reflect.get(target, property, receiver);
-      return typeof value === 'function' ? (value as (...args: unknown[]) => unknown).bind(target) : value;
+      if (typeof property !== 'string') return value;
+      if (typeof value !== 'function') {
+        touched.add(`${name}.${property}`);
+        return value;
+      }
+      return (...args: unknown[]) => {
+        touched.add(`${name}.${property}`);
+        return (value as (...args: unknown[]) => unknown).apply(target, args);
+      };
     },
   });
 }
@@ -211,6 +223,22 @@ describe('LoansStore', () => {
     await expectDataError(loans.delete('00000000-0000-4000-8000-0000000000ff'), 'NOT_FOUND');
   });
 
+  it('delete rolls back the loan tombstone when a child tombstone fails', async () => {
+    const { loans, events, dataStore } = await setup();
+    const loan = await loans.create(sampleLoan());
+    await events.create(sampleEvent(loan.id));
+    const original = dataStore.transaction.bind(dataStore);
+    vi.spyOn(dataStore, 'transaction').mockImplementation((work) =>
+      original((tx) =>
+        work({ ...tx, events: { ...tx.events, delete: () => Promise.reject(new Error('disk full')) } } as typeof tx),
+      ),
+    );
+    await expectDataError(loans.delete(loan.id), 'STORAGE');
+    expect((await dataStore.loans.get(loan.id))?.deletedAt).toBeNull();
+    expect(loans.loan(loan.id)()).toBeDefined();
+    expect(events.listByLoan(loan.id)()).toHaveLength(1);
+  });
+
   const CHILDREN = [
     ['LoanEvent', (s: Awaited<ReturnType<typeof setup>>) => s.events, sampleEvent],
     ['ReportedBalance', (s: Awaited<ReturnType<typeof setup>>) => s.balances, sampleReportedBalance],
@@ -285,14 +313,13 @@ describe('child stores', () => {
       unknown
     > & { id: Uuid };
     void [createdAt, updatedAt, updatedByDevice, deletedAt];
-    const changed = key === 'scenarios' ? { name: 'Otro nombre' } : key === 'events' ? { amount: '1.00' } : {};
-    const updatedRecord = await store.update({
-      ...fields,
-      id,
-      ...changed,
-      ...(key === 'balances' ? { balance: '1.00' } : {}),
-      ...(key === 'payments' ? { total: '1.00' } : {}),
-    });
+    const changes = {
+      events: { amount: '1.00' },
+      balances: { balance: '1.00' },
+      payments: { total: '1.00' },
+      scenarios: { name: 'Otro nombre' },
+    } as const;
+    const updatedRecord = await store.update({ ...fields, id, ...changes[key] });
     expect(updatedRecord.id).toBe(id);
     expect(
       store
@@ -310,6 +337,39 @@ describe('child stores', () => {
     await expectDataError(store.delete('00000000-0000-4000-8000-0000000000ff'), 'NOT_FOUND');
     await expectDataError(store.create({ ...sample(loanA), loanId: 'not-a-uuid' }), 'VALIDATION');
   });
+
+  it.each(CASES)('%s: create needs a live loan; loanId is immutable', async (key, sample) => {
+    const stores = await setup();
+    const store = stores[key] as unknown as {
+      create(draft: unknown): Promise<{ id: Uuid }>;
+      update(update: unknown): Promise<unknown>;
+    };
+    const gone = '00000000-0000-4000-8000-0000000000ff';
+    await expectDataError(store.create(sample(gone)), 'VALIDATION');
+    const doomed = (await stores.loans.create(sampleLoan())).id;
+    await stores.loans.delete(doomed);
+    await expectDataError(store.create(sample(doomed)), 'VALIDATION');
+    const repositories = {
+      events: stores.dataStore.events,
+      balances: stores.dataStore.reportedBalances,
+      payments: stores.dataStore.payments,
+      scenarios: stores.dataStore.scenarios,
+    };
+    expect(await repositories[key].list({ includeDeleted: true })).toEqual([]);
+
+    const loanA = (await stores.loans.create(sampleLoan())).id;
+    const loanB = (await stores.loans.create(sampleLoan())).id;
+    const created = await store.create(sample(loanA));
+    const { createdAt, updatedAt, updatedByDevice, deletedAt, ...fields } = created as unknown as Record<
+      string,
+      unknown
+    >;
+    void [createdAt, updatedAt, updatedByDevice, deletedAt];
+    await expectDataError(store.update({ ...fields, loanId: loanB }), 'VALIDATION');
+    // The currency of loan B stays editable: nothing moved there.
+    expect(stores.loans.isCurrencyLocked(loanB)()).toBe(false);
+    expect(stores.loans.isCurrencyLocked(loanA)()).toBe(true);
+  });
 });
 
 describe('ScenariosStore active scenario', () => {
@@ -325,6 +385,35 @@ describe('ScenariosStore active scenario', () => {
     expect((await dataStore.settings.getSynced())?.activeScenarioByLoan).toEqual({ [loanA]: scenario.id });
     await scenarios.setActiveScenario(loanA, null);
     expect(scenarios.activeScenarioId(loanA)()).toBeNull();
+  });
+
+  it('is a no-op (no write, no persist request) when the pointer would not change', async () => {
+    const { loans, scenarios, dataStore, requestPersist } = await setup();
+    const loanA = (await loans.create(sampleLoan())).id;
+    const scenario = await scenarios.create(sampleScenario(loanA));
+    requestPersist.mockClear();
+    const before = await dataStore.settings.getSynced();
+    await scenarios.setActiveScenario(loanA, null);
+    expect(await dataStore.settings.getSynced()).toEqual(before);
+    await scenarios.setActiveScenario(loanA, scenario.id);
+    const afterFirst = await dataStore.settings.getSynced();
+    await scenarios.setActiveScenario(loanA, scenario.id);
+    expect(await dataStore.settings.getSynced()).toEqual(afterFirst);
+  });
+
+  it('reads null unless the pointed scenario is live and belongs to that loan', async () => {
+    const { loans, scenarios, dataStore } = await setup();
+    const loanA = (await loans.create(sampleLoan())).id;
+    const loanB = (await loans.create(sampleLoan())).id;
+    const foreign = await scenarios.create(sampleScenario(loanB));
+    await dataStore.settings.saveSynced({ activeScenarioByLoan: { [loanA]: foreign.id } });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(scenarios.activeScenarioId(loanA)()).toBeNull();
+    const own = await scenarios.create(sampleScenario(loanA));
+    await dataStore.settings.saveSynced({ activeScenarioByLoan: { [loanA]: own.id } });
+    await vi.waitFor(() => expect(scenarios.activeScenarioId(loanA)()).toBe(own.id));
+    await dataStore.scenarios.delete(own.id);
+    await vi.waitFor(() => expect(scenarios.activeScenarioId(loanA)()).toBeNull());
   });
 
   it('rejects a scenario that is missing or belongs to another loan', async () => {
@@ -368,6 +457,12 @@ describe('SettingsStore', () => {
     await settings.saveDevice({ theme: 'light', driveSyncEnabled: true });
     await settings.setTheme('dark');
     expect(settings.device()).toEqual({ theme: 'dark', driveSyncEnabled: true });
+  });
+
+  it('setTheme and saveDevice fired together do not lose an update', async () => {
+    const { settings } = await setup();
+    await Promise.all([settings.saveDevice({ theme: 'dark', driveSyncEnabled: true }), settings.setTheme('light')]);
+    expect(settings.device()).toEqual({ theme: 'light', driveSyncEnabled: true });
   });
 
   it('rejects an invalid theme with VALIDATION', async () => {
@@ -464,6 +559,102 @@ describe('reloading', () => {
   });
 });
 
+describe('reload edge cases', () => {
+  it('retries the entities of a failed reload on the next notification', async () => {
+    const { loans, dataStore } = await setup();
+    const repo = dataStore.loans as { list: DataStore['loans']['list'] };
+    const list = repo.list.bind(repo);
+    let failNext = true;
+    repo.list = (options) => {
+      if (failNext) {
+        failNext = false;
+        return Promise.reject(new Error('read failed'));
+      }
+      return list(options);
+    };
+    const external = await dataStore.loans.create({ ...sampleLoan(), name: 'Externa' });
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(loans.loans()).toEqual([]);
+    await dataStore.events.create(sampleEvent(external.id));
+    await vi.waitFor(() => expect(loans.loans().map((loan) => loan.id)).toEqual([external.id]));
+  });
+
+  it('re-arms when a notification arrives while a reload is running', async () => {
+    const { loans, dataStore } = await setup();
+    const repo = dataStore.loans as { list: DataStore['loans']['list'] };
+    const list = repo.list.bind(repo);
+    repo.list = async (options) => {
+      const snapshot = await list(options);
+      await new Promise((resolve) => setTimeout(resolve, 25));
+      return snapshot;
+    };
+    await dataStore.loans.create({ ...sampleLoan(), name: 'Primera' });
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    await dataStore.loans.create({ ...sampleLoan(), name: 'Segunda' });
+    await vi.waitFor(() => expect(loans.loans()).toHaveLength(2));
+  });
+
+  function lazyStore(dataStore: DataStore): { open(): void } {
+    let open: () => void = () => undefined;
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideStores(),
+        { provide: DATA_STORE, useValue: new Promise<DataStore>((resolve) => (open = () => resolve(dataStore))) },
+        { provide: STORAGE_HEALTH, useValue: { requestPersist: () => Promise.resolve(true) } },
+      ],
+    });
+    return { open: () => open() };
+  }
+
+  it('never subscribes when destroyed before the DataStore opened', async () => {
+    const dataStore = await createInMemoryDataStore({ clock: createManualClock(), ids: createSequentialIds() });
+    const subscribe = vi.spyOn(dataStore, 'subscribe');
+    const gate = lazyStore(dataStore);
+    const loans = TestBed.inject(LOANS_STORE);
+    TestBed.resetTestingModule();
+    gate.open();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(subscribe).not.toHaveBeenCalled();
+    expect(loans.ready()).toBe(false);
+  });
+
+  it('unsubscribes when destroyed while the first load is still reading', async () => {
+    const dataStore = await createInMemoryDataStore({ clock: createManualClock(), ids: createSequentialIds() });
+    const unsubscribe = vi.fn();
+    const subscribe = vi.spyOn(dataStore, 'subscribe').mockReturnValue(unsubscribe);
+    const repo = dataStore.loans as { list: DataStore['loans']['list'] };
+    const list = repo.list.bind(repo);
+    repo.list = async (options) => {
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      return list(options);
+    };
+    const gate = lazyStore(dataStore);
+    const loans = TestBed.inject(LOANS_STORE);
+    gate.open();
+    await vi.waitFor(() => expect(subscribe).toHaveBeenCalled());
+    TestBed.resetTestingModule();
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(unsubscribe).toHaveBeenCalled();
+    expect(loans.ready()).toBe(false);
+  });
+
+  it('exposes a failed load through loadError', async () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideStores(),
+        { provide: DATA_STORE, useValue: Promise.reject(new Error('cannot open')) },
+        { provide: STORAGE_HEALTH, useValue: { requestPersist: () => Promise.resolve(true) } },
+      ],
+    });
+    const runtime = TestBed.inject(StoresRuntime);
+    expect(runtime.loadError()).toBeNull();
+    await vi.waitFor(() => expect(runtime.loadError()?.code).toBe('STORAGE'));
+    expect(runtime.ready()).toBe(false);
+  });
+});
+
 describe('data stores unavailable', () => {
   it('stays not ready and rejects writes with STORAGE', async () => {
     TestBed.resetTestingModule();
@@ -482,17 +673,14 @@ describe('data stores unavailable', () => {
 
 /** Members declared in `interface <name> { ... }` of data/api.ts (own members only). */
 function declaredMembers(source: string, name: string): string[] {
-  const start = source.indexOf(`export interface ${name}`);
-  const open = source.indexOf('{', source.indexOf('>', start) > source.indexOf('{', start) ? start : start);
+  const open = source.indexOf('{', source.indexOf(`export interface ${name}`));
   const body = source.slice(open + 1, source.indexOf('\n}', open));
   return [...body.matchAll(/^ {2}(?:readonly )?(\w+)\s*[(:<]/gm)].map((match) => `${name}.${match[1]}`);
 }
 
 describe('meta-test: coverage of data/api.ts', () => {
-  afterAll(() => undefined);
-
-  it('exercises every store member declared in data/api.ts', () => {
-    const api = readFileSync('apps/web/src/app/data/api.ts', 'utf8');
+  it('invokes every method and reads every signal member declared in data/api.ts', () => {
+    const api = readFileSync(join(import.meta.dirname, '..', 'api.ts'), 'utf8');
     const declared = [
       ...declaredMembers(api, 'LoansStore'),
       ...declaredMembers(api, 'LoanChildStore'),

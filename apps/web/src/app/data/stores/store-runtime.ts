@@ -6,21 +6,20 @@ import {
   PersistenceError,
   type RecordUpdate,
 } from '@cuotascasa/persistence';
-import type {
-  ActualPayment,
-  BaseRecord,
-  DeviceSettingsValues,
-  Loan,
-  LoanEvent,
-  ReportedBalance,
-  Scenario,
-  SyncedSettings,
+import {
+  type ActualPayment,
+  type BaseRecord,
+  DEFAULT_DEVICE_SETTINGS_VALUES,
+  type DeviceSettingsValues,
+  type Loan,
+  type LoanEvent,
+  type ReportedBalance,
+  type Scenario,
+  type SyncedSettings,
 } from '@cuotascasa/schema';
 import { DataError } from '../api.ts';
 import { DATA_STORE } from '../data-layer.tokens.ts';
 import { STORAGE_HEALTH } from '../tokens.ts';
-
-export const DEFAULT_DEVICE_VALUES: DeviceSettingsValues = { theme: 'system', driveSyncEnabled: false };
 
 const ALL_ENTITIES: readonly EntityName[] = [
   'loans',
@@ -76,6 +75,8 @@ export class StoresRuntime {
   private reloadScheduled = false;
   private readonly pendingReload = new Set<EntityName>();
   private unsubscribe: (() => void) | undefined;
+  private destroyed = false;
+  private readonly loadErrorState = signal<DataError | null>(null);
 
   private readonly loansState = signal<readonly Loan[]>([]);
   private readonly eventsState = signal<readonly LoanEvent[]>([]);
@@ -83,9 +84,11 @@ export class StoresRuntime {
   private readonly paymentsState = signal<readonly ActualPayment[]>([]);
   private readonly scenariosState = signal<readonly Scenario[]>([]);
   private readonly syncedState = signal<SyncedSettings | undefined>(undefined);
-  private readonly deviceState = signal<DeviceSettingsValues>(DEFAULT_DEVICE_VALUES);
+  private readonly deviceState = signal<DeviceSettingsValues>(DEFAULT_DEVICE_SETTINGS_VALUES);
   private readonly readyState = signal(false);
 
+  /** Why the first load failed (STORAGE), or null. Writes still reject on their own. */
+  readonly loadError: Signal<DataError | null> = this.loadErrorState.asReadonly();
   readonly ready: Signal<boolean> = this.readyState.asReadonly();
   readonly loans: Signal<readonly Loan[]> = this.loansState.asReadonly();
   readonly events: Signal<readonly LoanEvent[]> = this.eventsState.asReadonly();
@@ -96,8 +99,11 @@ export class StoresRuntime {
   readonly device: Signal<DeviceSettingsValues> = this.deviceState.asReadonly();
 
   constructor() {
-    inject(DestroyRef).onDestroy(() => this.unsubscribe?.());
-    this.enqueue(() => this.start()).catch(() => undefined);
+    inject(DestroyRef).onDestroy(() => {
+      this.destroyed = true;
+      this.unsubscribe?.();
+    });
+    this.enqueue(() => this.start()).catch((error: unknown) => this.loadErrorState.set(toDataError(error)));
   }
 
   /**
@@ -105,17 +111,27 @@ export class StoresRuntime {
    * once. `work` must not call store-level DataStore methods from inside `transaction` (only the `tx` it receives).
    */
   write<R>(touched: readonly EntityName[], work: (store: DataStore) => Promise<R>): Promise<R> {
+    return this.writeIfChanged(touched, async (store) => ({ result: await work(store), wrote: true }));
+  }
+
+  /** Like write(), but `work` reports whether it wrote; a no-op neither refreshes nor requests persistence. */
+  writeIfChanged<R>(
+    touched: readonly EntityName[],
+    work: (store: DataStore) => Promise<{ readonly result: R; readonly wrote: boolean }>,
+  ): Promise<R> {
     return this.enqueue(async () => {
       const store = await this.requireStore();
-      let result: R;
+      let outcome: { readonly result: R; readonly wrote: boolean };
       try {
-        result = await work(store);
+        outcome = await work(store);
       } catch (error) {
         throw toDataError(error);
       }
-      await this.refresh(store, touched).catch(() => undefined);
-      this.requestPersistOnce();
-      return result;
+      if (outcome.wrote) {
+        await this.refresh(store, touched).catch(() => undefined);
+        this.requestPersistOnce();
+      }
+      return outcome.result;
     });
   }
 
@@ -140,9 +156,16 @@ export class StoresRuntime {
     if (!this.dataStore) {
       return;
     }
-    const store = await this.dataStore;
+    const store = await this.requireStore();
+    if (this.destroyed) {
+      return;
+    }
     this.unsubscribe = store.subscribe((event) => this.onChange(event));
     await this.refresh(store, ALL_ENTITIES);
+    if (this.destroyed) {
+      this.unsubscribe();
+      return;
+    }
     this.readyState.set(true);
   }
 
@@ -159,7 +182,15 @@ export class StoresRuntime {
       this.reloadScheduled = false;
       const entities = [...this.pendingReload];
       this.pendingReload.clear();
-      await this.refresh(await this.requireStore(), entities);
+      try {
+        await this.refresh(await this.requireStore(), entities);
+      } catch (error) {
+        // The next notification retries what this one could not read.
+        for (const entity of entities) {
+          this.pendingReload.add(entity);
+        }
+        throw error;
+      }
     }).catch(() => undefined);
   }
 
@@ -191,7 +222,7 @@ export class StoresRuntime {
       const [synced, device] = settings;
       this.syncedState.set(synced);
       this.deviceState.set(
-        device ? { theme: device.theme, driveSyncEnabled: device.driveSyncEnabled } : DEFAULT_DEVICE_VALUES,
+        device ? { theme: device.theme, driveSyncEnabled: device.driveSyncEnabled } : DEFAULT_DEVICE_SETTINGS_VALUES,
       );
     }
   }
