@@ -9,6 +9,7 @@ import {
   type SyncErrorCode,
 } from '../ports.ts';
 import { decodeBase64Url, encodeBase64Url } from './base64url.ts';
+import { MAX_PBKDF2_ITERATIONS } from './envelope.ts';
 import {
   SALT_BYTES,
   changePassphrase,
@@ -139,6 +140,12 @@ describe('deriveKey', () => {
     ['a salt shorter than 16 bytes', () => deriveKey(PASSPHRASE, new Uint8Array(15), TEST_ITERATIONS)],
     ['zero iterations', () => deriveKey(PASSPHRASE, generateSalt(), 0)],
     ['fractional iterations', () => deriveKey(PASSPHRASE, generateSalt(), 1000.5)],
+    ['iterations above the cap', () => deriveKey(PASSPHRASE, generateSalt(), 10_000_001)],
+    ['deriveStoredKey above the cap', () => deriveStoredKey(PASSPHRASE, { iterations: 10_000_001 })],
+    [
+      'changePassphrase above the cap',
+      () => changePassphrase(key, envelope, PASSPHRASE, { iterations: 10_000_001, minIterations: TEST_ITERATIONS }),
+    ],
   ])('rejects %s without echoing the passphrase', async (_label, call) => {
     const error: unknown = await call().then(
       () => null,
@@ -146,6 +153,13 @@ describe('deriveKey', () => {
     );
     expect(error).toBeInstanceOf(RangeError);
     expectNoSecrets(error, PASSPHRASE);
+  });
+
+  it('caps PBKDF2 iterations at exactly 10,000,000', async () => {
+    expect(MAX_PBKDF2_ITERATIONS).toBe(10_000_000);
+    const atCap = vi.spyOn(crypto.subtle, 'deriveKey').mockRejectedValue(new Error('stop before deriving'));
+    await expect(deriveKey(PASSPHRASE, generateSalt(), MAX_PBKDF2_ITERATIONS)).rejects.toThrow('stop before deriving');
+    expect(atCap).toHaveBeenCalledTimes(1);
   });
 
   it('deriveStoredKey rejects a saltId that is not canonical base64url', async () => {
@@ -328,6 +342,22 @@ describe('rejection before any decryption attempt', () => {
     ['iterations 1', (e) => ({ ...e, kdf: { ...e.kdf, iterations: 1 } }), 'WeakParams'],
     ['iterations 0', (e) => ({ ...e, kdf: { ...e.kdf, iterations: 0 } }), 'WeakParams'],
     ['negative iterations', (e) => ({ ...e, kdf: { ...e.kdf, iterations: -600_000 } }), 'WeakParams'],
+    ['iterations above the cap', (e) => ({ ...e, kdf: { ...e.kdf, iterations: 10_000_001 } }), 'WeakParams'],
+    [
+      'iterations at Number.MAX_SAFE_INTEGER',
+      (e) => ({ ...e, kdf: { ...e.kdf, iterations: Number.MAX_SAFE_INTEGER } }),
+      'WeakParams',
+    ],
+    [
+      'a salt longer than 64 base64url characters',
+      (e) => ({ ...e, kdf: { ...e.kdf, salt: encodeBase64Url(new Uint8Array(51)) } }),
+      'WeakParams',
+    ],
+    [
+      'a 65-character salt that is not even base64url',
+      (e) => ({ ...e, kdf: { ...e.kdf, salt: 'A'.repeat(65) } }),
+      'WeakParams',
+    ],
     ['a salt of 8 bytes', (e) => ({ ...e, kdf: { ...e.kdf, salt: encodeBase64Url(new Uint8Array(8)) } }), 'WeakParams'],
     ['not an object', () => 'cuotascasa-enc', 'InvalidRemote'],
     ['null', () => null, 'InvalidRemote'],
@@ -361,6 +391,18 @@ describe('rejection before any decryption attempt', () => {
       expect(spy).not.toHaveBeenCalled();
     },
   );
+
+  it('a 64-character salt (48 bytes) passes the length check and reaches KeyMismatch', async () => {
+    const salt = encodeBase64Url(new Uint8Array(48));
+    expect(salt).toHaveLength(64);
+    const strong = { ...envelope, kdf: { ...envelope.kdf, iterations: PBKDF2_ITERATIONS, salt } };
+    await expectSyncError(decrypt(key, strong), 'KeyMismatch');
+  });
+
+  it('an envelope at exactly the cap passes the iteration check', async () => {
+    const atCap = { ...envelope, kdf: { ...envelope.kdf, iterations: MAX_PBKDF2_ITERATIONS } };
+    await expectSyncError(decrypt(key, atCap), 'WrongPassphraseOrTamper');
+  });
 
   it('a different salt gives KeyMismatch before decrypting', async () => {
     const spy = vi.spyOn(crypto.subtle, 'decrypt');

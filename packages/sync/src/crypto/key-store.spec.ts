@@ -215,6 +215,29 @@ describe('IndexedDB KeyStore (node, fake-indexeddb)', () => {
     );
   });
 
+  it('rejects with a fixed message when the database exists without the keys store', async () => {
+    const factory = new IDBFactory();
+    await new Promise<void>((resolve, reject) => {
+      const open = factory.open(KEY_STORE_DATABASE, 1);
+      open.onupgradeneeded = () => open.result.createObjectStore('otra');
+      open.onsuccess = () => {
+        open.result.close();
+        resolve();
+      };
+      open.onerror = () => reject(new Error('open failed'));
+    });
+    const store = createIndexedDbKeyStore({ indexedDB: factory });
+    for (const call of [() => store.load(), () => store.clear()]) {
+      const error: unknown = await call().then(
+        () => null,
+        (reason: unknown) => reason,
+      );
+      expect(error).toBeInstanceOf(Error);
+      expect(error).not.toBeInstanceOf(DOMException);
+      expect((error as Error).message).toBe('Key store transaction failed');
+    }
+  });
+
   it('rejects with a fixed message when the transaction aborts', async () => {
     const factory = new IDBFactory();
     const store = createIndexedDbKeyStore({ indexedDB: factory });

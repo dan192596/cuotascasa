@@ -7,6 +7,13 @@ export const KDF_NAME = 'PBKDF2-SHA256';
 export const CIPHER_NAME = 'AES-256-GCM';
 export const SALT_BYTES = 16;
 export const IV_BYTES = 12;
+/**
+ * Highest accepted PBKDF2 iteration count. An envelope's iterations may come from a hostile Drive file, and an
+ * uncapped value would hang the tab while deriving; above it the envelope is WeakParams and deriveKey a RangeError.
+ */
+export const MAX_PBKDF2_ITERATIONS = 10_000_000;
+/** Longest accepted salt field: 64 base64url characters (48 bytes), checked before decoding. */
+export const MAX_SALT_CHARS = 64;
 
 type Header = Omit<EncryptedEnvelopeV1, 'ct'>;
 
@@ -31,7 +38,8 @@ function hasExactKeys(value: unknown, keys: readonly string[]): value is Record<
 /**
  * Validates an untrusted value as an envelope v1 without touching any key. Order: not an envelope (InvalidRemote),
  * unknown version or algorithm (UnsupportedVersion), malformed v1 fields (WrongPassphraseOrTamper), then KDF strength
- * (WeakParams): iterations below `minIterations` or a salt shorter than 16 bytes.
+ * (WeakParams): iterations below `minIterations` or above MAX_PBKDF2_ITERATIONS, a salt field longer than 64
+ * characters (checked before decoding) or a salt shorter than 16 bytes.
  */
 export function checkEnvelope(value: unknown, minIterations: number): CheckedEnvelope {
   if (!isRecord(value) || value['format'] !== ENVELOPE_FORMAT) {
@@ -59,7 +67,7 @@ export function checkEnvelope(value: unknown, minIterations: number): CheckedEnv
     throw new SyncError('UnsupportedVersion');
   }
   const iterations = kdf['iterations'];
-  if (iterations < minIterations) {
+  if (iterations < minIterations || iterations > MAX_PBKDF2_ITERATIONS || kdf['salt'].length > MAX_SALT_CHARS) {
     throw new SyncError('WeakParams');
   }
   const salt = decodeBase64Url(kdf['salt']);

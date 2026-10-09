@@ -1,6 +1,14 @@
 import { ENVELOPE_FORMAT, PBKDF2_ITERATIONS, SyncError, type EncryptedEnvelopeV1, type StoredKey } from '../ports.ts';
 import { decodeBase64Url, encodeBase64Url } from './base64url.ts';
-import { CIPHER_NAME, IV_BYTES, KDF_NAME, SALT_BYTES, checkEnvelope, headerAad } from './envelope.ts';
+import {
+  CIPHER_NAME,
+  IV_BYTES,
+  KDF_NAME,
+  MAX_PBKDF2_ITERATIONS,
+  SALT_BYTES,
+  checkEnvelope,
+  headerAad,
+} from './envelope.ts';
 
 /**
  * ADR-0009: PBKDF2-SHA256 to a non-extractable AES-256-GCM key, a fresh random 96-bit IV per encryption and the
@@ -34,8 +42,8 @@ export interface ChangePassphraseResult {
 const subtle = (): SubtleCrypto => globalThis.crypto.subtle;
 
 function assertIterations(iterations: number): void {
-  if (!Number.isSafeInteger(iterations) || iterations < 1) {
-    throw new RangeError('PBKDF2 iterations must be a positive integer');
+  if (!Number.isSafeInteger(iterations) || iterations < 1 || iterations > MAX_PBKDF2_ITERATIONS) {
+    throw new RangeError('PBKDF2 iterations must be an integer from 1 to 10000000');
   }
 }
 

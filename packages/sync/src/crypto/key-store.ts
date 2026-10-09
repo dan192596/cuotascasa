@@ -78,9 +78,17 @@ export function createIndexedDbKeyStore(options: IndexedDbKeyStoreOptions = {}):
     const db = await open();
     try {
       return await new Promise<T>((resolve, reject) => {
-        const tx = db.transaction(KEY_STORE_STORE, mode);
-        const request = operation(tx.objectStore(KEY_STORE_STORE));
         const fail = (): void => reject(new Error('Key store transaction failed'));
+        let tx: IDBTransaction;
+        let request: IDBRequest<T>;
+        try {
+          // Throws NotFoundError when a database with this name exists without the keys store.
+          tx = db.transaction(KEY_STORE_STORE, mode);
+          request = operation(tx.objectStore(KEY_STORE_STORE));
+        } catch {
+          fail();
+          return;
+        }
         tx.oncomplete = () => resolve(request.result);
         tx.onerror = fail;
         tx.onabort = fail;
