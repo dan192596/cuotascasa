@@ -247,7 +247,7 @@ Todos llevan solo la función `core` y `inputs.events = []`.
 - La cuota del primer evento, `k₁`, es uniforme en [6, `min(48, termMonths − 36)`].
 - Un segundo evento va en `k₂ = k₁ + j`, con `j` uniforme en [6, 12]; un tercero, en `k₃ = k₂ + j'`, con `j'` uniforme en [1, 12].
 - Un evento asociado por fecha que debe caer en `k` lleva `date = dueDate(k) − o` días, con `o` uniforme en [0, 20].
-- Si un evento queda en una cuota que no existe o que es la última del calendario vigente en ese punto, el generador vuelve a sortear su cuota con el mismo generador (muestreo por rechazo).
+- Si un evento queda en una cuota que no existe o que es la última del calendario vigente en ese punto, el generador vuelve a sortear su cuota con el mismo generador (muestreo por rechazo). Además, un intento de casilla que lance cualquier error del oráculo, o cuyo estado de liquidación no coincida con tener o no una receta `PAYOFF`, se vuelve a sortear completo (la cuota y todos sus sorteos) con el mismo generador.
 
 **Recetas.** «Proyectado» significa el camino real calculado con los eventos de clave de orden menor (`[ALG.EVENTS.ORDER]`).
 
@@ -379,7 +379,7 @@ Se ejecuta desde `tools/oracle`; las rutas son relativas al directorio de trabaj
   ```
 
 - **Nunca** imprime el total de filas, montos, fechas ni condiciones, ni siquiera en la terminal o en un error.
-- **Códigos de salida:** 0 si coinciden todas las filas, 1 si no, 2 ante un error de uso o de formato. Un error imprime una sola línea `error: <código>`, con código `usage`, `terms-invalid`, `csv-header` o `csv-row`, sin valores ni números de fila. Un archivo que falta o no se puede leer da `usage`. Hasta W2-06, un `events` que no sea una lista vacía da `terms-invalid` (el oráculo aún no aplica eventos).
+- **Códigos de salida:** 0 si coinciden todas las filas, 1 si no, 2 ante un error de uso o de formato. Un error imprime una sola línea `error: <código>`, con código `usage`, `terms-invalid`, `csv-header` o `csv-row`, sin valores ni números de fila. Un archivo que falta o no se puede leer da `usage`. `compare` calcula el camino real con `events` (§3.4). Da `terms-invalid` cuando las condiciones o un evento están mal formados (incluido un `events` que no es lista), cuando un evento no se puede ubicar ([ALG.EVENTS.ANCHOR]: fuera de rango, o un `ActualPayment` sin `installmentNumber`) y cuando el cálculo lanza un error tipado, por ejemplo `NegativeAmortizationError`.
 
 ### 8.4 `compare … --log-line --sha <sha> --label <label>`
 

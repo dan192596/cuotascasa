@@ -119,6 +119,20 @@ Se tomaron al cerrar la revisión del plan de W0 (2026-10-04). Si una sección d
   - **W2-13:** vigilar en el diff motor ↔ oráculo una diferencia en el dígito 34 entre `pow` de decimal.js y `Decimal ** int` de Python, que en teoría podría voltear un empate de medio centavo.
   - **W4-09:** guardar la clave solo después de subir con éxito (`changePassphrase` no toca el KeyStore) y no derivar nunca con las iteraciones de un sobre remoto sin el tope de ADR-0009.
 
+- **Hallazgos de W2 (2026-10-09):**
+  - **Antes de W3-01 (Opus, con el dueño):** la denylist privada coincide con texto común en español y con montos sintéticos, porque la normalización quita los espacios y une palabras. W2-01 tuvo que probar 110 semillas y dos cuerpos de PR se reformularon. Decidir la coincidencia por token o por límite de palabra en `tools/hygiene/denylist.mjs` y en el escaneo previo a publicar, o acotar los términos cortos de la lista, antes de que W3-01 suba el perfil `full`.
+  - **Micro-tarjeta de Opus (`tools/conformance/src/private-compare`):** mismo mapeo que el `compare` del oráculo (FORMAT §8.3): `events` se aplican, y un evento fuera de rango o un `NegativeAmortizationError` dan `terms-invalid`.
+  - **W4-09 / ADR-0008:**
+    - `markSynced` pone `pendingChanges` en 0 aun para las ediciones posteriores a la lectura del sync.
+    - `lastSyncAt` sale del reloj local, así que un reloj adelantado acorta la purga de 90 días; considerar un tope con el `updatedAt` máximo visto.
+    - Los errores de almacenamiento rechazan `sync()` porque no tienen código en `SyncStatus`.
+    - WebKit podría bloquear la ventana de Google en el primer `connect()` si GIS carga después del gesto; precargar GIS en la pantalla de conexión o confirmarlo en la prueba manual del dueño.
+  - **W3 (e2e):** una prueba que muestre en pantalla un préstamo sembrado con `seedFromBackup`, para probar que el adaptador Dexie lee lo que siembra el e2e (hoy hay un espejo de `DEXIE_SCHEMA_V1` con prueba de deriva). Revisar que `/app/*` no quede eximida para siempre de las sondas de almacenamiento.
+  - **W3-14:** registro manual del service worker con `cc-sw-loader` y alcance `/` (ADR-0023); crear `apps/web/public/icons/icon.svg`, que `index.html` ya enlaza.
+  - **W3-17:** el paso posterior al build (`tools/edge/headers/generate.mjs`) corre dentro de `pnpm build` y debe correr antes de `wrangler deploy`; revalidar ADR-0022 en el dominio real con `edge:check --base-url`.
+  - **Triage de W3-01:** RECALC con plazo derivado y ancla al alza en la misma `k` lanza [ALG.TERM] (dictamen (a)); `AdvanceInstallments` con proyección negativa (dictamen A). Ambos quedaron escritos en `docs/algorithm.md`; falta un ejemplo para cada uno en `docs/specs/algorithm-examples/`.
+  - **Micro-tarjeta de Opus:** exportar `placeEvents` desde `schedule/index.ts` (hoy `paths/` lo importa por ruta interna del paquete).
+
 ## Estado de verificación del plan
 
 Cada redactor o corrector **ejecutó su sección en un workspace temporal** fuera del repo, en el orden del plan. Con esa reproducción se comprobó lo siguiente:

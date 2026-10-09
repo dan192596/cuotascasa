@@ -22,7 +22,7 @@ Además, conviene que la app funcione sin conexión, y la landing debe seguir si
    - el fallback de navegación a `index.csr.html` aplica solo a `/app/**`;
    - las URLs de Google nunca se guardan en caché;
    - el manifiesto tiene `start_url` `/app` e íconos *maskable*.
-2. **El service worker nunca se registra en `/` ni en `/privacidad`.** El mecanismo exacto (alcance `/app/` y registro solo tras la primera navegación dentro de `/app`) lo fija ADR-0023, que Opus escribe en W2-02; W3-14 lo implementa.
+2. **El service worker nunca se registra en `/` ni en `/privacidad`.** El mecanismo exacto lo fija ADR-0023; W3-14 lo implementa. **Enmienda (2026-10-09, ADR-0023):** el alcance es `/` y no `/app/`, porque con `/app/` la ruta `/app` no carga sin conexión; el registro sigue ocurriendo solo tras la primera navegación dentro de `/app`, y `ngsw-config` nunca guarda HTML público, así que una visita a `/` o `/privacidad` sin haber usado `/app` no crea almacenamiento.
 3. **Aviso de actualización.** `cc-update-prompt` muestra un aviso en español cuando hay versión nueva; al aceptarlo, activa la versión y recarga.
 4. **Navegadores.** La recomendación es Chrome o Edge de escritorio con la PWA instalada. Safari se soporta con un **aviso persistente** cuando no corre como app instalada (modo standalone). CI prueba Chromium y WebKit; otros navegadores modernos no se bloquean, pero v1 no los prueba.
 5. **Almacenamiento persistente.**
@@ -39,7 +39,7 @@ Además, conviene que la app funcione sin conexión, y la landing debe seguir si
 ## Alternativas consideradas
 
 - **Sin PWA.** Sin uso sin conexión y sin la posible exención de ITP de las apps instaladas. Descartada.
-- **Service worker con alcance raíz.** Rompería la landing sin almacenamiento. Descartada.
+- **Service worker con alcance raíz.** Rompería la landing sin almacenamiento. Descartada en un principio; ADR-0023 la adopta con registro diferido (ver la enmienda de la decisión 2).
 - **Respaldo automático con File System Access.** Solo Chromium, pide permisos recurrentes y Drive ya cubre la necesidad. Descartada para v1.
 - **Bloquear Safari.** Demasiado restrictivo. Descartada.
 - **Pedir `persist()` al cargar.** Quien solo explora todavía no tiene nada que proteger, y la respuesta del navegador depende de heurísticas de uso. Se pide en el primer guardado.
