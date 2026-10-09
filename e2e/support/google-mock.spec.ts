@@ -57,6 +57,10 @@ async function listFiles(page: Page, token: string | undefined): Promise<{ statu
 }
 
 test.describe('Google mock', () => {
+  // WebKit's context.route does not see requests the app's service worker (ADR-0023) re-issues with its own fetch, so
+  // the mock would never answer them. These tests exercise the mock, not the worker: keep workers out of the page.
+  test.use({ serviceWorkers: 'block' });
+
   test('serves the GIS script and Drive v3 from the frozen fakes, inspectable from the test', async ({
     page,
     googleMock,
