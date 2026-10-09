@@ -13,7 +13,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from . import GENERATOR_VERSION, dates
-from .fixture import compute_traits, dumps
+from .fixture import compute_features, compute_traits, dumps
 from .money import calc_context, fmt_rate
 from .schedule import build_schedule
 
@@ -151,9 +151,9 @@ def _core_terms(loan: CoreLoan, generator: random.Random) -> dict:
     }
 
 
-def make_fixture(profile: str, seed: int, index: int, terms: dict, features: list[str]) -> dict:
-    """Arma el fixture de un préstamo sin eventos a partir de sus condiciones."""
-    result = build_schedule(terms)
+def make_fixture(profile: str, seed: int, index: int, terms: dict, events: list[dict]) -> dict:
+    """Arma el fixture de un préstamo a partir de sus condiciones y sus eventos."""
+    result = build_schedule(terms, events)
     return {
         "synthetic": True,
         "id": f"{profile}-{index:04d}",
@@ -161,9 +161,9 @@ def make_fixture(profile: str, seed: int, index: int, terms: dict, features: lis
         "seed": seed,
         "loanIndex": index,
         "generatorVersion": GENERATOR_VERSION,
-        "features": features,
-        "traits": compute_traits(terms, result["rows"]),
-        "inputs": {"terms": terms, "events": []},
+        "features": compute_features(events, result["rows"]),
+        "traits": compute_traits(terms, result["rows"], events),
+        "inputs": {"terms": terms, "events": events},
         "expected": result,
     }
 
@@ -171,10 +171,19 @@ def make_fixture(profile: str, seed: int, index: int, terms: dict, features: lis
 def _build_core(seed: int, index: int) -> dict:
     loan = CORE_LOANS[index - 1]
     terms = _core_terms(loan, rng("core", seed, index))
-    return make_fixture("core", seed, index, terms, ["core"])
+    return make_fixture("core", seed, index, terms, [])
 
 
-PROFILES: dict[str, Profile] = {"core": Profile("core", len(CORE_LOANS), _build_core)}
+def _build_full(seed: int, index: int) -> dict:
+    from .full_profile import build_full  # importa este módulo: se carga al usarlo
+
+    return build_full(seed, index)
+
+
+PROFILES: dict[str, Profile] = {
+    "core": Profile("core", len(CORE_LOANS), _build_core),
+    "full": Profile("full", 40, _build_full),
+}
 
 
 def build_fixture(profile: str, seed: int, index: int) -> dict:

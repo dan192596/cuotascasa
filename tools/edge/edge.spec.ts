@@ -53,8 +53,9 @@ describe('_headers', () => {
       'X-Content-Type-Options: nosniff',
       'Referrer-Policy:',
       'Permissions-Policy:',
-      "Content-Security-Policy: frame-ancestors 'none'",
-      'Content-Security-Policy-Report-Only:',
+      'Strict-Transport-Security: max-age=31536000',
+      // The exact per-route policy belongs to ADR-0021 (W2-10 asserts it); this baseline only pins frame-ancestors.
+      "frame-ancestors 'none'",
     ]) {
       expect(star).toContain(header);
     }

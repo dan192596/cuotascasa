@@ -13,8 +13,8 @@ const SECURITY_HEADERS = {
   'strict-transport-security': 'max-age=31536000',
   'referrer-policy': 'strict-origin-when-cross-origin',
   'permissions-policy': /camera=\(\)/,
-  'content-security-policy': "frame-ancestors 'none'",
-  'content-security-policy-report-only': /^default-src 'self'/,
+  // The exact per-route policy is ADR-0021's (W2-10 asserts it); the baseline only pins frame-ancestors.
+  'content-security-policy': /frame-ancestors 'none'/,
 };
 const NO_CACHE = { 'cache-control': 'no-cache' };
 const HTML = { 'content-type': /^text\/html/ };

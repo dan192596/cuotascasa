@@ -9,7 +9,7 @@ from datetime import date
 from decimal import Decimal
 from pathlib import Path
 
-from .errors import InvalidInputError, OracleError
+from .errors import InvalidInputError, NegativeAmortizationError, OracleError
 from .fixture import ROW_FIELDS
 from .money import ZERO, calc_context, fmt_amount
 from .schedule import build_schedule
@@ -124,7 +124,8 @@ def compare(terms_path: Path, expected_path: Path) -> CompareResult:
     expected_rows = read_expected(expected_path)
     try:
         computed = build_schedule(raw["terms"], raw["events"])["rows"]
-    except InvalidInputError as error:
+    except (InvalidInputError, NegativeAmortizationError) as error:
+        # Un error de cálculo del camino real también es una entrada inválida para `compare`.
         raise CompareError("terms-invalid") from error
     mismatched = 0
     with calc_context():
