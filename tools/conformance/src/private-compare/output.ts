@@ -12,11 +12,11 @@ export function formatResultLines(result: RowComparison): string {
     .join('');
 }
 
-/** The validation-log line of tools/oracle/FORMAT.md §8.4, with `motor <sha>` (the TypeScript engine). */
+/**
+ * The validation-log line of tools/oracle/FORMAT.md §8.4, with `motor <sha>` (the TypeScript engine).
+ * Only sí or no: no mismatch count and no max difference, which could reveal the real term or an amount.
+ */
 export function formatLogLine(input: { date: string; sha: string; label: string; result: RowComparison }): string {
   const matched = input.result.mismatchedRows === 0 ? 'sí' : 'no';
-  return (
-    `${input.date} · motor ${input.sha} · préstamo ${input.label} · todas las filas coinciden: ${matched}` +
-    ` · filas con diferencia ${String(input.result.mismatchedRows)} · dif. máx. ${centsToMoney(input.result.maxAbsDiffCents)}\n`
-  );
+  return `${input.date} · motor ${input.sha} · préstamo ${input.label} · todas las filas coinciden: ${matched}\n`;
 }
