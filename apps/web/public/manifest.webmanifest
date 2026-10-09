@@ -1,9 +1,19 @@
 {
   "name": "CuotasCasa",
   "short_name": "CuotasCasa",
+  "description": "Modela las cuotas de tu préstamo de vivienda y compara lo proyectado con lo real.",
   "lang": "es-GT",
   "dir": "ltr",
+  "id": "/app",
   "start_url": "/app",
+  "scope": "/",
   "display": "standalone",
-  "icons": []
+  "theme_color": "#1d4e89",
+  "background_color": "#fbf8f1",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
 }
