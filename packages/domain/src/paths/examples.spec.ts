@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { thrownBy } from '../../test/support/errors.ts';
 import { createEngineContext } from '../engine-context.ts';
-import { buildSchedule, runSchedule } from '../schedule/index.ts';
-import { yearlySubtotals } from '../schedule/index.ts';
+import { buildSchedule, runSchedule, yearlySubtotals } from '../schedule/index.ts';
 import { isStubHandler } from '../stub.ts';
 import type { EngineContext } from '../types/engine.ts';
 import type { HypotheticalEvent } from '../types/events.ts';
@@ -123,6 +122,15 @@ describe('anchor, actual payment, cutoff and metrics examples (docs/specs/algori
       }
     });
   }
+});
+
+describe('example coverage guard', () => {
+  it('no example case is skipped once no stubs remain', () => {
+    const stubs = Object.values(realContext.registry).some(isStubHandler);
+    if (!stubs) {
+      expect(cases.filter((item) => !runnable(item)).map((item) => item.id)).toEqual([]);
+    }
+  });
 });
 
 describe('own error behavior of the example cases', () => {

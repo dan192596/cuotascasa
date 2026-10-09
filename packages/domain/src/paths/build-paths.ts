@@ -2,7 +2,7 @@ import { buildSchedule, runSchedule } from '../schedule/index.ts';
 import { placeEvents } from '../schedule/placement.ts';
 import type { BuildPathsFn } from '../types/engine.ts';
 import type { DomainEvent, DomainEventType } from '../types/events.ts';
-import { InvalidInputError, type LocalDate } from '../types/primitives.ts';
+import { InvalidInputError } from '../types/primitives.ts';
 import type { LoanTerms } from '../types/loan.ts';
 
 /** [ALG.PATHS.CUTOFF] Tipos reales que mueven el corte; los `RateChange` y `FixedChargeChange` reales no. */
@@ -70,5 +70,3 @@ export const buildPaths: BuildPathsFn = (input, ctx) => {
   }
   return { input, original, real: realRun.schedule, scenario, cutoffK, realDelta: realRun.realDelta };
 };
-
-export type { LocalDate };
