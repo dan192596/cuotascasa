@@ -30,6 +30,14 @@ El repositorio es **público** porque forma parte del portafolio del dueño, per
    - Un check de W1-10 falla si `git ls-files --others --ignored --exclude-standard` encuentra un `.json` o un `.csv` dentro de un directorio de fixtures.
 5. **gitleaks** en pre-commit (lefthook) y en CI sobre el **historial completo**.
 6. **Lista local de términos prohibidos, opcional.** Un hook lee `$CUOTASCASA_DENYLIST` o `~/.config/cuotascasa/denylist.txt`, y la ruta debe resolver **fuera del repo**. Normaliza números (comas, espacios, símbolos de moneda), ignora mayúsculas e informa solo archivo y línea, nunca el contenido de la lista. Si la lista no existe, pasa con un aviso.
+
+   **Enmienda (decisión del dueño, 2026-10-09): comparación por palabra y número completos.** La versión original quitaba espacios y comas de toda la línea y buscaba subcadenas, así que términos cortos o nombres de dos palabras chocaban con texto común en español y con montos sintéticos (ninguna semilla sintética de 40 préstamos salió limpia en 2001 intentos, y dos cuerpos de PR chocaron). Desde la enmienda:
+   - Texto y términos se normalizan igual: Unicode NFC y minúsculas; se quita `Q` o `US$` justo antes de un número (con o sin espacio) y los separadores de miles dentro de un número (coma, espacio o NBSP entre grupos de tres dígitos). El punto decimal se conserva.
+   - Se tokeniza en palabras y números: letras Unicode con tildes, dígitos y un punto decimal entre dígitos. Todo lo demás separa.
+   - Un término coincide solo como racha contigua de tokens completos: un nombre de dos palabras, solo con esas dos palabras seguidas; una palabra corta, nunca dentro de otra; un número, nunca dentro de otro más largo.
+   - Los decimales se comparan en forma canónica, sin ceros finales ni punto final: `1234.5`, `1234.50` y `Q 1,234.50` coinciden; `91234.5`, `1234.51` y `12345` no. Los ceros a la izquierda se conservan.
+   - Modo de conteo para herramientas: `node tools/hygiene/denylist.mjs --count-file <ruta>` o `--count-stdin` imprime solo un entero (líneas con al menos una coincidencia). Si la lista falta, es un enlace roto, vive dentro del repo o no se puede leer, sale con código 1 y sin número.
+   - Lo demás no cambia: solo líneas agregadas en el *stage*, el mismo análisis del diff que falla cerrado, la misma resolución de la lista y la salida limitada a `archivo:línea`.
 7. **Correo noreply:** un hook exige que `user.email` termine en `@users.noreply.github.com`.
 8. **Protecciones de GitHub:** secret scanning y push protection activos **antes del primer push público** (acción del dueño en W0-06), más protección de rama (CI y revisión de Opus).
 9. **Configuración inyectada al compilar.** El ID de cliente de Google entra con `--define` (`GOOGLE_CLIENT_ID`) desde variables de GitHub y vale `''` en desarrollo y pruebas. El token de Cloudflare vive solo en los secretos de GitHub (W3-17).
