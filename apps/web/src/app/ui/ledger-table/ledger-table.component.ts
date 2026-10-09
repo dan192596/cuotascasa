@@ -7,13 +7,15 @@ import {
   input,
   output,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import type { LedgerCellEdit, LedgerColumn, LedgerRow } from './ledger-table.types.ts';
 
 const PAGE_ROWS = 12;
 const DEFAULT_WIDTH = '7rem';
-const DECIMAL = /^\d+(\.\d+)?$/;
+const THOUSANDS = /^\d{1,3}(,\d{3})+(\.\d+)?$/;
+const DECIMAL = /^\d+(\.\d{1,2})?$/;
 
 interface CellVm {
   readonly ci: number;
@@ -33,8 +35,10 @@ interface RowVm {
 }
 
 interface Editing {
-  readonly r: number;
+  readonly rowKey: string;
   readonly c: number;
+  /** El editor nació de una tecla: el cursor va al final en lugar de seleccionar todo. */
+  readonly seeded: boolean;
   readonly initial: string;
   readonly draft: string;
   readonly invalid: boolean;
@@ -53,6 +57,7 @@ interface Editing {
     '[style.--cc-ledger-cols]': 'template()',
     '(keydown)': 'onKeydown($event)',
     '(focusin)': 'onFocusIn($event)',
+    '(dblclick)': 'onDblclick($event)',
   },
 })
 export class LedgerTableComponent {
@@ -124,7 +129,16 @@ export class LedgerTableComponent {
       const el = this.editor()?.nativeElement;
       if (el) {
         el.focus();
-        el.select();
+        if (untracked(this.editing)?.seeded) el.setSelectionRange(el.value.length, el.value.length);
+        else el.select();
+      }
+    });
+    effect(() => {
+      const keys = new Set(this.rows().map((row) => row.key));
+      const state = untracked(this.editing);
+      if (state && !keys.has(state.rowKey)) {
+        this.editing.set(null);
+        this.announce('Edición cancelada: la fila ya no existe.');
       }
     });
   }
@@ -133,9 +147,20 @@ export class LedgerTableComponent {
     return row.kind !== 'subtotal' && row.editable === true && column.editable === true;
   }
 
-  protected isEditing(r: number, c: number): boolean {
+  protected isEditing(rowKey: string, c: number): boolean {
     const e = this.editing();
-    return e !== null && e.r === r && e.c === c;
+    return e !== null && e.rowKey === rowKey && e.c === c;
+  }
+
+  /** Vuelve a anunciar aunque el texto sea idéntico al anterior: vacía la región y la rellena en el turno siguiente. */
+  private announce(message: string): void {
+    this.status.set('');
+    setTimeout(() => this.status.set(message), 0);
+  }
+
+  protected onDblclick(event: MouseEvent): void {
+    const pos = this.positionOf(event.target);
+    if (pos && !this.editing()) this.startEdit(pos.r, pos.c);
   }
 
   protected onFocusIn(event: FocusEvent): void {
@@ -145,6 +170,8 @@ export class LedgerTableComponent {
 
   protected onKeydown(event: KeyboardEvent): void {
     if (this.editing()) return;
+    if (event.altKey || event.metaKey || event.shiftKey) return;
+    if (event.ctrlKey && event.key.startsWith('Page')) return;
     const pos = this.positionOf(event.target);
     if (!pos) return;
     const lastRow = this.rows().length - 1;
@@ -181,6 +208,10 @@ export class LedgerTableComponent {
         this.startEdit(pos.r, pos.c);
         return;
       default:
+        if (!event.ctrlKey && /^\d$/.test(event.key) && this.view()[pos.r]?.cells[pos.c]?.editable) {
+          event.preventDefault();
+          this.startEdit(pos.r, pos.c, event.key);
+        }
         return;
     }
     event.preventDefault();
@@ -209,50 +240,67 @@ export class LedgerTableComponent {
     if (this.editing()) this.commit(true);
   }
 
-  private startEdit(r: number, c: number): void {
+  private startEdit(r: number, c: number, seed?: string): void {
     const vm = this.view()[r];
     const cell = vm?.cells[c];
     if (!vm || !cell) return;
     if (!cell.editable) {
-      this.status.set('Esta celda no se puede editar.');
+      this.announce('Esta celda no se puede editar.');
       return;
     }
     const raw = vm.row.editValues?.[cell.column.key] ?? cell.text.replace(/[,\s]/g, '');
-    this.editing.set({ r, c, initial: raw, draft: raw, invalid: false });
-    this.status.set(`Editando ${cell.column.header} de ${this.rowName(vm.row)}. Enter confirma, Escape cancela.`);
+    this.editing.set({
+      rowKey: vm.row.key,
+      c,
+      seeded: seed !== undefined,
+      initial: raw,
+      draft: seed ?? raw,
+      invalid: false,
+    });
+    this.announce(`Editando ${cell.column.header} de ${this.rowName(vm.row)}. Enter confirma, Escape cancela.`);
   }
 
   /** `leaving`: la edición termina por foco o Tab; un valor inválido se descarta en lugar de atrapar al usuario. */
   private commit(leaving: boolean): void {
     const state = this.editing();
     if (!state) return;
-    const vm = this.view()[state.r];
+    const r = this.rows().findIndex((row) => row.key === state.rowKey);
+    const vm = this.view()[r];
     const cell = vm?.cells[state.c];
-    if (!vm || !cell) return;
-    const normalized = state.draft.replace(/[,\s]/g, '');
+    if (!vm || !cell) {
+      this.editing.set(null);
+      this.announce('Edición cancelada: la fila ya no existe.');
+      return;
+    }
+    const draft = state.draft.trim();
+    const normalized = THOUSANDS.test(draft) ? draft.replace(/,/g, '') : draft;
     if (normalized !== '' && !DECIMAL.test(normalized)) {
       if (leaving) {
         this.editing.set(null);
-        this.status.set('Edición cancelada: el valor no era un número válido.');
+        this.announce('Edición cancelada: el valor no era un número válido.');
       } else {
         this.editing.update((e) => (e ? { ...e, invalid: true } : e));
-        this.status.set('Escribe un número válido, sin signo (por ejemplo 1500.50).');
+        this.announce('Escribe un número válido, sin signo, con coma solo para miles y hasta 2 decimales.');
       }
       return;
     }
     this.editing.set(null);
-    if (!leaving) this.focusCell(state.r, state.c);
-    if (normalized === state.initial) return;
-    this.cellEdit.emit({ rowKey: vm.row.key, columnKey: cell.column.key, value: normalized === '' ? '0' : normalized });
-    this.status.set(`${cell.column.header} de ${this.rowName(vm.row)} actualizado.`);
+    if (!leaving) this.focusCell(r, state.c);
+    const value = normalized === '' ? '0' : normalized;
+    if (value === (state.initial === '' ? '0' : state.initial)) return;
+    this.cellEdit.emit({ rowKey: vm.row.key, columnKey: cell.column.key, value });
+    this.announce(`${cell.column.header} de ${this.rowName(vm.row)} actualizado.`);
   }
 
   private cancel(): void {
     const state = this.editing();
     if (!state) return;
     this.editing.set(null);
-    this.focusCell(state.r, state.c);
-    this.status.set('Edición cancelada.');
+    this.focusCell(
+      this.rows().findIndex((row) => row.key === state.rowKey),
+      state.c,
+    );
+    this.announce('Edición cancelada.');
   }
 
   private rowName(row: LedgerRow): string {

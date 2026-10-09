@@ -65,10 +65,16 @@
   box-shadow: inset 0 -1px 0 var(--cc-color-control-border);
 }
 .row.current .cell[data-c='0']::before {
-  content: '\25B6';
+  content: '\25B6' / '';
   margin-inline-end: 0.25rem;
   color: var(--cc-color-accent);
   font-size: 0.75em;
+}
+@media (forced-colors: active) {
+  .cell[data-editable='true'] {
+    box-shadow: none;
+    border-bottom: 1px solid ButtonBorder;
+  }
 }
 .editor {
   width: 100%;

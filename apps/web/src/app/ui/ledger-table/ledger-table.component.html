@@ -45,7 +45,7 @@
           [attr.data-c]="cell.ci"
           [attr.tabindex]="activeCell().r === vm.ri && activeCell().c === cell.ci ? 0 : -1"
         >
-          @if (isEditing(vm.ri, cell.ci)) {
+          @if (isEditing(vm.row.key, cell.ci)) {
             <input
               #editor
               class="editor"

@@ -10,7 +10,11 @@ export interface LedgerColumn {
   readonly header: string;
   /** Alineación del contenido; las cifras van a la derecha. Por defecto `start`. */
   readonly align?: 'start' | 'end';
-  /** Ancho CSS de la columna (longitud, por ejemplo `7rem`). Por defecto `7rem`. */
+  /**
+   * Ancho CSS de la columna. Debe ser una longitud fija (por ejemplo `7rem`, `120px`; nada de `fr`, `%` ni `auto`):
+   * los desfases de las columnas fijas (`stickyColumns`) se calculan sumando estos anchos. Por defecto `7rem`.
+   * El encabezado fijo solo funciona si el anfitrión acota su altura (`--cc-ledger-max-height` o un contenedor con alto).
+   */
   readonly width?: string;
   /** Las celdas de esta columna admiten edición cuando su fila también la admite. */
   readonly editable?: boolean;
