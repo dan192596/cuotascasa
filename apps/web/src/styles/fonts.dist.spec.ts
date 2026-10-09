@@ -32,6 +32,8 @@ describe('self-hosted fonts in dist (ADR-0012 §8)', () => {
     const names = files(DIST).map((file) => file.toLowerCase());
     expect(names.some((n) => n.includes('source-serif-4') && n.endsWith('.woff2'))).toBe(true);
     expect(names.some((n) => n.includes('jetbrains-mono') && n.endsWith('.woff2'))).toBe(true);
+    expect(names.filter((n) => n.endsWith('.woff'))).toEqual([]);
+    expect(names.filter((n) => n.endsWith('.woff2'))).toHaveLength(4);
     const css = files(DIST)
       .filter((file) => file.endsWith('.css'))
       .map((file) => readFileSync(file, 'utf8'))

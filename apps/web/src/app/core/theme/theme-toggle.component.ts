@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, effect, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, ErrorHandler, inject } from '@angular/core';
 import { SETTINGS_STORE } from '../../data/tokens.ts';
 import { type ThemePreference, ThemeService } from './theme.service.ts';
 
@@ -25,6 +25,7 @@ interface ThemeOption {
 export class ThemeToggleComponent {
   protected readonly theme = inject(ThemeService);
   private readonly settings = inject(SETTINGS_STORE);
+  private readonly errors = inject(ErrorHandler);
   protected readonly options: readonly ThemeOption[] = [
     { value: 'system', label: 'Sistema' },
     { value: 'light', label: 'Claro' },
@@ -44,7 +45,8 @@ export class ThemeToggleComponent {
       await this.settings.setTheme(value);
     } catch (error) {
       this.theme.setPreference(previous);
-      throw error;
+      // An async click handler's rejection would skip Angular's ErrorHandler, so report it explicitly.
+      this.errors.handleError(error);
     }
   }
 }

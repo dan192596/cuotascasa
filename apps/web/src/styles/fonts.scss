@@ -1,6 +1,34 @@
-// Self-hosted (ADR-0012 §8, ADR-0021 font-src 'self'): Latin subsets only, which cover every es-GT character.
-// The build emits the .woff2/.woff files next to the bundle; nothing is requested from another origin.
-@use '@fontsource/source-serif-4/latin-400.css' as serif-400;
-@use '@fontsource/source-serif-4/latin-600.css' as serif-600;
-@use '@fontsource/jetbrains-mono/latin-400.css' as mono-400;
-@use '@fontsource/jetbrains-mono/latin-600.css' as mono-600;
+// Self-hosted (ADR-0012 §8, ADR-0021 font-src 'self'): Latin subsets only (they cover every es-GT character) and
+// woff2 only, which every supported browser reads. The build copies the files next to the bundle; nothing is
+// requested from another origin.
+@font-face {
+  font-family: 'Source Serif 4';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('@fontsource/source-serif-4/files/source-serif-4-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Source Serif 4';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url('@fontsource/source-serif-4/files/source-serif-4-latin-600-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('@fontsource/jetbrains-mono/files/jetbrains-mono-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url('@fontsource/jetbrains-mono/files/jetbrains-mono-latin-600-normal.woff2') format('woff2');
+}
