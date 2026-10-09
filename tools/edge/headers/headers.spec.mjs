@@ -60,7 +60,37 @@ describe('extractInlineScripts', () => {
       '<script src="a.js"></script><script>one()</script><script type="module">two()</script>' +
       '<script id="ng-state" type="application/json">{"a":1}</script><script>one()</script><script>  </script>' +
       '<script type="text/javascript">three()</script><script type="application/ld+json">{}</script>';
-    expect(extractInlineScripts(html)).toEqual(['one()', 'two()', 'three()']);
+    expect(extractInlineScripts(html)).toEqual(['one()', 'two()', '  ', 'three()']);
+  });
+});
+
+describe('extractInlineScripts edge cases', () => {
+  it('does not mistake data-src or data-type for src or type', () => {
+    expect(extractInlineScripts('<script data-src="x">f()</script><script data-type="x">g()</script>')).toEqual([
+      'f()',
+      'g()',
+    ]);
+  });
+  it('accepts the JavaScript MIME types of the HTML spec, case-insensitively and with parameters', () => {
+    const types = [
+      'text/ecmascript',
+      'application/ecmascript',
+      'text/jscript',
+      'text/livescript',
+      'text/x-javascript',
+      'application/x-javascript',
+      'application/x-ecmascript',
+      'text/javascript1.5',
+      'TEXT/JavaScript',
+      'Module',
+      'text/javascript; charset=utf-8',
+    ];
+    for (const type of types)
+      expect(extractInlineScripts(`<script type="${type}">f()</script>`), type).toEqual(['f()']);
+    expect(extractInlineScripts('<script type="importmap">{}</script>')).toEqual([]);
+  });
+  it('keeps whitespace-only scripts but skips empty ones', () => {
+    expect(extractInlineScripts('<script> </script><script></script>')).toEqual([' ']);
   });
 });
 

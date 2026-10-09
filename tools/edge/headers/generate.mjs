@@ -11,7 +11,27 @@ import { fileURLToPath } from 'node:url';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const DEFAULT_DIST = resolve(ROOT, 'dist/apps/web/browser');
 const DEFAULT_TEMPLATE = resolve(ROOT, 'apps/web/public/_headers');
-const EXECUTABLE_TYPES = new Set(['', 'module', 'text/javascript', 'application/javascript']);
+// Script types the browser executes: empty, `module` and the JavaScript MIME types of the HTML spec.
+const EXECUTABLE_TYPES = new Set([
+  '',
+  'module',
+  'application/ecmascript',
+  'application/javascript',
+  'application/x-ecmascript',
+  'application/x-javascript',
+  'text/ecmascript',
+  'text/javascript',
+  'text/javascript1.0',
+  'text/javascript1.1',
+  'text/javascript1.2',
+  'text/javascript1.3',
+  'text/javascript1.4',
+  'text/javascript1.5',
+  'text/jscript',
+  'text/livescript',
+  'text/x-ecmascript',
+  'text/x-javascript',
+]);
 
 /**
  * @param {string} text exact script text
@@ -23,6 +43,7 @@ export function hashSource(text) {
 
 /**
  * Executable inline scripts of a document: no `src`, not a data block (`application/json`, ...), not empty.
+ * The parser assumes Angular-shaped HTML: no scripts inside comments and no `>` inside quoted attributes.
  * @param {string} html
  * @returns {string[]} unique script texts in document order
  */
@@ -32,8 +53,9 @@ export function extractInlineScripts(html) {
   for (const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)) {
     const attributes = match[1] ?? '';
     const text = match[2] ?? '';
-    if (/\bsrc\s*=/i.test(attributes) || text.trim() === '') continue;
-    const type = /\btype\s*=\s*["']?([^"'\s>]+)/i.exec(attributes)?.[1]?.toLowerCase() ?? '';
+    if (/(?:^|\s)src\s*=/i.test(attributes) || text === '') continue;
+    const raw = /(?:^|\s)type\s*=\s*["']?([^"'\s>;]+)/i.exec(attributes)?.[1] ?? '';
+    const type = raw.split(';')[0]?.trim().toLowerCase() ?? '';
     if (EXECUTABLE_TYPES.has(type) && !found.includes(text)) found.push(text);
   }
   return found;
