@@ -32,7 +32,10 @@ export interface GisLoaderDeps {
   getOAuth2(): GisOAuth2 | undefined;
   /** window.trustedTypes; undefined when the browser has none. */
   trustedTypes: TrustedTypesLike | undefined;
+  /** Gives up on a script that fires neither load nor error; default 30 000 ms. */
+  scriptTimeoutMs?: number;
 }
+const DEFAULT_SCRIPT_TIMEOUT_MS = 30_000;
 
 type ScriptUrlPolicy = { createScriptURL(input: string): unknown };
 
@@ -82,7 +85,12 @@ export function createGisLoader(deps?: GisLoaderDeps): () => Promise<GisOAuth2> 
         resolvedDeps.trustedTypes === undefined
           ? GIS_SCRIPT_URL
           : gisPolicy(resolvedDeps.trustedTypes).createScriptURL(GIS_SCRIPT_URL);
+      const timer = setTimeout(() => {
+        script.remove();
+        reject(new SyncError('NetworkError'));
+      }, resolvedDeps.scriptTimeoutMs ?? DEFAULT_SCRIPT_TIMEOUT_MS);
       script.onload = () => {
+        clearTimeout(timer);
         const oauth2 = resolvedDeps.getOAuth2();
         if (oauth2 === undefined) {
           script.remove();
@@ -92,6 +100,7 @@ export function createGisLoader(deps?: GisLoaderDeps): () => Promise<GisOAuth2> 
         resolve(oauth2);
       };
       script.onerror = () => {
+        clearTimeout(timer);
         script.remove();
         reject(new SyncError('NetworkError'));
       };
@@ -104,9 +113,7 @@ export function createGisLoader(deps?: GisLoaderDeps): () => Promise<GisOAuth2> 
       const attempt = inject(deps ?? browserDeps());
       loaded = attempt;
       attempt.catch(() => {
-        if (loaded === attempt) {
-          loaded = null;
-        }
+        loaded = null;
       });
     }
     return loaded;

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SyncError } from '../ports.ts';
 import { createGisFake } from '../testing/index.ts';
 import {
@@ -128,5 +128,77 @@ describe('createGisLoader', () => {
     env.scripts[0]?.onload?.();
     const error = await pending.catch((caught: unknown) => caught);
     expect((error as SyncError).code).toBe('NetworkError');
+  });
+});
+
+describe('createGisLoader with the real browser globals (stubbed)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  it('builds the script on document.head through window.trustedTypes and reads google.accounts.oauth2', async () => {
+    const gis = createGisFake();
+    const appended: unknown[] = [];
+    const script = { async: false, src: '' as unknown, onload: null, onerror: null, remove: vi.fn() };
+    vi.stubGlobal('document', {
+      createElement: (tag: string) => {
+        expect(tag).toBe('script');
+        return script;
+      },
+      head: { appendChild: (node: unknown) => appended.push(node) },
+    });
+    vi.stubGlobal('trustedTypes', {
+      createPolicy: (_name: string, rules: { createScriptURL: (input: string) => string }) => ({
+        createScriptURL: (input: string) => ({ wrapped: rules.createScriptURL(input) }),
+      }),
+    });
+    const pending = createGisLoader()();
+    expect(appended).toEqual([script]);
+    expect(script.src).toEqual({ wrapped: GIS_SCRIPT_URL });
+    gis.install(globalThis);
+    (script.onload as unknown as () => void)();
+    await expect(pending).resolves.toBe(gis.oauth2);
+    vi.unstubAllGlobals();
+    delete (globalThis as { google?: unknown }).google;
+  });
+
+  it('without window.trustedTypes assigns the plain string', () => {
+    const script = { async: false, src: '' as unknown, onload: null, onerror: null, remove: vi.fn() };
+    vi.stubGlobal('document', { createElement: () => script, head: { appendChild: () => undefined } });
+    void createGisLoader()();
+    expect(script.src).toBe(GIS_SCRIPT_URL);
+  });
+});
+
+describe('script load timeout', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('rejects with NetworkError after 30 s by default, removes the script and allows a retry', async () => {
+    vi.useFakeTimers();
+    const env = setup();
+    const load = createGisLoader(env.deps);
+    const pending = load().catch((caught: unknown) => caught);
+    await vi.advanceTimersByTimeAsync(29_999);
+    expect(env.scripts[0]?.remove).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    const error = await pending;
+    expect((error as SyncError).code).toBe('NetworkError');
+    expect(env.scripts[0]?.remove).toHaveBeenCalled();
+    void load();
+    expect(env.scripts).toHaveLength(2);
+  });
+
+  it('honours an injected timeout and a script that loads in time is not timed out', async () => {
+    vi.useFakeTimers();
+    const env = setup();
+    const load = createGisLoader({ ...env.deps, scriptTimeoutMs: 100 });
+    const pending = load();
+    env.gis.install(env.target);
+    env.scripts[0]?.onload?.();
+    await vi.advanceTimersByTimeAsync(1_000);
+    await expect(pending).resolves.toBe(env.gis.oauth2);
   });
 });

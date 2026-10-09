@@ -24,12 +24,18 @@ export interface GoogleDriveProviderOptions {
   readonly fetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
   /** Millisecond clock for token expiry. */
   readonly now: () => number;
+  /** How long connect()/authorize() wait for GIS to call back before AuthError; default 120 000 ms. */
+  readonly tokenTimeoutMs?: number;
+  /** Upper bound on waiting for revoke's `done` in disconnect(); default 5 000 ms. */
+  readonly revokeTimeoutMs?: number;
 }
 
 const FIELDS = 'id,name,modifiedTime,version';
 const RATE_LIMIT_REASONS = new Set(['rateLimitExceeded', 'userRateLimitExceeded']);
 /** The token is treated as expired this long before GIS says so, so a call never starts with a dying token. */
 const EXPIRY_MARGIN_MS = 60_000;
+const DEFAULT_TOKEN_TIMEOUT_MS = 120_000;
+const DEFAULT_REVOKE_TIMEOUT_MS = 5_000;
 
 interface Token {
   readonly value: string;
@@ -93,6 +99,8 @@ export function createGoogleDriveProvider(options: GoogleDriveProviderOptions): 
   let token: Token | null = null;
   let oauth2: GisOAuth2 | null = null;
   let pendingRequest: Promise<void> | null = null;
+  /** Bumped by disconnect(); a token request that started in an older epoch must not install its token. */
+  let epoch = 0;
 
   function liveToken(): string {
     if (token === null || options.now() >= token.expiresAt - EXPIRY_MARGIN_MS) {
@@ -120,25 +128,42 @@ export function createGoogleDriveProvider(options: GoogleDriveProviderOptions): 
     if (pendingRequest !== null) {
       return pendingRequest;
     }
+    const started = epoch;
     const attempt = (async () => {
       const gis = await ensureOAuth2();
       const response = await new Promise<GisTokenResponse>((resolve, reject) => {
-        let client: GisTokenClient;
+        const timer = setTimeout(() => {
+          reject(new SyncError('AuthError'));
+        }, options.tokenTimeoutMs ?? DEFAULT_TOKEN_TIMEOUT_MS);
+        const settle = <T>(done: (value: T) => void) => {
+          return (value: T) => {
+            clearTimeout(timer);
+            done(value);
+          };
+        };
         try {
-          client = gis.initTokenClient({
+          const client: GisTokenClient = gis.initTokenClient({
             client_id: options.clientId,
             scope: DRIVE_APPDATA_SCOPE,
-            callback: resolve,
-            error_callback: () => {
+            callback: settle(resolve),
+            error_callback: settle(() => {
               reject(new SyncError('AuthError'));
-            },
+            }),
           });
           client.requestAccessToken({ prompt });
         } catch {
+          clearTimeout(timer);
           reject(new SyncError('AuthError'));
         }
       });
       if (!('access_token' in response) || response.access_token === '') {
+        throw new SyncError('AuthError');
+      }
+      if (epoch !== started) {
+        gis.revoke(response.access_token);
+        throw new SyncError('AuthError');
+      }
+      if (!response.scope.split(' ').includes(DRIVE_APPDATA_SCOPE)) {
         throw new SyncError('AuthError');
       }
       const seconds = Number(response.expires_in);
@@ -149,7 +174,9 @@ export function createGoogleDriveProvider(options: GoogleDriveProviderOptions): 
     })();
     pendingRequest = attempt;
     const clear = () => {
-      pendingRequest = null;
+      if (pendingRequest === attempt) {
+        pendingRequest = null;
+      }
     };
     attempt.then(clear, clear);
     return attempt;
@@ -167,7 +194,7 @@ export function createGoogleDriveProvider(options: GoogleDriveProviderOptions): 
       throw new SyncError('NetworkError');
     }
     if (!response.ok) {
-      if (response.status === 401) {
+      if (response.status === 401 && token?.value === bearer) {
         token = null;
       }
       throw await failureOf(response);
@@ -192,7 +219,7 @@ export function createGoogleDriveProvider(options: GoogleDriveProviderOptions): 
   }
 
   async function findFile(name: RemoteFileName): Promise<RemoteFile | null> {
-    const q = encodeURIComponent(`name = '${name}'`);
+    const q = encodeURIComponent(`name = '${name.replace(/[\\']/g, '\\$&')}'`);
     const response = await call(
       `${DRIVE_FILES_URL}?spaces=${DRIVE_APPDATA_FOLDER}&q=${q}&fields=${encodeURIComponent(`files(${FIELDS})`)}`,
     );
@@ -238,6 +265,8 @@ export function createGoogleDriveProvider(options: GoogleDriveProviderOptions): 
   }
 
   async function disconnect(): Promise<void> {
+    epoch += 1;
+    pendingRequest = null;
     const held = token;
     token = null;
     if (held === null || oauth2 === null) {
@@ -245,7 +274,9 @@ export function createGoogleDriveProvider(options: GoogleDriveProviderOptions): 
     }
     const gis = oauth2;
     await new Promise<void>((resolve) => {
+      const timer = setTimeout(resolve, options.revokeTimeoutMs ?? DEFAULT_REVOKE_TIMEOUT_MS);
       gis.revoke(held.value, () => {
+        clearTimeout(timer);
         resolve();
       });
     });
