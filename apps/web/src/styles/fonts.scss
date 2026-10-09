@@ -1,0 +1,6 @@
+// Self-hosted (ADR-0012 §8, ADR-0021 font-src 'self'): Latin subsets only, which cover every es-GT character.
+// The build emits the .woff2/.woff files next to the bundle; nothing is requested from another origin.
+@use '@fontsource/source-serif-4/latin-400.css' as serif-400;
+@use '@fontsource/source-serif-4/latin-600.css' as serif-600;
+@use '@fontsource/jetbrains-mono/latin-400.css' as mono-400;
+@use '@fontsource/jetbrains-mono/latin-600.css' as mono-600;
