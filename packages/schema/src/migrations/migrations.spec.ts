@@ -3,7 +3,8 @@ import { z } from 'zod';
 import { backupDataV1Schema, backupDocumentV1Schema } from '../backup/v1.ts';
 import { BACKUP_SCHEMAS_BY_VERSION, LATEST_VERSION, type BackupMigration } from '../backup/types.ts';
 import { deepFreeze } from '../testing/deep-freeze.ts';
-import { applyMigrations, backupMigrations, hasMigrationPath, migrateToLatest } from './index.ts';
+import { applyMigrations, hasMigrationPath } from './chain.ts';
+import { backupMigrations, migrateToLatest } from './index.ts';
 import { preV1Document, preV1ToV1 } from './test-only-pre-v1.ts';
 
 describe('migration registry', () => {
@@ -55,6 +56,8 @@ describe('migration chain (proven with a test-only pre-v1 step that is never reg
     expect(hasMigrationPath(1, 1, [])).toBe(true);
     expect(hasMigrationPath(0, 1, [])).toBe(false);
     expect(hasMigrationPath(0, 2, chain)).toBe(false);
+    const overshoot: BackupMigration = { from: 0, to: 3, migrate: (input) => input };
+    expect(hasMigrationPath(0, 2, [overshoot])).toBe(false);
     expect(() => applyMigrations({}, 0, 2, chain)).toThrow(/No migration path/);
   });
 

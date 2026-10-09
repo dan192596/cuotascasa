@@ -2,6 +2,7 @@ import type { z } from 'zod';
 import {
   BACKUP_FORMAT,
   BACKUP_SCHEMAS_BY_VERSION,
+  backupDocumentSchema,
   LATEST_VERSION,
   type BackupDocument,
   type BackupError,
@@ -12,18 +13,21 @@ import {
   type Result,
 } from '../backup/types.ts';
 import { ENTITY_KEYS, type EntityKey } from '../entities/registry.ts';
-import { applyMigrations, backupMigrations, hasMigrationPath } from '../migrations/index.ts';
+import { applyMigrations, hasMigrationPath } from '../migrations/chain.ts';
+import { backupMigrations } from '../migrations/index.ts';
 
 /** What parseBackup needs to know about the version chain; production uses the registered one. */
 export interface CodecConfig {
   readonly latestVersion: number;
   readonly schemas: { readonly [version: number]: z.ZodType };
+  readonly latestSchema: z.ZodType;
   readonly migrations: readonly BackupMigration[];
 }
 
 const PRODUCTION_CONFIG: CodecConfig = {
   latestVersion: LATEST_VERSION,
   schemas: BACKUP_SCHEMAS_BY_VERSION,
+  latestSchema: backupDocumentSchema,
   migrations: backupMigrations,
 };
 
@@ -31,11 +35,11 @@ function fail(error: BackupError): Result<never, BackupError> {
   return { ok: false, error };
 }
 
-function validationError(error: z.ZodError, version?: number): BackupError {
-  const issue = error.issues[0];
-  const path = (issue?.path ?? []).filter((key): key is string | number => typeof key !== 'symbol');
-  const message = issue?.message ?? 'Invalid backup';
-  return version === undefined ? { code: 'VALIDATION', message, path } : { code: 'VALIDATION', message, path, version };
+/** Locates the first issue only; zod's own message can quote user data, so the message is static. */
+export function validationError(error: z.ZodError, version?: number): BackupError {
+  const path = (error.issues[0]?.path ?? []).filter((key): key is string | number => typeof key !== 'symbol');
+  const base = { code: 'VALIDATION' as const, message: 'The backup does not match the expected structure', path };
+  return version === undefined ? base : { ...base, version };
 }
 
 function countRecords(records: readonly { readonly deletedAt: string | null }[]): EntityCounts {
@@ -61,21 +65,19 @@ export function parseBackupWith(input: unknown, config: CodecConfig): Result<Par
     if (typeof input === 'string') {
       try {
         raw = JSON.parse(input.charCodeAt(0) === 0xfeff ? input.slice(1) : input);
-      } catch (cause) {
-        return fail({
-          code: 'INVALID_JSON',
-          message: cause instanceof Error ? cause.message : 'Invalid JSON',
-          path: [],
-        });
+      } catch {
+        // V8's message quotes a snippet of the input, so it is not passed on.
+        return fail({ code: 'INVALID_JSON', message: 'The file is not valid JSON', path: [] });
       }
     }
     if (!isRecord(raw) || raw['format'] !== BACKUP_FORMAT) {
-      return fail({ code: 'FOREIGN_FORMAT', message: `Not a ${BACKUP_FORMAT} backup`, path: [] });
+      return fail({ code: 'FOREIGN_FORMAT', message: 'Not a CuotasCasa backup', path: [] });
     }
 
     const version = raw['version'];
     if (typeof version !== 'number' || !Number.isInteger(version)) {
-      return fail({ code: 'VALIDATION', message: 'Expected an integer version', path: ['version'] });
+      // A missing or non-integer version is a malformed field, not an unsupported one: VALIDATION.
+      return fail({ code: 'VALIDATION', message: 'The version must be an integer', path: ['version'] });
     }
     if (version > config.latestVersion) {
       return fail({
@@ -107,23 +109,16 @@ export function parseBackupWith(input: unknown, config: CodecConfig): Result<Par
       version === config.latestVersion
         ? source.data
         : applyMigrations(source.data, version, config.latestVersion, config.migrations);
-    const latestSchema = config.schemas[config.latestVersion];
-    if (latestSchema === undefined) {
-      return fail({ code: 'UNSUPPORTED_VERSION', message: 'No schema for the latest version', path: [] });
-    }
-    const latest = latestSchema.safeParse(migrated);
+    const latest = config.latestSchema.safeParse(migrated);
     if (!latest.success) {
       return fail(validationError(latest.error, version));
     }
     const document = latest.data as BackupDocument;
     return { ok: true, value: { document, migratedFrom: version, preview: buildPreview(document, version) } };
-  } catch (cause) {
-    // Total by contract (ADR-0007): a defect in a migration or a hostile input becomes a typed error.
-    return fail({
-      code: 'VALIDATION',
-      message: cause instanceof Error ? cause.message : 'Unexpected failure while reading the backup',
-      path: [],
-    });
+  } catch {
+    // Total by contract (ADR-0007): a defect in a migration becomes a typed error. The cause is not passed on
+    // because it may quote user data.
+    return fail({ code: 'VALIDATION', message: 'Unexpected failure while reading the backup', path: [] });
   }
 }
 

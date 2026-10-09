@@ -1,4 +1,5 @@
 import fc from 'fast-check';
+import { z } from 'zod';
 import { describe, expect, it } from 'vitest';
 import { actualPaymentExample } from '../__examples__/actual-payment.example.ts';
 import { loanExample } from '../__examples__/loan.example.ts';
@@ -17,7 +18,8 @@ import { backupDocumentV0Schema, preV1Document, preV1ToV1 } from '../migrations/
 import { deepFreeze } from '../testing/deep-freeze.ts';
 import { withField } from '../test-support/with-field.ts';
 import { backupDocumentArb } from '../testing/documents.ts';
-import { parseBackup, parseBackupWith, serializeBackup, type CodecConfig } from './index.ts';
+import { parseBackup, serializeBackup } from './index.ts';
+import { parseBackupWith, validationError, type CodecConfig } from './parse.ts';
 
 const document: BackupDocument = {
   format: 'cuotascasa',
@@ -107,6 +109,7 @@ describe('parseBackup errors (never throws)', () => {
     const config: CodecConfig = {
       latestVersion: 1,
       schemas: { 0: backupDocumentV0Schema, 1: backupDocumentV1Schema },
+      latestSchema: backupDocumentV1Schema,
       migrations: [
         {
           from: 0,
@@ -119,29 +122,81 @@ describe('parseBackup errors (never throws)', () => {
     };
     expect(parseBackupWith(preV1Document, config)).toMatchObject({
       ok: false,
-      error: { code: 'VALIDATION', message: 'boom' },
+      error: { code: 'VALIDATION', path: [] },
     });
   });
 
-  it('reports an invalid migration output and a missing latest schema', () => {
+  it('reports an invalid migration output', () => {
     const base: CodecConfig = {
       latestVersion: 1,
       schemas: { 0: backupDocumentV0Schema, 1: backupDocumentV1Schema },
+      latestSchema: backupDocumentV1Schema,
       migrations: [{ from: 0, to: 1, migrate: (input) => ({ ...(input as object), version: 1 }) }],
     };
     expect(parseBackupWith(preV1Document, base)).toMatchObject({
       ok: false,
       error: { code: 'VALIDATION', path: ['data', 'settings'], version: 0 },
     });
-    const noLatest: CodecConfig = { ...base, schemas: { 0: backupDocumentV0Schema } };
-    expect(parseBackupWith(preV1Document, noLatest)).toMatchObject({
-      ok: false,
-      error: { code: 'UNSUPPORTED_VERSION' },
-    });
   });
 });
 
 const BOM = String.fromCharCode(0xfeff);
+
+describe('error messages never echo user data', () => {
+  const SECRET = 'SENTINEL-4f9a';
+  const throwing: CodecConfig = {
+    latestVersion: 1,
+    schemas: { 0: backupDocumentV0Schema, 1: backupDocumentV1Schema },
+    latestSchema: backupDocumentV1Schema,
+    migrations: [
+      {
+        from: 0,
+        to: 1,
+        migrate() {
+          throw new Error(`leaks ${SECRET}`);
+        },
+      },
+    ],
+  };
+
+  it.each([
+    ['a money field', JSON.stringify(withField(document, ['data', 'loans', 0, 'principal'], SECRET))],
+    ['an unknown key', JSON.stringify({ ...document, [SECRET]: 1 })],
+    ['a nested unknown key', JSON.stringify(withField(document, ['data', 'loans', 0, SECRET], 1))],
+    ['malformed JSON', `{"format": "${SECRET}", oops`],
+    ['a foreign format', JSON.stringify({ format: SECRET })],
+    ['a bad version', JSON.stringify({ ...document, version: SECRET })],
+  ])('%s', (_name, text) => {
+    expect(JSON.stringify(parseBackup(text))).not.toContain(SECRET);
+  });
+
+  it('a throwing migration', () => {
+    const result = parseBackupWith(preV1Document, throwing);
+    expect(result.ok).toBe(false);
+    expect(JSON.stringify(result)).not.toContain(SECRET);
+  });
+});
+
+describe('hostile keys', () => {
+  it('rejects __proto__ at the root and inside a record without throwing or polluting', () => {
+    const root = JSON.stringify(document).replace('{', '{"__proto__":{"polluted":1},');
+    const nested = JSON.stringify(document).replace('"name"', '"__proto__":{"polluted":1},"name"');
+    for (const text of [root, nested]) {
+      expect(text).toContain('"__proto__"');
+      expect(() => parseBackup(text)).not.toThrow();
+      expect(parseBackup(text)).toMatchObject({ ok: false, error: { code: 'VALIDATION' } });
+    }
+    expect(({} as { polluted?: number }).polluted).toBeUndefined();
+  });
+});
+
+describe('validationError', () => {
+  it('falls back to an empty path without issues and drops symbol path keys', () => {
+    expect(validationError(new z.ZodError([])).path).toEqual([]);
+    const symbolic = new z.ZodError([{ code: 'custom', message: 'x', path: ['data', Symbol('k'), 2] }]);
+    expect(validationError(symbolic, 3)).toMatchObject({ path: ['data', 2], version: 3 });
+  });
+});
 
 describe('parseBackup success', () => {
   it('parses JSON text and an already parsed value to the same result', () => {
@@ -206,6 +261,7 @@ describe('parseBackup success', () => {
     const config: CodecConfig = {
       latestVersion: 1,
       schemas: { 0: backupDocumentV0Schema, 1: backupDocumentV1Schema },
+      latestSchema: backupDocumentV1Schema,
       migrations: [preV1ToV1],
     };
     const frozen = deepFreeze(structuredClone({ synthetic: true, ...preV1Document }));
