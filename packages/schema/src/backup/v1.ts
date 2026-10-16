@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from 'zod';
 import { isoInstantSchema, uuidSchema } from '../common.ts';
 import { actualPaymentSchema } from '../entities/actual-payment.ts';
 import { loanSchema } from '../entities/loan.ts';
