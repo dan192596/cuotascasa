@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from 'zod';
 import { baseRecordShape, isoInstantSchema, localDateSchema, noteSchema, textSchema, uuidSchema } from '../common.ts';
 import {
   advanceInstallmentsPayloadShape,

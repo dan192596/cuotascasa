@@ -15,7 +15,7 @@ export function fieldInvalid(field: FieldTree<unknown>): boolean {
   selector: 'cc-wizard-errors',
   template: `
     @if (shown()) {
-      <ul class="cc-wiz-errors" role="alert">
+      <ul class="cc-wiz-errors">
         @for (error of field()().errors(); track $index) {
           <li>{{ error.message }}</li>
         }
