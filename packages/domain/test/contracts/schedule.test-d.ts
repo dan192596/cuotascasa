@@ -161,7 +161,7 @@ describe('schedules, paths and results (contract)', () => {
     >();
   });
 
-  it('TemplateValidationResult is GREEN without cause, AMBER or RED with a closed cause ([ALG.VALIDATE])', () => {
+  it('TemplateValidationResult is GREEN without cause, AMBER or RED with a closed cause, or UNVALIDATED ([ALG.VALIDATE])', () => {
     expectTypeOf<keyof TemplateValidationResult>().toEqualTypeOf<
       'k' | 'reported' | 'modeled' | 'realDelta' | 'status' | 'cause'
     >();
@@ -172,9 +172,17 @@ describe('schedules, paths and results (contract)', () => {
     }>();
     expectTypeOf<TrafficLight>().toEqualTypeOf<'GREEN' | 'AMBER' | 'RED'>();
     expectTypeOf<ValidationStatus>().toEqualTypeOf<'GREEN' | 'AMBER' | 'RED' | 'UNVALIDATED'>();
-    expectTypeOf<TemplateValidationResult['status']>().toEqualTypeOf<TrafficLight>();
+    expectTypeOf<TemplateValidationResult['status']>().toEqualTypeOf<ValidationStatus>();
     expectTypeOf<Extract<TemplateValidationResult, { status: 'GREEN' }>['cause']>().toEqualTypeOf<null>();
-    expectTypeOf<Exclude<TemplateValidationResult, { status: 'GREEN' }>['cause']>().toEqualTypeOf<DeltaCause>();
+    expectTypeOf<Extract<TemplateValidationResult, { status: 'AMBER' | 'RED' }>['cause']>().toEqualTypeOf<DeltaCause>();
+    expectTypeOf<Extract<TemplateValidationResult, { status: 'UNVALIDATED' }>>().toEqualTypeOf<{
+      readonly k: number;
+      readonly reported: Money;
+      readonly modeled: null;
+      readonly realDelta: null;
+      readonly status: 'UNVALIDATED';
+      readonly cause: null;
+    }>();
     expectTypeOf<DeltaCause>().toEqualTypeOf<
       | 'INSTALLMENT_MISALIGNMENT'
       | 'UNKNOWN'
@@ -183,6 +191,7 @@ describe('schedules, paths and results (contract)', () => {
       | 'ROUNDING_PROFILE'
       | 'MISSING_EVENT'
     >();
-    expectTypeOf<TemplateValidationResult['realDelta']>().toEqualTypeOf<Money>();
+    expectTypeOf<Extract<TemplateValidationResult, { status: TrafficLight }>['realDelta']>().toEqualTypeOf<Money>();
+    expectTypeOf<TemplateValidationResult['realDelta']>().toEqualTypeOf<Money | null>();
   });
 });
