@@ -7,6 +7,8 @@ export const routes: Routes = [
     path: '',
     pathMatch: 'full',
     title: 'CuotasCasa',
+    // The footer «Repositorio» link is derived from the build-time issues URL (D27), never hardcoded.
+    data: { issuesUrl: ISSUES_URL },
     loadComponent: () => import('./public/landing/landing-page.component.ts').then((m) => m.LandingPageComponent),
   },
   {
