@@ -109,6 +109,10 @@ interface Row {
           </p>
         }
 
+        @if (realEndDate(); as end) {
+          <p class="num" data-testid="real-end-date">Fin proyectado con tus datos reales: {{ end }}</p>
+        }
+
         @if (context(); as ctx) {
           <div class="add-bar" role="group" aria-label="Agregar un registro real" data-testid="add-bar">
             @for (kind of kinds; track kind) {
@@ -395,6 +399,11 @@ export class RealDataTimelineComponent {
       paymentDay: loan.paymentDay,
       endDate,
     };
+  });
+
+  protected readonly realEndDate = computed(() => {
+    const end = this.projection().realEndDate();
+    return end === null ? null : formatLocalDate(end);
   });
 
   protected readonly engineError = computed(() => {

@@ -390,6 +390,19 @@ describe('cc-real-data-timeline: list', () => {
   });
 });
 
+describe('cc-real-data-timeline: projected end date', () => {
+  it('shows the end date of the real path and follows the facade', async () => {
+    const h = await mount();
+    expect(h.text('real-end-date')).toBe('Fin proyectado con tus datos reales: 31/01/2045');
+    h.projection.realEndDate.set('2044-07-31');
+    await h.fixture.whenStable();
+    expect(h.text('real-end-date')).toBe('Fin proyectado con tus datos reales: 31/07/2044');
+    h.projection.realEndDate.set(null);
+    await h.fixture.whenStable();
+    expect(h.testid('real-end-date')).toBeNull();
+  });
+});
+
 describe('cc-real-data-timeline: add', () => {
   it.each(CASES)('adds a $kind through cc-event-form and shows it on the timeline', async (c) => {
     const h = await mount();
