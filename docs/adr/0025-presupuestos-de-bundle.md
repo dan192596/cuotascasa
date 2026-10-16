@@ -37,3 +37,18 @@ Al medir juntas las tres tarjetas de W4 que usan formularios y plantillas nuevas
 1. El presupuesto de la landing pasa a **104 kB gzip** (106 496 B). Deja unos 7 kB para las APIs de core que usen W5 y W6 (`@defer`, gráficas y exportación siguen siendo diferidas de verdad).
 2. Para que el techo más alto no oculte regresiones reales, el grafo inicial de la landing **prohíbe** dominio, `decimal.js`, `@angular/forms`, zod, schema y `ui/` (además de lo que ya prohibía). Si alguno entra, `bundle:check` falla aunque el tamaño quepa. El crecimiento de core queda como el único aceptado.
 
+## Enmienda (2026-10-16): `/app` inicial a 200 kB
+
+Al cerrar W4, `/app` inicial medía 236.34 kB de 240. El metafile mostró dos fugas:
+
+1. **zod completo, con las traducciones de todos los idiomas.** Eran 290 kB raw y el 41 % de `/app`. `packages/schema` importaba `import { z } from 'zod'`: `z` es un namespace (`export * as z`), y al cruzar chunks esbuild materializa todos sus miembros. Se corrige con la forma que recomienda zod v4, `import * as z from 'zod'`.
+2. **El cifrado de `sync/crypto` cargado al inicio.** El servicio de respaldo lo importaba de forma estática. Ahora lo carga con `import()` solo al cifrar o descifrar.
+
+Con los dos arreglos, `/app` inicial mide 167.64 kB. Decisión:
+
+- El presupuesto de `/app` inicial baja a **200 kB gzip** (204 800 B). Deja margen para W5 y W6, y detecta pronto una regresión como esta.
+- El grafo inicial de `/app` prohíbe:
+  - las traducciones de zod distintas de `en`;
+  - `sync/crypto`;
+  - `dexie`.
+

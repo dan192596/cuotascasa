@@ -1,4 +1,4 @@
-import type { z } from 'zod';
+import type * as z from 'zod';
 import type { IsoInstant } from '../common.ts';
 import type { EntityKey } from '../entities/registry.ts';
 import { backupDataV1Schema, backupDocumentV1Schema, type BackupDataV1, type BackupDocumentV1 } from './v1.ts';
