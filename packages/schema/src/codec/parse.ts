@@ -1,4 +1,4 @@
-import type { z } from 'zod';
+import type * as z from 'zod';
 import {
   BACKUP_FORMAT,
   BACKUP_SCHEMAS_BY_VERSION,
