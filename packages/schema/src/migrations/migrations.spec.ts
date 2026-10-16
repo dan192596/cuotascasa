@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { z } from 'zod';
+import * as z from 'zod';
 import { backupDataV1Schema, backupDocumentV1Schema } from '../backup/v1.ts';
 import { BACKUP_SCHEMAS_BY_VERSION, LATEST_VERSION, type BackupMigration } from '../backup/types.ts';
 import { deepFreeze } from '../testing/deep-freeze.ts';
