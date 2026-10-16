@@ -23,6 +23,7 @@ import {
   amountError,
   countError,
   dateError,
+  decideApply,
   describeEvent,
   domainErrorText,
   dryRun,
@@ -510,5 +511,51 @@ describe('M6: the minimum trial throws', () => {
       goal: { kind: 'MAX_INSTALLMENT', amount: '0.00' },
     });
     expect(outcome).toMatchObject({ kind: 'FOUND', isPayoff: true, mode: 'REDUCE_INSTALLMENT' });
+  });
+});
+
+describe('decideApply: plan plus safety net, decided before anything is asked or saved', () => {
+  const input: GoalInput = { prepaymentDate: '2026-03-31', goal: { kind: 'FINISH_BY', date: '2036-12-31' } };
+
+  function found(base: Paths): Extract<ReturnType<typeof seekGoal>, { kind: 'FOUND' }> {
+    const outcome = seekGoal(base, input);
+    if (outcome.kind !== 'FOUND') throw new Error('expected FOUND');
+    return outcome;
+  }
+
+  it('case B (same-day REDUCE_INSTALLMENT base, goal id sorted first) is stale, even without rule 1', () => {
+    const own = [
+      prepaymentEvent(ID(999), {
+        date: '2026-03-31',
+        amount: '30000.00',
+        mode: 'REDUCE_INSTALLMENT',
+        commissionKind: 'NONE',
+        commissionAmount: '',
+        commissionRate: '',
+      }),
+    ];
+    const base = paths(own);
+    const goal = goalPrepayment(ID(1), input.prepaymentDate, found(base));
+    expect(decideApply(base, own, goal, input, FACTS, false)).toEqual({ kind: 'stale' });
+    expect(decideApply(base, own, goal, input, FACTS, true)).toEqual({ kind: 'stale' });
+  });
+
+  it('asks only for a result that meets the goal, and saves it once confirmed', () => {
+    const own = [prepayment(1, '2042-03-31', '1000.00')];
+    const base = paths(own);
+    const goal = goalPrepayment(ID(2), input.prepaymentDate, found(base));
+    const ask = decideApply(base, own, goal, input, FACTS, false);
+    expect(ask.kind).toBe('confirm');
+    const save = decideApply(base, own, goal, input, FACTS, true);
+    expect(save.kind).toBe('save');
+  });
+
+  it('saves a normal result at once and reports a domain error', () => {
+    const base = paths(null);
+    const goal = goalPrepayment(ID(2), input.prepaymentDate, found(base));
+    expect(decideApply(base, [], goal, input, FACTS, false).kind).toBe('save');
+    const real = paths(null, [REAL_PREPAYMENT]);
+    const early = goalPrepayment(ID(2), '2025-05-31', found(base));
+    expect(decideApply(real, [], early, input, FACTS, false).kind).toBe('error');
   });
 });

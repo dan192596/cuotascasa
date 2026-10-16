@@ -591,7 +591,7 @@ describe('C1: own events that would fall after the new end', () => {
     expect(h.store.updated).toHaveLength(before);
     const confirmation = h.byTestId('apply-confirmation')!;
     expect(confirmation.textContent).toContain('el préstamo termina antes');
-    expect(confirmation.textContent).toContain('Cuota 206');
+    expect(confirmation.textContent).toContain('cuota 206');
     expect(confirmation.textContent).toContain('31/03/2042');
     expect(confirmation.textContent).toContain('Aplicar y quitarlos');
   });
@@ -789,5 +789,64 @@ describe('M7', () => {
     expect(h.byTestId('scenarios-failure')?.textContent).toContain(
       'Se creó el escenario «Plan A», pero no se pudo activar',
     );
+  });
+});
+
+describe('review round 3', () => {
+  it('a remove followed at once by a rename keeps the removal', async () => {
+    const h = await setup([scenario(1, 'Plan A', [prepayment(10, '2025-09-30', '5000.00')])], ID(1));
+    await h.click('rename');
+    await h.type('name', 'Plan Z');
+    h.element.querySelector<HTMLElement>('[data-testid="remove-event"]')!.click();
+    h.element.querySelector<HTMLFormElement>('[data-testid="name-form"]')!.requestSubmit();
+    await vi.waitFor(() => expect(h.store.list()[0]!.name).toBe('Plan Z'));
+    expect(h.store.list()[0]!.events).toHaveLength(0);
+  });
+
+  it('does not ask to remove events for a result that fails the safety net', async () => {
+    // Case B reached by skipping rule 1: a late own event plus a stale-order tie is not constructible through the UI,
+    // so the guarantee is checked in decideApply; here the normal flow still asks exactly once.
+    const h = await setup([scenario(1, 'Plan A', [prepayment(10, '2042-03-31', '1000.00')])], ID(1));
+    await runGoal(h, '31/03/2026', '31/12/2035');
+    await h.click('goal-apply');
+    expect(h.byTestId('apply-confirmation')).not.toBeNull();
+  });
+
+  it('says the data changed when a stale result is dropped', async () => {
+    const h = await setup([scenario(1, 'Plan A')], ID(1));
+    await h.choose('goal-kind', 'FINISH_BY');
+    await h.type('goal-date', '31/03/2026');
+    await h.type('goal-target-date', '31/12/2038');
+    vi.useFakeTimers({ toFake: ['setTimeout'] });
+    try {
+      h.element.querySelector<HTMLFormElement>('[data-testid="goal-form"]')?.requestSubmit();
+      for (let turn = 0; turn < 20; turn++) await Promise.resolve();
+      h.store.list.update((current) => [{ ...current[0]!, events: [prepayment(10, '2025-09-30', '5000.00')] }]);
+      vi.advanceTimersByTime(1);
+    } finally {
+      vi.useRealTimers();
+    }
+    await vi.waitFor(() => expect(h.byTestId('goal-failure')).not.toBeNull());
+    expect(h.byTestId('goal-failure')?.textContent).toContain('Los datos cambiaron; vuelve a calcular.');
+  });
+
+  it('shows the cuota and the date of a removed event once', async () => {
+    const h = await setup([scenario(1, 'Plan A', [prepayment(10, '2042-03-31', '1000.00')])], ID(1));
+    await runGoal(h, '31/03/2026', '31/12/2035');
+    await h.click('goal-apply');
+    const text = h.byTestId('removed-event')!.textContent!;
+    expect(text.match(/31\/03\/2042/g)).toHaveLength(1);
+    expect(text.match(/cuota 206/gi)).toHaveLength(1);
+  });
+
+  it('fails without saving when the event being edited no longer exists', async () => {
+    const h = await setup([scenario(1, 'Plan A', [prepayment(10, '2025-09-30', '5000.00')])], ID(1));
+    await h.click('edit-event');
+    h.store.list.update((current) => [{ ...current[0]!, events: [] }]);
+    await h.settle();
+    await h.type('abono-amount', '7000');
+    await h.submit('abono-form');
+    expect(h.store.updated).toHaveLength(0);
+    expect(h.byTestId('abono-failure')?.textContent).toContain('ya no existe');
   });
 });

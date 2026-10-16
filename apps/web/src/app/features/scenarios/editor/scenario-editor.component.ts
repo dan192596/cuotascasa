@@ -25,7 +25,7 @@ import {
   type AdvanceModel,
   advanceEvent,
   amountError,
-  appliedMeetsGoal,
+  decideApply,
   countError,
   dateError,
   describeEvent,
@@ -87,6 +87,7 @@ const MODE_OPTIONS: readonly { readonly value: PrepaymentMode; readonly label: s
   { value: 'REDUCE_INSTALLMENT', label: 'Reducir la cuota (el plazo sigue igual)' },
 ];
 
+const DATA_CHANGED = 'Los datos cambiaron; vuelve a calcular.';
 const STALE_GOAL = 'El abono calculado ya no cumple la meta con los datos actuales; vuelve a calcular.';
 const SAME_DAY = 'Ya hay un abono o adelanto en esa fecha en el escenario. Elige otra fecha o quítalo primero.';
 
@@ -402,15 +403,18 @@ export class ScenarioEditorComponent {
           }
         }
       } else {
-        const current = this.scenarios().find((scenario) => scenario.id === renaming);
-        if (current === undefined) {
-          throw new DataError('NOT_FOUND');
-        }
-        await this.scenariosStore.update({
-          id: current.id,
-          loanId: current.loanId,
-          name,
-          events: [...current.events],
+        // Queued, and the scenario is read when its turn comes: a removal in flight must not be overwritten.
+        await this.enqueue(async () => {
+          const current = this.scenarios().find((scenario) => scenario.id === renaming);
+          if (current === undefined) {
+            throw new DataError('NOT_FOUND');
+          }
+          await this.scenariosStore.update({
+            id: current.id,
+            loanId: current.loanId,
+            name,
+            events: [...current.events],
+          });
         });
         this.say(`Escenario renombrado a «${name}».`);
       }
@@ -514,6 +518,10 @@ export class ScenarioEditorComponent {
         return false;
       }
       const live = active.events.filter((event) => event.deletedAt === null);
+      if (replacing !== null && !live.some((event) => event.id === replacing)) {
+        this.failure.set({ scope, text: 'El evento que editabas ya no existe en el escenario.' });
+        return false;
+      }
       const events =
         replacing === null ? [...live, candidate] : live.map((event) => (event.id === replacing ? candidate : event));
       const error = dryRun(paths, events);
@@ -624,6 +632,7 @@ export class ScenarioEditorComponent {
       await nextTurn();
       // I1: the data changed while the engine was about to run: the result would describe an older scenario.
       if (this.paths() !== paths) {
+        this.failure.set({ scope: 'goal', text: DATA_CHANGED });
         return undefined;
       }
       const outcome = seekGoal(paths, input);
@@ -688,7 +697,7 @@ export class ScenarioEditorComponent {
         return;
       }
       if (state.paths !== paths) {
-        this.failure.set({ scope: 'goal', text: STALE_GOAL });
+        this.failure.set({ scope: 'goal', text: DATA_CHANGED });
         return;
       }
       const goalEvent = goalPrepayment(this.newId(), state.input.prepaymentDate, state.outcome);
@@ -696,21 +705,21 @@ export class ScenarioEditorComponent {
         this.failure.set({ scope: 'goal', text: 'No se pudo guardar. Revisa los datos del formulario.' });
         return;
       }
-      const plan = planApply(paths, active.events, goalEvent, facts);
-      if (plan.kind === 'error') {
-        this.failure.set({ scope: 'goal', text: domainErrorText(plan.error) });
+      const decision = decideApply(paths, active.events, goalEvent, state.input, facts, confirmed);
+      if (decision.kind === 'error') {
+        this.failure.set({ scope: 'goal', text: domainErrorText(decision.error) });
         return;
       }
-      if (plan.removed.length > 0 && !confirmed) {
-        this.pendingApply.set({ plan });
-        this.focusControl('apply-confirm');
-        return;
-      }
-      // Opus C2 rule 2: whatever the order of events, the saved result must meet the goal it was computed for.
-      if (!appliedMeetsGoal(plan.candidate, state.input)) {
+      if (decision.kind === 'stale') {
         this.failure.set({ scope: 'goal', text: STALE_GOAL });
         return;
       }
+      if (decision.kind === 'confirm') {
+        this.pendingApply.set({ plan: decision.plan });
+        this.focusControl('apply-confirm');
+        return;
+      }
+      const { plan } = decision;
       this.failure.set(null);
       const ok = await this.guard('goal', async () => {
         await this.saveEvents(active, plan.events);

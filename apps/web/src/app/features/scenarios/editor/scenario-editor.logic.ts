@@ -259,6 +259,36 @@ export function appliedMeetsGoal(candidate: Paths, input: GoalInput): boolean {
   return seekGoal(candidate, input).kind === 'ALREADY_MET';
 }
 
+export type ApplyDecision =
+  | { readonly kind: 'error'; readonly error: DomainError }
+  /** The result no longer meets its goal with the current events (Opus C2 rule 2). */
+  | { readonly kind: 'stale' }
+  /** Own events would be removed: ask the user (only for a result that does meet the goal). */
+  | { readonly kind: 'confirm'; readonly plan: Extract<ApplyPlan, { kind: 'ok' }> }
+  | { readonly kind: 'save'; readonly plan: Extract<ApplyPlan, { kind: 'ok' }> };
+
+/**
+ * Whether and how a found goal prepayment is applied: the plan (Opus C1), then the safety net (C2 rule 2) BEFORE any
+ * question, so the user never confirms removing events for a result that then fails.
+ */
+export function decideApply(
+  paths: Paths,
+  own: readonly ScenarioEvent[],
+  goalEvent: ScenarioEvent,
+  input: GoalInput,
+  facts: LoanFacts,
+  confirmed: boolean,
+): ApplyDecision {
+  const plan = planApply(paths, own, goalEvent, facts);
+  if (plan.kind === 'error') {
+    return { kind: 'error', error: plan.error };
+  }
+  if (!appliedMeetsGoal(plan.candidate, input)) {
+    return { kind: 'stale' };
+  }
+  return plan.removed.length > 0 && !confirmed ? { kind: 'confirm', plan } : { kind: 'save', plan };
+}
+
 export interface EventExtra {
   readonly label: string;
   readonly amount: Money;

@@ -401,7 +401,7 @@
                         <ul>
                           @for (item of pending.plan.removed; track item.event.id) {
                             <li data-testid="removed-event">
-                              Cuota {{ item.k }}, {{ item.event.date | localDate }}: {{ removedText(item) }}
+                              {{ removedText(item) }}
                             </li>
                           }
                         </ul>
