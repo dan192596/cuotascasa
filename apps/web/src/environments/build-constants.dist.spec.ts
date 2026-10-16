@@ -35,15 +35,13 @@ function matchesIn(pattern: RegExp): string[] {
 }
 
 describe('build-time defines in the build output (W3-17, ADR-0015 §9)', () => {
-  // Until a consumer reads GOOGLE_OAUTH_CLIENT_ID (W4-09) the optimizer drops it, so an injected build may ship it or
-  // not; it must never ship a different one. W4-09 can tighten this to "exactly the injected ID".
+  // The sync service (W4-09) reads GOOGLE_OAUTH_CLIENT_ID, so an injected build must ship exactly that ID.
   it(
     EXPECTED_CLIENT_ID === ''
       ? 'ships no Google client ID when GOOGLE_CLIENT_ID is not injected (Drive "no configurado")'
-      : 'ships no Google client ID other than the injected one',
+      : 'ships exactly the injected Google client ID',
     () => {
-      const unexpected = matchesIn(CLIENT_ID_PATTERN).filter((id) => id !== EXPECTED_CLIENT_ID);
-      expect(unexpected).toEqual([]);
+      expect(matchesIn(CLIENT_ID_PATTERN)).toEqual(EXPECTED_CLIENT_ID === '' ? [] : [EXPECTED_CLIENT_ID]);
     },
   );
 
