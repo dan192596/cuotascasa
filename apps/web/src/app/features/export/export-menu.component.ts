@@ -27,6 +27,8 @@ export type ExportRequest =
   | { readonly kind: 'schedule'; readonly input: ScheduleReportInput }
   | { readonly kind: 'comparison'; readonly input: ComparisonReportInput };
 
+let nextId = 0;
+
 const FORMATS: readonly ExportFormat[] = ['excel', 'csv', 'pdf'];
 
 /**
@@ -42,10 +44,9 @@ const FORMATS: readonly ExportFormat[] = ['excel', 'csv', 'pdf'];
         type="button"
         class="trigger"
         data-testid="export-trigger"
-        aria-haspopup="true"
         [attr.aria-expanded]="open()"
-        [attr.aria-controls]="listId"
-        [disabled]="busy() !== null"
+        [attr.aria-controls]="open() ? listId : null"
+        [attr.aria-disabled]="busy() !== null ? 'true' : null"
         [attr.aria-busy]="busy() !== null ? 'true' : null"
         (click)="toggle()"
       >
@@ -64,12 +65,18 @@ const FORMATS: readonly ExportFormat[] = ['excel', 'csv', 'pdf'];
       }
     </div>
     @if (pending(); as format) {
-      <div class="warning" role="group" aria-labelledby="export-warning-title" data-testid="export-warning">
-        <p id="export-warning-title">
+      <div class="warning" role="group" [attr.aria-labelledby]="warningId" data-testid="export-warning">
+        <p [id]="warningId">
           <strong>Antes de descargar:</strong> el Excel, CSV o PDF no va cifrado y contiene datos financieros. Guárdalo
           en un lugar seguro.
         </p>
-        <button #confirm type="button" data-testid="warning-confirm" (click)="confirmWarning(format)">
+        <button
+          #confirm
+          type="button"
+          data-testid="warning-confirm"
+          [attr.aria-describedby]="warningId"
+          (click)="confirmWarning(format)"
+        >
           Descargar {{ labels[format] }}
         </button>
         <button type="button" data-testid="warning-cancel" (click)="cancelWarning()">Cancelar</button>
@@ -123,7 +130,11 @@ const FORMATS: readonly ExportFormat[] = ['excel', 'csv', 'pdf'];
       color: var(--cc-danger, inherit);
     }
   `,
-  host: { '(keydown.escape)': 'close(true)' },
+  host: {
+    '(keydown.escape)': 'escape()',
+    '(document:click)': 'outsideClick($event)',
+    '(focusout)': 'focusOut($event)',
+  },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ExportMenuComponent {
@@ -131,7 +142,9 @@ export class ExportMenuComponent {
 
   protected readonly formats = FORMATS;
   protected readonly labels = FORMAT_LABELS;
-  protected readonly listId = `cc-export-list-${nextId++}`;
+  private readonly uid = nextId++;
+  protected readonly listId = `cc-export-list-${this.uid}`;
+  protected readonly warningId = `cc-export-warning-${this.uid}`;
   protected readonly open = signal(false);
   /** Format waiting for the user to accept the unencrypted-file notice. */
   protected readonly pending = signal<ExportFormat | null>(null);
@@ -143,10 +156,27 @@ export class ExportMenuComponent {
   private readonly saveFile = inject(FILE_SAVER);
   private readonly announcer = inject(Announcer);
   private readonly injector = inject(Injector);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly trigger = viewChild<ElementRef<HTMLButtonElement>>('trigger');
   private readonly confirm = viewChild<ElementRef<HTMLButtonElement>>('confirm');
 
+  protected escape(): void {
+    if (this.pending() !== null) this.cancelWarning();
+    else this.close(true);
+  }
+
+  protected outsideClick(event: Event): void {
+    if (event.target instanceof Node && !this.host.nativeElement.contains(event.target)) this.close(false);
+  }
+
+  protected focusOut(event: FocusEvent): void {
+    const next = event.relatedTarget;
+    if (next instanceof Node && this.host.nativeElement.contains(next)) return;
+    this.close(false);
+  }
+
   protected toggle(): void {
+    if (this.busy() !== null) return;
     this.open.update((value) => !value);
   }
 
@@ -160,6 +190,7 @@ export class ExportMenuComponent {
     this.open.set(false);
     this.error.set(null);
     if (this.session.warningAccepted()) {
+      this.focusAfterRender(this.trigger);
       void this.run(format);
       return;
     }
@@ -170,6 +201,7 @@ export class ExportMenuComponent {
   protected confirmWarning(format: ExportFormat): void {
     this.session.warningAccepted.set(true);
     this.pending.set(null);
+    this.focusAfterRender(this.trigger);
     void this.run(format);
   }
 
@@ -200,7 +232,10 @@ export class ExportMenuComponent {
           : { kind: 'comparison', generatedOn: request.input.generatedOn },
         writer.extension,
       );
-      this.saveFile(bytes as Uint8Array<ArrayBuffer>, writer.mimeType, fileName);
+      // Copy into a plain ArrayBuffer so the bytes are a valid BlobPart whatever buffer the writer returned.
+      const copy = new Uint8Array(bytes.byteLength);
+      copy.set(bytes);
+      this.saveFile(copy, writer.mimeType, fileName);
       void this.announcer.polite(`Archivo ${FORMAT_LABELS[format]} listo: ${fileName}`);
     } catch {
       // The error text can carry amounts or loan names: only fixed copy by stage is shown.
@@ -212,5 +247,3 @@ export class ExportMenuComponent {
     }
   }
 }
-
-let nextId = 0;

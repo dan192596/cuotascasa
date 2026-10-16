@@ -13,7 +13,7 @@ import {
 } from './export-support.ts';
 
 const MODEL = { kind: 'schedule', title: 'Tabla', tables: [] } as unknown as ReportModel;
-const BYTES = new Uint8Array([1, 2, 3]) as Uint8Array<ArrayBuffer>;
+const BYTES = new Uint8Array([1, 2, 3]);
 const TYPES = {
   csv: { mimeType: 'text/csv;charset=utf-8', extension: 'csv' },
   excel: {
@@ -41,7 +41,10 @@ interface SetupOptions {
 }
 
 function setup(request: ExportRequest = SCHEDULE_REQUEST, options: SetupOptions = {}) {
-  const live = { announce: vi.fn(() => Promise.resolve()), clear: vi.fn() };
+  const live = {
+    announce: vi.fn<(message: string, politeness: string) => Promise<void>>(() => Promise.resolve()),
+    clear: vi.fn(),
+  };
   const save = vi.fn();
   const buildScheduleReport = vi.fn(() => MODEL);
   const buildComparisonReport = vi.fn(() => MODEL);
@@ -221,6 +224,8 @@ describe('cc-export-menu', () => {
     other.detectChanges();
     root.querySelector<HTMLElement>('[data-testid="format-excel"]')?.click();
     await other.whenStable();
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    other.detectChanges();
     expect(root.querySelector('[data-testid="export-warning"]')).toBeNull();
     expect(s.save).toHaveBeenCalledTimes(3);
   });
@@ -230,6 +235,7 @@ describe('cc-export-menu', () => {
     await pick(s, 'csv');
     await confirmWarning(s);
     expect(s.live.announce).toHaveBeenCalledWith('Archivo CSV listo: cuotascasa-tabla-real-2026-10-16.csv', 'polite');
+    expect(s.live.announce.mock.calls.filter(([, politeness]) => politeness === 'assertive')).toEqual([]);
     expect(q(s, 'export-progress')).toBeNull();
   });
 
@@ -238,12 +244,13 @@ describe('cc-export-menu', () => {
     await pick(s, 'csv');
     await confirmWarning(s);
     expect(q(s, 'export-progress')?.textContent).toContain('Generando');
-    expect((q(s, 'export-trigger') as HTMLButtonElement).disabled).toBe(true);
+    expect(q(s, 'export-trigger')?.getAttribute('aria-disabled')).toBe('true');
+    expect((q(s, 'export-trigger') as HTMLButtonElement).disabled).toBe(false);
     expect(el(s).querySelector('[aria-busy="true"]')).not.toBeNull();
     s.release();
     await settle(s);
     expect(q(s, 'export-progress')).toBeNull();
-    expect((q(s, 'export-trigger') as HTMLButtonElement).disabled).toBe(false);
+    expect(q(s, 'export-trigger')?.getAttribute('aria-disabled')).toBeNull();
   });
 
   it.each([
@@ -258,10 +265,113 @@ describe('cc-export-menu', () => {
       expect(q(s, 'export-error')?.textContent?.trim()).toBe(message);
       expect(el(s).textContent).not.toContain('1234.56');
       expect(el(s).textContent).not.toContain('99.00');
-      expect(s.live.announce).toHaveBeenCalledWith(message, 'assertive');
+      expect(s.live.announce.mock.calls).toEqual([[message, 'assertive']]);
       expect(s.save).not.toHaveBeenCalled();
     },
   );
+});
+
+describe('cc-export-menu focus and semantics', () => {
+  beforeEach(() => TestBed.resetTestingModule());
+  afterEach(() => document.body.replaceChildren());
+
+  function attached(request: ExportRequest = SCHEDULE_REQUEST, options: SetupOptions = {}): Setup {
+    const s = setup(request, options);
+    document.body.append(el(s));
+    return s;
+  }
+  const trigger = (s: Setup) => q(s, 'export-trigger') as HTMLButtonElement;
+
+  it('moves focus to the confirm button when the warning opens', async () => {
+    const s = attached();
+    await pick(s, 'csv');
+    expect(document.activeElement).toBe(q(s, 'warning-confirm'));
+  });
+
+  it('returns focus to the trigger on cancel and on confirm', async () => {
+    const s = attached();
+    await pick(s, 'csv');
+    q(s, 'warning-cancel')?.click();
+    await settle(s);
+    expect(document.activeElement).toBe(trigger(s));
+    await pick(s, 'csv');
+    await confirmWarning(s);
+    expect(document.activeElement).toBe(trigger(s));
+  });
+
+  it('returns focus to the trigger after choosing a format once the warning was accepted', async () => {
+    const s = attached();
+    await pick(s, 'csv');
+    await confirmWarning(s);
+    await pick(s, 'pdf');
+    expect(document.activeElement).toBe(trigger(s));
+  });
+
+  it('Escape with the warning open cancels it and focuses the trigger', async () => {
+    const s = attached();
+    await pick(s, 'csv');
+    q(s, 'warning-confirm')?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await settle(s);
+    expect(q(s, 'export-warning')).toBeNull();
+    expect(s.save).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(trigger(s));
+  });
+
+  it('keeps focus on the trigger while busy and ignores clicks on it', async () => {
+    const s = attached(SCHEDULE_REQUEST, { gateCsv: true });
+    await pick(s, 'csv');
+    await confirmWarning(s);
+    expect(document.activeElement).toBe(trigger(s));
+    trigger(s).click();
+    s.fixture.detectChanges();
+    expect(q(s, 'export-list')).toBeNull();
+    s.release();
+    await settle(s);
+  });
+
+  it('has no aria-haspopup and sets aria-controls only while the list exists', () => {
+    const s = attached();
+    expect(trigger(s).hasAttribute('aria-haspopup')).toBe(false);
+    expect(trigger(s).hasAttribute('aria-controls')).toBe(false);
+    trigger(s).click();
+    s.fixture.detectChanges();
+    expect(trigger(s).getAttribute('aria-controls')).toBe(q(s, 'export-list')?.id);
+  });
+
+  it('describes the confirm button with the warning text', async () => {
+    const s = attached();
+    await pick(s, 'csv');
+    const id = q(s, 'warning-confirm')?.getAttribute('aria-describedby') ?? '';
+    expect(id).not.toBe('');
+    expect(document.getElementById(id)?.textContent).toContain('no va cifrado');
+  });
+
+  it('closes the list on an outside click and when focus leaves the menu', () => {
+    const s = attached();
+    trigger(s).click();
+    s.fixture.detectChanges();
+    document.body.click();
+    s.fixture.detectChanges();
+    expect(q(s, 'export-list')).toBeNull();
+
+    trigger(s).click();
+    s.fixture.detectChanges();
+    const outside = document.createElement('button');
+    document.body.append(outside);
+    outside.focus();
+    q(s, 'format-csv')?.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }));
+    s.fixture.detectChanges();
+    expect(q(s, 'export-list')).toBeNull();
+  });
+
+  it('keeps the list open when focus moves inside the menu', () => {
+    const s = attached();
+    trigger(s).click();
+    s.fixture.detectChanges();
+    q(s, 'format-csv')?.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: q(s, 'format-pdf') }));
+    s.fixture.detectChanges();
+    expect(q(s, 'export-list')).not.toBeNull();
+  });
 });
 
 describe('exportFileName', () => {
@@ -300,6 +410,7 @@ describe('saveBlobAsFile', () => {
     expect(document.querySelector('a[download]')).toBeNull();
     expect(revoke).not.toHaveBeenCalled();
     vi.advanceTimersByTime(OBJECT_URL_LIFETIME_MS);
+    expect(OBJECT_URL_LIFETIME_MS).toBe(40_000);
     expect(revoke).toHaveBeenCalledWith('blob:synthetic');
   });
 });

@@ -33,8 +33,8 @@ export const EXPORT_LOADERS = new InjectionToken<ExportLoaders>('EXPORT_LOADERS'
 /** Saves bytes as a file. The default builds a Blob and clicks an anchor; a test replaces it. */
 export type FileSaver = (bytes: Uint8Array<ArrayBuffer>, mimeType: string, fileName: string) => void;
 
-/** Milliseconds the object URL stays alive after the click, so every browser starts the download before it is revoked. */
-export const OBJECT_URL_LIFETIME_MS = 1000;
+/** Milliseconds the object URL stays alive after the click: large PDFs in Safari need the time to start the download. */
+export const OBJECT_URL_LIFETIME_MS = 40_000;
 
 export const saveBlobAsFile: FileSaver = (bytes, mimeType, fileName) => {
   const url = URL.createObjectURL(new Blob([bytes], { type: mimeType }));
