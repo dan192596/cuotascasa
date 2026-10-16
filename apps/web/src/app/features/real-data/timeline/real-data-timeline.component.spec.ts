@@ -226,15 +226,15 @@ async function mount(
     async type(name, text) {
       const target = control(name);
       target.value = text;
-      target.dispatchEvent(new Event('input'));
+      target.dispatchEvent(new Event('input', { bubbles: true }));
       target.dispatchEvent(new Event('blur'));
       await fixture.whenStable();
     },
     async choose(name, value) {
       const target = control(name);
       target.value = value;
-      target.dispatchEvent(new Event('input'));
-      target.dispatchEvent(new Event('change'));
+      target.dispatchEvent(new Event('input', { bubbles: true }));
+      target.dispatchEvent(new Event('change', { bubbles: true }));
       target.dispatchEvent(new Event('blur'));
       await fixture.whenStable();
     },
@@ -531,6 +531,17 @@ describe('cc-real-data-timeline: dry run and write errors (HU-10)', () => {
     expect(h.testid('write-error')).toBeNull();
   });
 
+  it('clears the refusal banner as soon as the user edits the form', async () => {
+    const h = await mount();
+    h.refusal.value = new InvalidInputError('INVALID_EVENT', 'x');
+    await h.click(h.button('Agregar abono a capital'));
+    await CASES[4]!.fill(h);
+    await h.submit();
+    expect(h.testid('write-error')).not.toBeNull();
+    await h.type('amount', '15000');
+    expect(h.testid('write-error')).toBeNull();
+  });
+
   it('never throws when the facade reports another typed error', async () => {
     const h = await mount();
     h.refusal.value = new InvalidInputError('INSTALLMENT_OUT_OF_RANGE', 'x', { k: 0, max: 240 });
@@ -637,10 +648,10 @@ describe('cc-real-data-timeline: Real Δ and validation chip', () => {
       'Real Δ: Q 0.00',
       'Real Δ: -Q 60,000.00',
     ]);
-    expect(entries.map((entry) => read(entry, 'modeled-balance'))).toEqual([
-      'Saldo modelado: Q 479,900.00',
-      'Saldo modelado: Q 470,000.00',
-      'Saldo modelado: Q 460,000.00',
+    expect(entries.map((entry) => read(entry, 'projected-balance'))).toEqual([
+      'Saldo proyectado: Q 479,900.00',
+      'Saldo proyectado: Q 470,000.00',
+      'Saldo proyectado: Q 460,000.00',
     ]);
     expect(entries.map((entry) => read(entry, 'chip-label'))).toEqual([
       'Diferencia pequeña',
@@ -649,11 +660,21 @@ describe('cc-real-data-timeline: Real Δ and validation chip', () => {
     ]);
   });
 
-  it('shows «Sin validar» and no figure for a balance the facade could not compare', async () => {
+  it('shows neutral «Calculando…» text, not a chip, for a balance with no delta yet', async () => {
     const h = await mount({ seed: (x) => x.balances.seed(balance('b1', '2026-05-31')) });
-    expect(h.text('chip-label')).toBe('Sin validar');
+    expect(h.testid('chip')).toBeNull();
     expect(h.testid('real-delta')).toBeNull();
-    expect(h.text('delta-pending')).toContain('Sin calcular');
+    expect(h.text('delta-pending')).toContain('Calculando…');
+    expect(h.el.textContent).not.toContain('Sin validar');
+  });
+
+  it('does not claim «Calculando…» or a chip while an engine error blocks the comparison', async () => {
+    const h = await mount({ seed: (x) => x.balances.seed(balance('b1', '2026-05-31')) });
+    h.projection.error.set(new InvalidInputError('INVALID_EVENT', 'x'));
+    await h.fixture.whenStable();
+    expect(h.testid('chip')).toBeNull();
+    expect(h.text('delta-pending')).not.toContain('Calculando');
+    expect(h.text('delta-pending')).toContain('no disponible');
   });
 
   it('treats an UNVALIDATED delta of the facade as unvalidated: chip and no hard failure', async () => {
@@ -675,6 +696,62 @@ describe('cc-real-data-timeline: Real Δ and validation chip', () => {
       },
     });
     expect(h.text('delta-cause')).toContain('otra cuota');
+  });
+});
+
+describe('cc-real-data-timeline: informational fields', () => {
+  it('shows the reported installment, rate and note of a reported balance when present', async () => {
+    const h = await mount({
+      seed: (x) =>
+        x.balances.seed(
+          balance('b1', '2026-05-31', { totalInstallment: '4658.47', reportedRate: '0.0725', note: 'Correo del 31' }),
+        ),
+    });
+    const text = h.testid('timeline-entry')?.textContent?.replace(/\s+/g, ' ') ?? '';
+    expect(text).toContain('Cuota informada por el banco: Q 4,658.47');
+    expect(text).toContain('Tasa informada: 7.25 %');
+    expect(text).toContain('Nota: Correo del 31');
+  });
+
+  it('omits them when absent', async () => {
+    const h = await mount({ seed: (x) => x.balances.seed(balance('b1', '2026-05-31')) });
+    const text = h.testid('timeline-entry')?.textContent ?? '';
+    expect(text).not.toContain('Cuota informada');
+    expect(text).not.toContain('Tasa informada');
+    expect(text).not.toContain('Nota:');
+  });
+});
+
+describe('cc-real-data-timeline: focus', () => {
+  it('opens the confirmation on «Cancelar»', async () => {
+    const h = await mount({ seed: CASES[0]!.seed });
+    await h.click(h.testid('delete-entry'));
+    expect(document.activeElement).toBe(h.testid('confirm-cancel'));
+  });
+
+  it('moves focus to the timeline heading after a delete', async () => {
+    const h = await mount({ seed: CASES[0]!.seed });
+    await h.click(h.testid('delete-entry'));
+    await h.click(h.testid('confirm-ok'));
+    expect(document.activeElement).toBe(h.el.querySelector('#timeline-title'));
+  });
+
+  it('returns focus to the opener after a cancelled delete', async () => {
+    const h = await mount({ seed: CASES[0]!.seed });
+    const opener = h.testid('delete-entry');
+    await h.click(opener);
+    await h.click(h.testid('confirm-cancel'));
+    expect(document.activeElement).toBe(opener);
+  });
+
+  it('returns focus to the opener after a failed delete', async () => {
+    const h = await mount({ seed: CASES[0]!.seed });
+    h.balances.failWith = new DataError('STORAGE');
+    const opener = h.testid('delete-entry');
+    await h.click(opener);
+    await h.click(h.testid('confirm-ok'));
+    expect(h.testid('write-error')).not.toBeNull();
+    expect(document.activeElement).toBe(opener);
   });
 });
 

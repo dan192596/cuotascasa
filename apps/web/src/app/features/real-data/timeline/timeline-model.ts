@@ -66,8 +66,14 @@ export function entryFormKind(entry: TimelineEntry): EventFormKind {
 
 const STAMP_FIELDS: ReadonlySet<string> = new Set(['id', 'createdAt', 'updatedAt', 'updatedByDevice', 'deletedAt']);
 
-function withoutStamps<T extends object>(record: T): never {
-  return Object.fromEntries(Object.entries(record).filter(([key]) => !STAMP_FIELDS.has(key))) as never;
+type StampField = 'id' | 'createdAt' | 'updatedAt' | 'updatedByDevice' | 'deletedAt';
+/** A stored record without the fields the store owns, distributed over the LoanEvent union. */
+type Unstamped<T> = T extends unknown ? Omit<T, StampField> : never;
+
+function withoutStamps<T extends object>(record: T): Unstamped<T> {
+  const entries = Object.entries(record).filter(([key]) => !STAMP_FIELDS.has(key));
+  // Only the stamp keys are removed, which is exactly `Unstamped<T>`.
+  return Object.fromEntries(entries) as Unstamped<T>;
 }
 
 /** The stored record as the draft cc-event-form edits (its stamps are the store's business). */
@@ -78,21 +84,24 @@ export function entryToFormValue(entry: TimelineEntry): EventFormValue {
     case 'ActualPayment':
       return { entity: 'ActualPayment', draft: withoutStamps(entry.record) };
     case 'LoanEvent':
-      return { entity: 'LoanEvent', draft: withoutStamps(entry.record) as never };
+      return { entity: 'LoanEvent', draft: withoutStamps(entry.record) };
   }
+}
+
+/** Adds the id of the edited record to a draft; a create keeps the draft as it is. */
+function withId<T extends object>(draft: T, id: Uuid | null): T | (T & { readonly id: Uuid }) {
+  return id === null ? draft : { ...draft, id };
 }
 
 /** The record about to be written, for the dry run of `checkRealWrite` and for the store: an update carries the id. */
 export function toRealWrite(value: EventFormValue, editingId: Uuid | null): RealRecordWrite {
-  const withId = <T extends object>(draft: T): T | (T & { id: Uuid }) =>
-    editingId === null ? draft : { ...draft, id: editingId };
   switch (value.entity) {
     case 'ReportedBalance':
-      return { entity: 'ReportedBalance', record: withId(value.draft) };
+      return { entity: 'ReportedBalance', record: withId(value.draft, editingId) };
     case 'ActualPayment':
-      return { entity: 'ActualPayment', record: withId(value.draft) };
+      return { entity: 'ActualPayment', record: withId(value.draft, editingId) };
     case 'LoanEvent':
-      return { entity: 'LoanEvent', record: withId(value.draft) as never };
+      return { entity: 'LoanEvent', record: withId(value.draft, editingId) };
   }
 }
 
@@ -132,6 +141,12 @@ export const KIND_NOUNS: Readonly<Record<EventFormKind, string>> = {
 };
 
 export function describeEntry(entry: TimelineEntry, currency: Currency): EntryDescription {
+  const base = describeBase(entry, currency);
+  const note = entry.record.note;
+  return note === undefined ? base : { ...base, lines: [...base.lines, `Nota: ${note}`] };
+}
+
+function describeBase(entry: TimelineEntry, currency: Currency): EntryDescription {
   const money = (value: string): string => formatMoney(value, currency);
   switch (entry.entity) {
     case 'ReportedBalance': {
@@ -144,6 +159,10 @@ export function describeEntry(entry: TimelineEntry, currency: Currency): EntryDe
             ? 'Cuota: la primera con vencimiento desde esa fecha'
             : `Cuota ${String(record.installmentNumber)}`,
           `Origen: ${SOURCE_TEXT[record.source]}`,
+          ...(record.totalInstallment === undefined
+            ? []
+            : [`Cuota informada por el banco: ${money(record.totalInstallment)}`]),
+          ...(record.reportedRate === undefined ? [] : [`Tasa informada: ${formatPercent(record.reportedRate)} %`]),
         ],
       };
     }

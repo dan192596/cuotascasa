@@ -58,7 +58,7 @@ test('a reported balance shows its Real Δ and traffic-light chip', async ({ pag
   const entry = page.getByTestId('timeline-entry').filter({ hasText: 'Saldo reportado' });
   await expect(entry).toBeVisible();
   // Installment 1 opens with the whole principal, so the bank's figure is Q 1,000.00 below the model.
-  await expect(entry.getByTestId('modeled-balance')).toHaveText('Saldo modelado: Q 500,000.00');
+  await expect(entry.getByTestId('projected-balance')).toHaveText('Saldo proyectado: Q 500,000.00');
   await expect(entry.getByTestId('real-delta')).toHaveText('Real Δ: -Q 1,000.00');
   await expect(entry.getByTestId('chip-label')).toHaveText(/Coincide|Diferencia pequeña|Diferencia grande/);
   await expect(page.getByRole('button', { name: /Editar saldo reportado del 28\/02\/2025/ })).toBeFocused();

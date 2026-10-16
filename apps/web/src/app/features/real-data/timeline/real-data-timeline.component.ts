@@ -76,9 +76,11 @@ interface Row {
   readonly lines: readonly string[];
   readonly label: string;
   readonly delta: {
-    readonly status: ValidationStatus;
+    /** null while the facade has no delta for the balance: no chip, only neutral text. */
+    readonly status: ValidationStatus | null;
+    readonly pending: string | null;
     readonly text: string | null;
-    readonly modeled: string | null;
+    readonly projected: string | null;
     readonly cause: string | null;
   } | null;
   readonly paid: string | null;
@@ -127,7 +129,12 @@ interface Row {
           }
 
           @if (editor(); as current) {
-            <div class="form-panel" data-testid="form-panel">
+            <div
+              class="form-panel"
+              data-testid="form-panel"
+              (input)="writeError.set(null)"
+              (change)="writeError.set(null)"
+            >
               <cc-event-form
                 [kind]="current.kind"
                 [context]="ctx"
@@ -164,15 +171,17 @@ interface Row {
 
                 @if (row.delta; as delta) {
                   <div class="delta">
-                    @if (delta.modeled !== null) {
-                      <p class="num" data-testid="modeled-balance">Saldo modelado: {{ delta.modeled }}</p>
+                    @if (delta.projected !== null) {
+                      <p class="num" data-testid="projected-balance">Saldo proyectado: {{ delta.projected }}</p>
                     }
                     @if (delta.text !== null) {
                       <p class="num" data-testid="real-delta">Real Δ: {{ delta.text }}</p>
                     } @else {
-                      <p class="muted" data-testid="delta-pending">Real Δ: Sin calcular todavía.</p>
+                      <p class="muted" data-testid="delta-pending">Real Δ: {{ delta.pending }}</p>
                     }
-                    <cc-status-chip [status]="delta.status" />
+                    @if (delta.status !== null) {
+                      <cc-status-chip [status]="delta.status" />
+                    }
                     @if (delta.cause !== null) {
                       <p class="muted" data-testid="delta-cause">{{ delta.cause }}</p>
                     }
@@ -430,6 +439,7 @@ export class RealDataTimelineComponent {
     const anchors = new Map(projection.realDeltaPerAnchor().map((delta) => [delta.eventId, delta]));
     const components = new Map(projection.realDeltaPerComponent().map((delta) => [delta.eventId, delta]));
     const paid = projection.paidInstallments();
+    const pending = projection.error() === null ? 'Calculando…' : 'no disponible mientras haya un error en el cálculo.';
     return buildTimeline(this.balances(), this.payments(), this.events()).map((entry) => {
       const description = describeEntry(entry, currency);
       const id = entry.record.id;
@@ -439,11 +449,12 @@ export class RealDataTimelineComponent {
         const anchor = anchors.get(id);
         delta =
           anchor === undefined
-            ? { status: 'UNVALIDATED', text: null, modeled: null, cause: null }
+            ? { status: null, pending, text: null, projected: null, cause: null }
             : {
                 status: anchor.status,
+                pending: null,
                 text: formatDelta(anchor.realDelta, currency),
-                modeled: formatMoney(anchor.projected, currency),
+                projected: formatMoney(anchor.projected, currency),
                 cause: describeCause(anchor.cause),
               };
       }
