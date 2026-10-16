@@ -1,1 +1,15 @@
-["core"]
+[
+  "core",
+  "rateChange:RECALC_INSTALLMENT_KEEP_TERM",
+  "rateChange:KEEP_INSTALLMENT_ADJUST_TERM",
+  "rateChange:BANK_INSTALLMENT",
+  "fixedChargeChange",
+  "prepayment:REDUCE_TERM",
+  "prepayment:REDUCE_INSTALLMENT",
+  "commission:FLAT",
+  "commission:PERCENT",
+  "payoff",
+  "advance",
+  "anchor",
+  "actualPayment"
+]

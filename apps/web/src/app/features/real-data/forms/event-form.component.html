@@ -1,0 +1,287 @@
+<form [formRoot]="form" class="event-form" data-testid="event-form" [attr.aria-labelledby]="id('title')">
+  <h2 [id]="id('title')" #heading>{{ title() }}</h2>
+
+  @if (kind() === 'RateChange' && context().rateType === 'FIXED') {
+    <cc-banner tone="warning" data-testid="fixed-rate-warning">
+      Este préstamo es de tasa fija. Normalmente la tasa no cambia, pero puedes guardar el cambio si tu banco la
+      modificó.
+    </cc-banner>
+  }
+
+  <div class="field">
+    <label [for]="id('date')">{{ dateLabel() }}</label>
+    <cc-date-input [inputId]="id('date')" [formField]="form.date" />
+  </div>
+
+  @switch (kind()) {
+    @case ('ReportedBalance') {
+      <div class="field">
+        <label [for]="id('balance')">Saldo informado por el banco ({{ currencyName() }})</label>
+        <cc-money-input [inputId]="id('balance')" [currency]="context().currency" [formField]="form.balance" />
+      </div>
+      <div class="field">
+        <label [for]="id('installmentNumber')">Cuota a la que aplica (opcional)</label>
+        <input
+          type="text"
+          inputmode="numeric"
+          autocomplete="off"
+          [id]="id('installmentNumber')"
+          [formField]="form.installmentNumber"
+          [attr.aria-invalid]="invalid(form.installmentNumber)"
+          [attr.aria-describedby]="invalid(form.installmentNumber) ? id('installmentNumber') + '-errors' : null"
+        />
+        <p class="hint">Si la dejas vacía, aplica a la primera cuota con vencimiento igual o posterior a la fecha.</p>
+        <cc-field-errors [field]="form.installmentNumber" [controlId]="id('installmentNumber')" />
+      </div>
+      <div class="field">
+        <label [for]="id('totalInstallment')">Cuota total informada (opcional, {{ currencyName() }})</label>
+        <cc-money-input
+          [inputId]="id('totalInstallment')"
+          [currency]="context().currency"
+          [formField]="form.totalInstallment"
+        />
+      </div>
+      <div class="field">
+        <label [for]="id('reportedRate')">Tasa informada (opcional)</label>
+        <cc-rate-input [inputId]="id('reportedRate')" [formField]="form.reportedRate" />
+        <p class="hint">La cuota total y la tasa son informativas: no cambian el cálculo.</p>
+      </div>
+      <div class="field">
+        <label [for]="id('source')">Origen del saldo</label>
+        <select
+          [id]="id('source')"
+          [formField]="form.source"
+          [attr.aria-invalid]="invalid(form.source)"
+          [attr.aria-describedby]="invalid(form.source) ? id('source') + '-errors' : null"
+        >
+          <option value="">Elige el origen</option>
+          @for (option of sourceOptions; track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
+        <cc-field-errors [field]="form.source" [controlId]="id('source')" />
+      </div>
+    }
+    @case ('ActualPayment') {
+      <div class="field">
+        <label [for]="id('installmentNumber')">Cuota a la que aplica</label>
+        <input
+          type="text"
+          inputmode="numeric"
+          autocomplete="off"
+          [id]="id('installmentNumber')"
+          [formField]="form.installmentNumber"
+          [attr.aria-invalid]="invalid(form.installmentNumber)"
+          [attr.aria-describedby]="invalid(form.installmentNumber) ? id('installmentNumber') + '-errors' : null"
+          (input)="onInstallmentInput($event)"
+        />
+        <p class="hint">
+          Te sugerimos la primera cuota con vencimiento igual o posterior a la fecha de pago. Cámbiala si pagaste una
+          cuota atrasada.
+        </p>
+        <cc-field-errors [field]="form.installmentNumber" [controlId]="id('installmentNumber')" />
+      </div>
+      <div class="field">
+        <label [for]="id('total')">Monto pagado ({{ currencyName() }})</label>
+        <cc-money-input [inputId]="id('total')" [currency]="context().currency" [formField]="form.total" />
+      </div>
+      <fieldset
+        class="group"
+        [attr.aria-describedby]="showsOwnErrors(form.breakdown) ? id('breakdown') + '-errors' : null"
+      >
+        <legend>Desglose del pago (opcional)</legend>
+        <p class="hint">Si lo indicas, completa los cuatro componentes; puedes escribir 0.00.</p>
+        <div class="field">
+          <label [for]="id('breakdown-capital')">Capital</label>
+          <cc-money-input
+            [inputId]="id('breakdown-capital')"
+            [currency]="context().currency"
+            [formField]="form.breakdown.capital"
+          />
+        </div>
+        <div class="field">
+          <label [for]="id('breakdown-interest')">Interés</label>
+          <cc-money-input
+            [inputId]="id('breakdown-interest')"
+            [currency]="context().currency"
+            [formField]="form.breakdown.interest"
+          />
+        </div>
+        <div class="field">
+          <label [for]="id('breakdown-insurance')">Seguro</label>
+          <cc-money-input
+            [inputId]="id('breakdown-insurance')"
+            [currency]="context().currency"
+            [formField]="form.breakdown.insurance"
+          />
+        </div>
+        <div class="field">
+          <label [for]="id('breakdown-fixedCharges')">Cargos fijos</label>
+          <cc-money-input
+            [inputId]="id('breakdown-fixedCharges')"
+            [currency]="context().currency"
+            [formField]="form.breakdown.fixedCharges"
+          />
+        </div>
+        <cc-field-errors [field]="form.breakdown" [controlId]="id('breakdown')" />
+      </fieldset>
+    }
+    @case ('RateChange') {
+      <div class="field">
+        <label [for]="id('interestRate')">Nueva tasa de interés anual</label>
+        <cc-rate-input [inputId]="id('interestRate')" [formField]="form.interestRate" />
+      </div>
+      <fieldset class="group" [attr.aria-describedby]="invalid(form.policy) ? id('policy') + '-errors' : null">
+        <legend>¿Qué hace el cálculo con la cuota?</legend>
+        @for (option of policyOptions; track option.value) {
+          <div class="radio">
+            <input
+              type="radio"
+              [id]="id('policy-' + option.value)"
+              [value]="option.value"
+              [formField]="form.policy"
+              [attr.aria-describedby]="id('policy-' + option.value + '-help')"
+            />
+            <label [for]="id('policy-' + option.value)">{{ option.label }}</label>
+            <p class="hint" [id]="id('policy-' + option.value + '-help')">{{ option.help }}</p>
+          </div>
+        }
+        <cc-field-errors [field]="form.policy" [controlId]="id('policy')" />
+      </fieldset>
+      @if (model().policy === 'BANK_INSTALLMENT') {
+        <div class="field">
+          <label [for]="id('bankInstallment')">Cuota nivelada que informa el banco ({{ currencyName() }})</label>
+          <cc-money-input
+            [inputId]="id('bankInstallment')"
+            [currency]="context().currency"
+            [formField]="form.bankInstallment"
+          />
+          <p class="hint">Sin cargos fijos: solo capital, interés y seguros.</p>
+        </div>
+      }
+    }
+    @case ('FixedChargeChange') {
+      <fieldset class="group">
+        <legend>Cargos fijos mensuales desde esa fecha</legend>
+        <p class="hint">
+          Escribe la lista completa: los cargos anteriores dejan de aplicarse, incluso los de fecha futura. Para quitar
+          un cargo, déjalo fuera de la lista.
+        </p>
+        @for (row of form.fixedCharges; track $index; let i = $index) {
+          <div class="charge">
+            <div class="field">
+              <label [for]="id('charge-label-' + i)">Nombre del cargo {{ i + 1 }}</label>
+              <input
+                type="text"
+                autocomplete="off"
+                [id]="id('charge-label-' + i)"
+                [formField]="row.label"
+                [attr.aria-invalid]="invalid(row.label)"
+                [attr.aria-describedby]="invalid(row.label) ? id('charge-label-' + i) + '-errors' : null"
+              />
+              <cc-field-errors [field]="row.label" [controlId]="id('charge-label-' + i)" />
+            </div>
+            <div class="field">
+              <label [for]="id('charge-amount-' + i)">Monto mensual del cargo {{ i + 1 }} ({{ currencyName() }})</label>
+              <cc-money-input
+                [inputId]="id('charge-amount-' + i)"
+                [currency]="context().currency"
+                [formField]="row.amount"
+              />
+            </div>
+            <button type="button" (click)="removeCharge(i)">Quitar cargo {{ i + 1 }}</button>
+          </div>
+        } @empty {
+          <p class="hint">Sin cargos fijos: al guardar, el préstamo queda sin cargos desde esa fecha.</p>
+        }
+        <button type="button" [disabled]="model().fixedCharges.length >= maxCharges" (click)="addCharge()">
+          Agregar cargo
+        </button>
+      </fieldset>
+    }
+    @case ('Prepayment') {
+      <div class="field">
+        <label [for]="id('amount')">Monto del abono ({{ currencyName() }})</label>
+        <cc-money-input [inputId]="id('amount')" [currency]="context().currency" [formField]="form.amount" />
+      </div>
+      <div class="field">
+        <label [for]="id('mode')">¿Qué reduce el abono?</label>
+        <select
+          [id]="id('mode')"
+          [formField]="form.mode"
+          [attr.aria-invalid]="invalid(form.mode)"
+          [attr.aria-describedby]="invalid(form.mode) ? id('mode') + '-errors' : null"
+        >
+          <option value="">Elige una opción</option>
+          @for (option of modeOptions; track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
+        <cc-field-errors [field]="form.mode" [controlId]="id('mode')" />
+      </div>
+      <div class="field">
+        <label [for]="id('commissionKind')">Comisión por abonar</label>
+        <select [id]="id('commissionKind')" [formField]="form.commissionKind">
+          <option value="NONE">Sin comisión</option>
+          <option value="FLAT">Monto fijo</option>
+          <option value="PERCENT">Porcentaje del abono</option>
+        </select>
+      </div>
+      @if (model().commissionKind === 'FLAT') {
+        <div class="field">
+          <label [for]="id('commissionAmount')">Monto de la comisión ({{ currencyName() }})</label>
+          <cc-money-input
+            [inputId]="id('commissionAmount')"
+            [currency]="context().currency"
+            [formField]="form.commissionAmount"
+          />
+        </div>
+      }
+      @if (model().commissionKind === 'PERCENT') {
+        <div class="field">
+          <label [for]="id('commissionRate')">Porcentaje de comisión</label>
+          <cc-rate-input [inputId]="id('commissionRate')" [formField]="form.commissionRate" />
+        </div>
+      }
+    }
+    @case ('AdvanceInstallments') {
+      <div class="field">
+        <label [for]="id('count')">Cuántas cuotas adelantas</label>
+        <input
+          type="text"
+          inputmode="numeric"
+          autocomplete="off"
+          [id]="id('count')"
+          [formField]="form.count"
+          [attr.aria-invalid]="invalid(form.count)"
+          [attr.aria-describedby]="invalid(form.count) ? id('count') + '-errors' : null"
+        />
+        <p class="hint">Se abona el capital de las próximas cuotas, justo después de pagar la cuota de esa fecha.</p>
+        <cc-field-errors [field]="form.count" [controlId]="id('count')" />
+      </div>
+    }
+  }
+
+  <div class="field">
+    <label [for]="id('note')">Nota (opcional)</label>
+    <textarea
+      rows="2"
+      [id]="id('note')"
+      [formField]="form.note"
+      [attr.aria-invalid]="invalid(form.note)"
+      [attr.aria-describedby]="invalid(form.note) ? id('note') + '-errors' : null"
+    ></textarea>
+    <cc-field-errors [field]="form.note" [controlId]="id('note')" />
+  </div>
+
+  @if (failure() !== null) {
+    <p class="failure" role="alert" data-testid="event-form-failure">
+      {{ failure() }}
+    </p>
+  }
+
+  <div class="actions">
+    <button type="submit">Guardar</button>
+    <button type="button" (click)="cancelled.emit()">Cancelar</button>
+  </div>
+</form>
