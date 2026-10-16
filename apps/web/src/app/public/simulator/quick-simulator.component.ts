@@ -11,6 +11,7 @@ import {
   viewChild,
   ViewContainerRef,
 } from '@angular/core';
+import { INSURANCE_LEGEND } from './simulator-legend.ts';
 
 /**
  * Public quick simulator host (spec §9 «Simulador»). It keeps the landing's initial JS small: the prerendered HTML
@@ -23,7 +24,8 @@ import {
   template: `
     <ng-container #slot />
     @if (!loaded()) {
-      <section class="sim" aria-labelledby="sim-title" data-testid="sim-placeholder">
+      <section class="sim" aria-labelledby="sim-title" aria-busy="true" data-testid="sim-placeholder">
+        <!-- The placeholder fields are disabled on purpose: they cannot take focus, so no typing is lost on the swap. -->
         <h2 id="sim-title" class="title">Simulador rápido</h2>
         <p class="template">Plantilla: FHA Guatemala v1 · Quetzales</p>
         <div class="field">
@@ -34,7 +36,7 @@ import {
           <label for="sim-rate">Tasa de interés anual</label>
           <div class="row">
             <input id="sim-rate" type="text" inputmode="decimal" placeholder="7.00" disabled />
-            <span class="legend" data-testid="sim-rate-legend">+ 1.26 % seguros FHA</span>
+            <span class="legend" data-testid="sim-rate-legend">{{ insuranceLegend }}</span>
           </div>
         </div>
         <div class="field">
@@ -56,6 +58,8 @@ import {
       display: block;
     }
     .sim {
+      /* About the height of the live form, so swapping it in does not shift the page. */
+      min-height: 22rem;
       background: var(--cc-color-surface);
       border: 1px solid var(--cc-color-rule);
       border-radius: 0.5rem;
@@ -112,6 +116,7 @@ import {
 })
 export class QuickSimulatorComponent implements AfterViewInit {
   protected readonly loaded = signal(false);
+  protected readonly insuranceLegend = INSURANCE_LEGEND;
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly slot = viewChild.required('slot', { read: ViewContainerRef });
   private readonly destroyRef = inject(DestroyRef);

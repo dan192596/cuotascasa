@@ -116,6 +116,35 @@ describe('cc-quick-simulator-form', () => {
   });
 
   it.each([
+    ['250000.50', '8.5', '15', null, { level: '2649.93', total: '226987.35', count: '180', end: '2041-01-31' }],
+    [
+      '1200000',
+      '6.25',
+      '30',
+      { amount: '50000', k: '60', mode: 'REDUCE_TERM' as const },
+      { level: '8398.79', total: '1823568.15', count: '360', end: '2056-01-31', saved: '241898.05', newCount: '326' },
+    ],
+    [
+      '75000',
+      '10',
+      '1',
+      { amount: '5000', k: '6', mode: 'REDUCE_INSTALLMENT' as const },
+      { level: '6637.72', total: '4652.68', count: '12', end: '2027-01-31', saved: '165.49', newLevel: '5776.81' },
+    ],
+  ])('shows the engine results for %s at %s %% over %s years', async (principal, rate, years, extra, expected) => {
+    const { fill, prepay, text } = await setup();
+    await fill(principal, rate, years);
+    if (extra !== null) await prepay(extra.amount, extra.k, extra.mode);
+    expect(text('sim-level')).toBe(gtq(expected.level));
+    expect(text('sim-total')).toBe(gtq(expected.total));
+    expect(text('sim-count')).toBe(expected.count);
+    expect(text('sim-end')).toBe(formatLocalDate(expected.end));
+    if ('saved' in expected) expect(text('sim-saved')).toBe(gtq(expected.saved));
+    if ('newCount' in expected) expect(text('sim-new-count')).toBe(expected.newCount);
+    if ('newLevel' in expected) expect(text('sim-new-level')).toBe(gtq(expected.newLevel));
+  });
+
+  it.each([
     ['250000.50', '8.5', '15', null],
     ['1200000', '6.25', '30', { amount: '50000', k: '60', mode: 'REDUCE_TERM' as const }],
     ['75000', '10', '1', { amount: '5000', k: '6', mode: 'REDUCE_INSTALLMENT' as const }],
@@ -137,16 +166,10 @@ describe('cc-quick-simulator-form', () => {
     expect(text('sim-first-interest')).toBe(gtq(expected.firstInstallment.interest));
     expect(text('sim-first-insurance')).toBe(gtq(expected.firstInstallment.insurance));
     expect(text('sim-first-capital')).toBe(gtq(expected.firstInstallment.capital));
-    expect(text('sim-total')).toBe(gtq(expected.totalInterestAndInsurance));
-    expect(text('sim-count')).toBe(String(expected.installmentCount));
-    expect(text('sim-end')).toBe(formatLocalDate(expected.endDate));
     if (expected.prepayment !== null) {
       expect(text('sim-saved')).toBe(gtq(expected.prepayment.interestSaved));
       expect(text('sim-months-saved')).toBe(String(expected.prepayment.monthsSaved));
       expect(text('sim-new-end')).toBe(formatLocalDate(expected.prepayment.endDate));
-      if (expected.prepayment.newLevel !== null) {
-        expect(text('sim-new-level')).toBe(gtq(expected.prepayment.newLevel));
-      }
     }
   });
 
@@ -236,6 +259,19 @@ describe('cc-quick-simulator-form', () => {
   });
 
   describe('announcement', () => {
+    it('has no assertive role="alert" of its own, even with errors showing', async () => {
+      const { root, fill, prepay } = await setup();
+      await fill('500000', '7', '99');
+      await prepay('20000', '0');
+      // The ui/ controls (cc-money-input, cc-rate-input) keep an internal role="alert" on their error lists:
+      // tracked as an Opus follow-up, so they are excluded here.
+      const own = [...root.querySelectorAll('[role="alert"]')].filter(
+        (element) => element.closest('cc-money-input, cc-rate-input') === null,
+      );
+      expect(own).toEqual([]);
+      expect(root.querySelectorAll('[aria-live]').length).toBe(1);
+    });
+
     it('has a single polite live region, debounced, with the level and the total', async () => {
       const { root, fill, fixture } = await setup();
       const regions = root.querySelectorAll('[aria-live]');

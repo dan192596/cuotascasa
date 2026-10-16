@@ -44,6 +44,7 @@ describe('cc-quick-simulator host', () => {
     expect(root.querySelector('[data-testid="sim-rate-legend"]')?.textContent?.trim()).toBe('+ 1.26 % seguros FHA');
     expect(root.querySelector('[data-testid="sim-results"]')).toBeNull();
     expect(root.querySelector('cc-quick-simulator-form')).toBeNull();
+    expect(root.querySelector('[data-testid="sim-placeholder"]')?.getAttribute('aria-busy')).toBe('true');
   });
 
   it('swaps the placeholder for the interactive form when it enters the viewport', async () => {

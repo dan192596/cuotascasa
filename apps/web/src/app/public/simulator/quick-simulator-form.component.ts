@@ -11,6 +11,7 @@ import {
 import { formatLocalDate, formatMoney } from '../../ui/format/format.ts';
 import { MoneyInputComponent } from '../../ui/money-input/money-input.component.ts';
 import { RateInputComponent } from '../../ui/money-input/rate-input.component.ts';
+import { INSURANCE_LEGEND } from './simulator-legend.ts';
 import { PUBLIC_CLOCK } from '../public-clock.ts';
 import { type SimulationPrepayment, type SimulationResult, simulate } from './quick-simulation.ts';
 import {
@@ -43,7 +44,7 @@ const RATE_FRACTION = /^(?:0(?:\.\d+)?|1(?:\.0+)?)$/;
 const ANNOUNCE_DELAY_MS = 600;
 const MAX_YEARS = 30;
 
-/** Interactive part of the quick simulator (spec §9 «Simulador»), lazy behind the host's @defer: domain only. */
+/** Interactive part of the quick simulator (spec §9 «Simulador»), loaded lazily by the host with a dynamic `import()`: domain only. */
 @Component({
   selector: 'cc-quick-simulator-form',
   imports: [FormField, MoneyInputComponent, RateInputComponent],
@@ -71,7 +72,7 @@ const MAX_YEARS = 30;
           <label for="sim-rate">Tasa de interés anual</label>
           <div class="row">
             <cc-rate-input inputId="sim-rate" placeholder="7.00" [formField]="form.rate" />
-            <span class="legend" data-testid="sim-rate-legend">+ 1.26 % seguros FHA</span>
+            <span class="legend" data-testid="sim-rate-legend">{{ insuranceLegend }}</span>
           </div>
         </div>
 
@@ -91,7 +92,7 @@ const MAX_YEARS = 30;
             <span class="legend">años (1 a 30)</span>
           </div>
           @if (shows('years')) {
-            <ul id="sim-years-errors" class="errors" role="alert">
+            <ul id="sim-years-errors" class="errors">
               <li>{{ form.years().errors()[0]?.message }}</li>
             </ul>
           }
@@ -126,7 +127,7 @@ const MAX_YEARS = 30;
                 [attr.aria-describedby]="shows('prepayInstallment') ? 'sim-prepay-k-errors' : null"
               />
               @if (shows('prepayInstallment')) {
-                <ul id="sim-prepay-k-errors" class="errors" role="alert">
+                <ul id="sim-prepay-k-errors" class="errors">
                   <li>{{ form.prepayInstallment().errors()[0]?.message }}</li>
                 </ul>
               }
@@ -153,7 +154,7 @@ const MAX_YEARS = 30;
 
       @let current = outcome();
       @if (current.kind === 'error') {
-        <p class="errors" role="alert" data-testid="sim-error">{{ current.message }}</p>
+        <p class="errors" data-testid="sim-error">{{ current.message }}</p>
       }
       @if (current.kind === 'ok') {
         <div class="results" data-testid="sim-results">
@@ -365,6 +366,7 @@ export class QuickSimulatorFormComponent {
   private readonly clock = inject(PUBLIC_CLOCK);
 
   protected readonly disclaimer = DISCLAIMER;
+  protected readonly insuranceLegend = INSURANCE_LEGEND;
   protected readonly model = signal<SimulatorModel>({
     principal: '',
     rate: '',
@@ -464,7 +466,10 @@ export class QuickSimulatorFormComponent {
     this.announcement.set('');
     this.timer = setTimeout(() => {
       const current = this.outcome();
-      this.announcement.set(current.kind === 'ok' ? announcementFor(current.result) : '');
+      // The single polite region also carries a calculation error, so no assertive alert is needed.
+      this.announcement.set(
+        current.kind === 'ok' ? announcementFor(current.result) : current.kind === 'error' ? current.message : '',
+      );
     }, ANNOUNCE_DELAY_MS);
   }
 
