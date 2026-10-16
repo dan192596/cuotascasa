@@ -1,5 +1,5 @@
 import { DestroyRef, type EnvironmentProviders, inject, makeEnvironmentProviders } from '@angular/core';
-import type { Clock, DataStore, IdGenerator } from '@cuotascasa/persistence';
+import { type Clock, type DataStore, type IdGenerator, PersistenceError } from '@cuotascasa/persistence';
 import {
   type BackupDocument,
   type BackupData,
@@ -55,6 +55,8 @@ interface Fingerprint {
   readonly lastSyncAt: IsoInstant | null;
   readonly changesSinceBackup: number;
   readonly pendingChanges: number;
+  /** SHA-256 of the canonical exportAll (device settings included): catches writes that move no counter. */
+  readonly digest: string;
 }
 
 interface UndoEntry {
@@ -90,7 +92,8 @@ function sameFingerprint(a: Fingerprint, b: Fingerprint): boolean {
     a.lastBackupAt === b.lastBackupAt &&
     a.lastSyncAt === b.lastSyncAt &&
     a.changesSinceBackup === b.changesSinceBackup &&
-    a.pendingChanges === b.pendingChanges
+    a.pendingChanges === b.pendingChanges &&
+    a.digest === b.digest
   );
 }
 
@@ -124,12 +127,14 @@ class BackupServiceImpl extends BackupState implements BackupService {
     destroyRef.onDestroy(() => {
       this.unsubscribe?.();
       this.removeVisibility?.();
-      this.dropUndo();
+      this.discardUndo();
       this.dropPending();
     });
     if (typeof document !== 'undefined') {
       const onVisible = (): void => {
-        void this.refresh();
+        if (document.visibilityState === 'visible') {
+          void this.refresh();
+        }
       };
       document.addEventListener('visibilitychange', onVisible);
       this.removeVisibility = () => document.removeEventListener('visibilitychange', onVisible);
@@ -333,11 +338,17 @@ class BackupServiceImpl extends BackupState implements BackupService {
         this.discardUndo();
         throw new DataError('NOT_FOUND');
       }
+      // Residual risk: a commit between the check above and restoreSnapshot is overwritten. The port has no conditional
+      // restore; an atomic one is tracked as a separate contract card.
       await store.restoreSnapshot(undo.snapshotId);
       if (this.undo === undo) {
         this.dropUndo();
       }
     } catch (error) {
+      if (error instanceof PersistenceError && error.code === 'SNAPSHOT_NOT_FOUND') {
+        this.dropUndo();
+        throw new DataError('NOT_FOUND');
+      }
       throw toDataError(error);
     } finally {
       this.restoring = false;
@@ -346,12 +357,22 @@ class BackupServiceImpl extends BackupState implements BackupService {
   }
 
   private async fingerprint(store: DataStore): Promise<Fingerprint> {
-    const [meta, changesSinceBackup, pendingChanges] = await Promise.all([
+    const [meta, changesSinceBackup, pendingChanges, data] = await Promise.all([
       store.getMeta(),
       store.changesSinceBackup(),
       store.pendingChanges(),
+      store.exportAll(),
     ]);
-    return { lastBackupAt: meta.lastBackupAt, lastSyncAt: meta.lastSyncAt, changesSinceBackup, pendingChanges };
+    const bytes = new TextEncoder().encode(JSON.stringify(data));
+    const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
+    const digest = Array.from(hash, (byte) => byte.toString(16).padStart(2, '0')).join('');
+    return {
+      lastBackupAt: meta.lastBackupAt,
+      lastSyncAt: meta.lastSyncAt,
+      changesSinceBackup,
+      pendingChanges,
+      digest,
+    };
   }
 
   private dropPending(): void {

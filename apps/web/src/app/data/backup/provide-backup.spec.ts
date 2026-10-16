@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import type { DataStore } from '@cuotascasa/persistence';
+import { type DataStore, SnapshotNotFoundError } from '@cuotascasa/persistence';
 import {
   createManualClock,
   createSequentialIds,
@@ -325,6 +325,33 @@ describe('counters and undo', () => {
     await expect(b.backup.undoImport(receipt.undoToken)).rejects.toMatchObject({ code: 'NOT_FOUND' });
   });
 
+  it('a keep/keep replaceAll followed by an immediate undo is NOT_FOUND (content digest)', async () => {
+    const { b, exported } = await prepared();
+    const receipt = await b.backup.confirmImport(must(await b.backup.previewImport(exported.blob)).id);
+    const data = await b.store.exportAll();
+    const renamed = { ...data, loans: data.loans.map((loan) => ({ ...loan, name: 'Otro nombre' })) };
+    await b.store.replaceAll(renamed, { pending: 'keep', backedUpAt: 'keep' });
+    await expect(b.backup.undoImport(receipt.undoToken)).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    expect((await b.store.exportAll()).loans.every((loan) => loan.name === 'Otro nombre')).toBe(true);
+  });
+
+  it('a saveDevice followed by an immediate undo is NOT_FOUND (content digest)', async () => {
+    const { b, exported } = await prepared();
+    const receipt = await b.backup.confirmImport(must(await b.backup.previewImport(exported.blob)).id);
+    await b.store.settings.saveDevice({ theme: 'dark', driveSyncEnabled: true });
+    await expect(b.backup.undoImport(receipt.undoToken)).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    expect((await b.store.settings.getDevice())?.theme).toBe('dark');
+  });
+
+  it('SNAPSHOT_NOT_FOUND on restore drops the undo and is NOT_FOUND', async () => {
+    const { b, exported } = await prepared();
+    const receipt = await b.backup.confirmImport(must(await b.backup.previewImport(exported.blob)).id);
+    await settle();
+    vi.spyOn(b.store, 'restoreSnapshot').mockRejectedValueOnce(new SnapshotNotFoundError('gone'));
+    await expect(b.backup.undoImport(receipt.undoToken)).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    await expect(b.backup.undoImport(receipt.undoToken)).rejects.toMatchObject({ code: 'NOT_FOUND' });
+  });
+
   it('queues concurrent confirms and leaves at most one live snapshot', async () => {
     const { b, exported } = await prepared();
     const created = vi.spyOn(b.store, 'createSnapshot');
@@ -340,11 +367,9 @@ describe('counters and undo', () => {
     await expect(b.backup.undoImport(one.undoToken)).rejects.toMatchObject({ code: 'NOT_FOUND' });
     await expect(b.backup.undoImport(two.undoToken)).resolves.toBeUndefined();
     const again = must(await b.backup.previewImport(exported.blob));
-    await expect(
-      Promise.all([b.backup.confirmImport(again.id), b.backup.confirmImport(again.id)]),
-    ).rejects.toMatchObject({
-      code: 'NOT_FOUND',
-    });
+    const dupConfirm = b.backup.confirmImport(again.id);
+    await expect(b.backup.confirmImport(again.id)).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    await expect(dupConfirm).resolves.toBeDefined();
   });
 
   it('a write between the snapshot and replaceAll discards the snapshot', async () => {
