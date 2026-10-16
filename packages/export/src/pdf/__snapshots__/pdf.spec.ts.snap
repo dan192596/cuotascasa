@@ -1,0 +1,732 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`toPdfTableInput > snapshot: calendario sintético en dólares 1`] = `
+{
+  "body": [
+    {
+      "cells": [
+        {
+          "content": "1",
+          "halign": "right",
+        },
+        {
+          "content": "01/12/2026",
+          "halign": "center",
+        },
+        {
+          "content": "300.00",
+          "halign": "right",
+        },
+        {
+          "content": "100.00",
+          "halign": "right",
+        },
+        {
+          "content": "2.50",
+          "halign": "right",
+        },
+        {
+          "content": "0.50",
+          "halign": "right",
+        },
+        {
+          "content": "1.00",
+          "halign": "right",
+        },
+        {
+          "content": "104.00",
+          "halign": "right",
+        },
+        {
+          "content": "0.00",
+          "halign": "right",
+        },
+        {
+          "content": "0.00",
+          "halign": "right",
+        },
+        {
+          "content": "200.00",
+          "halign": "right",
+        },
+      ],
+      "role": "data",
+    },
+    {
+      "cells": [
+        {
+          "content": "",
+          "halign": "left",
+        },
+        {
+          "content": "Subtotal 2026",
+          "halign": "left",
+        },
+        {
+          "content": "",
+          "halign": "left",
+        },
+        {
+          "content": "100.00",
+          "halign": "right",
+        },
+        {
+          "content": "2.50",
+          "halign": "right",
+        },
+        {
+          "content": "0.50",
+          "halign": "right",
+        },
+        {
+          "content": "1.00",
+          "halign": "right",
+        },
+        {
+          "content": "104.00",
+          "halign": "right",
+        },
+        {
+          "content": "0.00",
+          "halign": "right",
+        },
+        {
+          "content": "0.00",
+          "halign": "right",
+        },
+        {
+          "content": "",
+          "halign": "left",
+        },
+      ],
+      "role": "subtotal",
+    },
+    {
+      "cells": [
+        {
+          "content": "2",
+          "halign": "right",
+        },
+        {
+          "content": "01/01/2027",
+          "halign": "center",
+        },
+        {
+          "content": "200.00",
+          "halign": "right",
+        },
+        {
+          "content": "100.00",
+          "halign": "right",
+        },
+        {
+          "content": "1.67",
+          "halign": "right",
+        },
+        {
+          "content": "0.33",
+          "halign": "right",
+        },
+        {
+          "content": "1.00",
+          "halign": "right",
+        },
+        {
+          "content": "103.00",
+          "halign": "right",
+        },
+        {
+          "content": "0.00",
+          "halign": "right",
+        },
+        {
+          "content": "0.00",
+          "halign": "right",
+        },
+        {
+          "content": "100.00",
+          "halign": "right",
+        },
+      ],
+      "role": "data",
+    },
+    {
+      "cells": [
+        {
+          "content": "3",
+          "halign": "right",
+        },
+        {
+          "content": "01/02/2027",
+          "halign": "center",
+        },
+        {
+          "content": "100.00",
+          "halign": "right",
+        },
+        {
+          "content": "100.00",
+          "halign": "right",
+        },
+        {
+          "content": "0.83",
+          "halign": "right",
+        },
+        {
+          "content": "0.17",
+          "halign": "right",
+        },
+        {
+          "content": "1.00",
+          "halign": "right",
+        },
+        {
+          "content": "102.00",
+          "halign": "right",
+        },
+        {
+          "content": "0.00",
+          "halign": "right",
+        },
+        {
+          "content": "0.00",
+          "halign": "right",
+        },
+        {
+          "content": "0.00",
+          "halign": "right",
+        },
+      ],
+      "role": "data",
+    },
+    {
+      "cells": [
+        {
+          "content": "",
+          "halign": "left",
+        },
+        {
+          "content": "Subtotal 2027",
+          "halign": "left",
+        },
+        {
+          "content": "",
+          "halign": "left",
+        },
+        {
+          "content": "200.00",
+          "halign": "right",
+        },
+        {
+          "content": "2.50",
+          "halign": "right",
+        },
+        {
+          "content": "0.50",
+          "halign": "right",
+        },
+        {
+          "content": "2.00",
+          "halign": "right",
+        },
+        {
+          "content": "205.00",
+          "halign": "right",
+        },
+        {
+          "content": "0.00",
+          "halign": "right",
+        },
+        {
+          "content": "0.00",
+          "halign": "right",
+        },
+        {
+          "content": "",
+          "halign": "left",
+        },
+      ],
+      "role": "subtotal",
+    },
+    {
+      "cells": [
+        {
+          "content": "",
+          "halign": "left",
+        },
+        {
+          "content": "Total",
+          "halign": "left",
+        },
+        {
+          "content": "",
+          "halign": "left",
+        },
+        {
+          "content": "300.00",
+          "halign": "right",
+        },
+        {
+          "content": "5.00",
+          "halign": "right",
+        },
+        {
+          "content": "1.00",
+          "halign": "right",
+        },
+        {
+          "content": "3.00",
+          "halign": "right",
+        },
+        {
+          "content": "309.00",
+          "halign": "right",
+        },
+        {
+          "content": "0.00",
+          "halign": "right",
+        },
+        {
+          "content": "0.00",
+          "halign": "right",
+        },
+        {
+          "content": "",
+          "halign": "left",
+        },
+      ],
+      "role": "total",
+    },
+  ],
+  "columnWidths": [
+    8,
+    14,
+    18,
+    16,
+    16,
+    16,
+    18,
+    18,
+    16,
+    16,
+    18,
+  ],
+  "head": [
+    "Cuota",
+    "Vencimiento",
+    "Saldo inicial (US$)",
+    "Capital (US$)",
+    "Interés (US$)",
+    "Seguros (US$)",
+    "Cargos fijos (US$)",
+    "Cuota total (US$)",
+    "Abono (US$)",
+    "Comisión (US$)",
+    "Saldo final (US$)",
+  ],
+  "headAlign": [
+    "right",
+    "center",
+    "right",
+    "right",
+    "right",
+    "right",
+    "right",
+    "right",
+    "right",
+    "right",
+    "right",
+  ],
+  "title": "Tabla de amortización",
+}
+`;
+
+exports[`toPdfTableInput > snapshot: calendario sintético en quetzales 1`] = `
+{
+  "body": [
+    {
+      "cells": [
+        {
+          "content": "1",
+          "halign": "right",
+        },
+        {
+          "content": "15/11/2026",
+          "halign": "center",
+        },
+        {
+          "content": "1,000.00",
+          "halign": "right",
+        },
+        {
+          "content": "200.00",
+          "halign": "right",
+        },
+        {
+          "content": "8.00",
+          "halign": "right",
+        },
+        {
+          "content": "1.50",
+          "halign": "right",
+        },
+        {
+          "content": "5.00",
+          "halign": "right",
+        },
+        {
+          "content": "214.50",
+          "halign": "right",
+        },
+        {
+          "content": "0.00",
+          "halign": "right",
+        },
+        {
+          "content": "0.00",
+          "halign": "right",
+        },
+        {
+          "content": "800.00",
+          "halign": "right",
+        },
+      ],
+      "role": "data",
+    },
+    {
+      "cells": [
+        {
+          "content": "2",
+          "halign": "right",
+        },
+        {
+          "content": "15/12/2026",
+          "halign": "center",
+        },
+        {
+          "content": "800.00",
+          "halign": "right",
+        },
+        {
+          "content": "201.00",
+          "halign": "right",
+        },
+        {
+          "content": "6.40",
+          "halign": "right",
+        },
+        {
+          "content": "1.20",
+          "halign": "right",
+        },
+        {
+          "content": "5.00",
+          "halign": "right",
+        },
+        {
+          "content": "213.60",
+          "halign": "right",
+        },
+        {
+          "content": "0.00",
+          "halign": "right",
+        },
+        {
+          "content": "0.00",
+          "halign": "right",
+        },
+        {
+          "content": "599.00",
+          "halign": "right",
+        },
+      ],
+      "role": "data",
+    },
+    {
+      "cells": [
+        {
+          "content": "",
+          "halign": "left",
+        },
+        {
+          "content": "Subtotal 2026",
+          "halign": "left",
+        },
+        {
+          "content": "",
+          "halign": "left",
+        },
+        {
+          "content": "401.00",
+          "halign": "right",
+        },
+        {
+          "content": "14.40",
+          "halign": "right",
+        },
+        {
+          "content": "2.70",
+          "halign": "right",
+        },
+        {
+          "content": "10.00",
+          "halign": "right",
+        },
+        {
+          "content": "428.10",
+          "halign": "right",
+        },
+        {
+          "content": "0.00",
+          "halign": "right",
+        },
+        {
+          "content": "0.00",
+          "halign": "right",
+        },
+        {
+          "content": "",
+          "halign": "left",
+        },
+      ],
+      "role": "subtotal",
+    },
+    {
+      "cells": [
+        {
+          "content": "3",
+          "halign": "right",
+        },
+        {
+          "content": "15/01/2027",
+          "halign": "center",
+        },
+        {
+          "content": "599.00",
+          "halign": "right",
+        },
+        {
+          "content": "202.00",
+          "halign": "right",
+        },
+        {
+          "content": "4.79",
+          "halign": "right",
+        },
+        {
+          "content": "0.90",
+          "halign": "right",
+        },
+        {
+          "content": "5.00",
+          "halign": "right",
+        },
+        {
+          "content": "212.69",
+          "halign": "right",
+        },
+        {
+          "content": "100.00",
+          "halign": "right",
+        },
+        {
+          "content": "2.00",
+          "halign": "right",
+        },
+        {
+          "content": "297.00",
+          "halign": "right",
+        },
+      ],
+      "role": "data",
+    },
+    {
+      "cells": [
+        {
+          "content": "4",
+          "halign": "right",
+        },
+        {
+          "content": "15/02/2027",
+          "halign": "center",
+        },
+        {
+          "content": "297.00",
+          "halign": "right",
+        },
+        {
+          "content": "297.00",
+          "halign": "right",
+        },
+        {
+          "content": "2.38",
+          "halign": "right",
+        },
+        {
+          "content": "0.45",
+          "halign": "right",
+        },
+        {
+          "content": "5.00",
+          "halign": "right",
+        },
+        {
+          "content": "304.83",
+          "halign": "right",
+        },
+        {
+          "content": "0.00",
+          "halign": "right",
+        },
+        {
+          "content": "0.00",
+          "halign": "right",
+        },
+        {
+          "content": "0.00",
+          "halign": "right",
+        },
+      ],
+      "role": "data",
+    },
+    {
+      "cells": [
+        {
+          "content": "",
+          "halign": "left",
+        },
+        {
+          "content": "Subtotal 2027",
+          "halign": "left",
+        },
+        {
+          "content": "",
+          "halign": "left",
+        },
+        {
+          "content": "499.00",
+          "halign": "right",
+        },
+        {
+          "content": "7.17",
+          "halign": "right",
+        },
+        {
+          "content": "1.35",
+          "halign": "right",
+        },
+        {
+          "content": "10.00",
+          "halign": "right",
+        },
+        {
+          "content": "517.52",
+          "halign": "right",
+        },
+        {
+          "content": "100.00",
+          "halign": "right",
+        },
+        {
+          "content": "2.00",
+          "halign": "right",
+        },
+        {
+          "content": "",
+          "halign": "left",
+        },
+      ],
+      "role": "subtotal",
+    },
+    {
+      "cells": [
+        {
+          "content": "",
+          "halign": "left",
+        },
+        {
+          "content": "Total",
+          "halign": "left",
+        },
+        {
+          "content": "",
+          "halign": "left",
+        },
+        {
+          "content": "900.00",
+          "halign": "right",
+        },
+        {
+          "content": "21.57",
+          "halign": "right",
+        },
+        {
+          "content": "4.05",
+          "halign": "right",
+        },
+        {
+          "content": "20.00",
+          "halign": "right",
+        },
+        {
+          "content": "945.62",
+          "halign": "right",
+        },
+        {
+          "content": "100.00",
+          "halign": "right",
+        },
+        {
+          "content": "2.00",
+          "halign": "right",
+        },
+        {
+          "content": "",
+          "halign": "left",
+        },
+      ],
+      "role": "total",
+    },
+  ],
+  "columnWidths": [
+    8,
+    14,
+    18,
+    16,
+    16,
+    16,
+    18,
+    18,
+    16,
+    16,
+    18,
+  ],
+  "head": [
+    "Cuota",
+    "Vencimiento",
+    "Saldo inicial (Q)",
+    "Capital (Q)",
+    "Interés (Q)",
+    "Seguros (Q)",
+    "Cargos fijos (Q)",
+    "Cuota total (Q)",
+    "Abono (Q)",
+    "Comisión (Q)",
+    "Saldo final (Q)",
+  ],
+  "headAlign": [
+    "right",
+    "center",
+    "right",
+    "right",
+    "right",
+    "right",
+    "right",
+    "right",
+    "right",
+    "right",
+    "right",
+  ],
+  "title": "Tabla de amortización",
+}
+`;
