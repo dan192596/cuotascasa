@@ -74,7 +74,7 @@ const CONVERSIONS: readonly (readonly [string, RegExp])[] = [
   ['Number.parse*', /\bNumber\s*\.\s*parse\w*/],
   ['.toNumber()', /\.\s*toNumber\s*\(/],
   ['Math.*', /\bMath\s*\./],
-  ['unary + or - on a name', /(?:^|[=(,:?&|!<>*/%^\[{;]|\breturn|\btypeof)\s*[+-]\s*[A-Za-z_$][\w$]*/m],
+  ['unary + or - on a name', /(?:^|[=(,:?&|!<>*/%^[{;]|\breturn|\btypeof)\s*[+-]\s*[A-Za-z_$][\w$]*/m],
   ['unary + or - after a + or -', /[+-]\s+[+-][A-Za-z_$]/],
   ['* 1 or / 1', /[*/]\s*1(?![\w.])|(?<![\w.])1\s*[*/]/],
 ];
