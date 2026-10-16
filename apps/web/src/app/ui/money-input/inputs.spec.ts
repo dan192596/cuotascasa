@@ -197,10 +197,13 @@ describe('shared control behavior', () => {
     expect(input.readOnly).toBe(false);
   });
 
-  it('announces errors with role="alert" when they appear', async () => {
+  it('links errors with aria-describedby and never as an assertive alert (no flood on submit)', async () => {
     const { element, type } = await setup();
-    expect(element.querySelector('[role="alert"]')).toBeNull();
     await type('amount', '12a');
-    expect(element.querySelector('#amount-errors')?.getAttribute('role')).toBe('alert');
+    const errors = element.querySelector('#amount-errors');
+    expect(errors).not.toBeNull();
+    expect(errors?.getAttribute('role')).toBeNull();
+    expect(element.querySelector('[role="alert"]')).toBeNull();
+    expect(element.querySelector('input[aria-describedby~="amount-errors"]')).not.toBeNull();
   });
 });

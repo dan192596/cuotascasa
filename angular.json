@@ -32,6 +32,7 @@
             },
             "tsConfig": "apps/web/tsconfig.app.json",
             "inlineStyleLanguage": "scss",
+            "externalDependencies": ["html2canvas", "dompurify", "canvg"],
             "assets": [
               {
                 "glob": "**/*",
