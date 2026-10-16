@@ -256,13 +256,14 @@ describe('DriveSyncService', () => {
       expect(world.gisLoads).toBe(1);
     });
 
-    it('prepare() on a failing GIS load resolves and connect() reports the failure as offline', async () => {
+    it('prepare() on a failing GIS load resolves; connect() keeps the state and says there is no connection', async () => {
       const world = createWorld();
       const failing = vi.fn(() => Promise.reject(new Error('blocked')));
       const device = await createDevice(world, 1, { loadGis: failing });
       await expect(device.service.prepare()).resolves.toBeUndefined();
       await device.service.connect();
-      expect(device.service.status()).toEqual({ state: 'offline', pendingChanges: 0 });
+      expect(device.service.status()).toEqual({ state: 'disconnected' });
+      expect(device.service.statusText()).toBe('Sin conexión con Drive');
     });
   });
 
@@ -728,11 +729,30 @@ describe('DriveSyncService: review fixes', () => {
       expect(world.gis.requests).toEqual([]);
     });
 
-    it('a failed dynamic import reads offline and no raw error escapes connect()', async () => {
+    it('a failed dynamic import keeps the state, says there is no connection and no raw error escapes connect()', async () => {
       const world = createWorld();
       const device = await createDevice(world, 1, { loadDriveModule: () => Promise.reject(new Error('chunk failed')) });
       await expect(device.service.connect()).resolves.toBeUndefined();
-      expect(device.service.status()).toEqual({ state: 'offline', pendingChanges: 0 });
+      expect(device.service.status()).toEqual({ state: 'disconnected' });
+      expect(device.service.statusText()).toBe('Sin conexión con Drive');
+    });
+
+    it('a failed connect() from needs-auth (after a reload) restores needs-auth, not offline', async () => {
+      const world = createWorld();
+      const first = await createDevice(world, 1);
+      await enroll(first);
+      const reloaded = await createDevice(
+        world,
+        1,
+        { loadDriveModule: () => Promise.reject(new Error('chunk failed')) },
+        first,
+      );
+      await vi.waitFor(() => {
+        expect(reloaded.service.status()).toEqual({ state: 'needs-auth' });
+      });
+      await reloaded.service.connect();
+      expect(reloaded.service.status()).toEqual({ state: 'needs-auth' });
+      expect(reloaded.service.statusText()).toBe('Sin conexión con Drive');
     });
 
     it('connect() skips the consent prompt while the token is still valid', async () => {
@@ -842,9 +862,10 @@ describe('DriveSyncService: review fixes', () => {
       first.hooks.onMainDownload = async () => {
         await second.service.sync();
       };
+      const before = first.service.status();
       await first.service.changePassphrase(NEW_PASSPHRASE);
       expect(first.service.statusText()).toBe(BUSY_TEXT);
-      expect(first.service.status().state).toBe('offline');
+      expect(first.service.status()).toEqual(before);
       expect(await localKeySalt(first)).toBe(salt);
       expect(await remoteKeySalt(world)).toBe(salt);
     });
@@ -1057,6 +1078,73 @@ describe('DriveSyncService: review fixes', () => {
       process.off('unhandledRejection', unhandled);
       expect(unhandled).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe('DriveSyncService: status races after disconnect', () => {
+  it('disconnect during changePassphrase ends disconnected', async () => {
+    const world = createWorld();
+    const { first } = await pair(world);
+    first.hooks.onMainDownload = async () => {
+      first.hooks.onMainDownload = null;
+      await first.service.disconnect();
+    };
+    await first.service.changePassphrase(NEW_PASSPHRASE);
+    expect(first.service.status()).toEqual({ state: 'disconnected' });
+    expect(first.service.statusText()).toBe('Drive desconectado');
+  });
+
+  it('disconnect while the connect popup is pending ends disconnected and not connected', async () => {
+    const world = createWorld();
+    const device = await createDevice(world, 1);
+    await device.service.prepare();
+    const connecting = device.service.connect();
+    const disconnecting = device.service.disconnect();
+    await Promise.all([connecting, disconnecting]);
+    expect(device.service.status()).toEqual({ state: 'disconnected' });
+    await expect(device.service.sync()).rejects.toMatchObject({ code: 'VALIDATION' });
+    expect((await device.store.settings.getDevice())?.driveSyncEnabled).not.toBe(true);
+  });
+
+  it('the AuthError of the epoch change does not overwrite disconnected', async () => {
+    const world = createWorld();
+    const device = await createDevice(world, 1);
+    await enroll(device);
+    world.now += 2 * 3600 * 1000;
+    const setting = device.service.setPassphrase(PASSPHRASE);
+    await device.service.disconnect();
+    await setting;
+    expect(device.service.status()).toEqual({ state: 'disconnected' });
+  });
+
+  it('a disconnect() + connect() inside a running sync: the old session never sets the status', async () => {
+    const world = createWorld();
+    const device = await createDevice(world, 1);
+    await enroll(device);
+    await addLoan(device, 'Casa A');
+    await device.service.sync();
+    await addLoan(device, 'Casa B');
+    let afterReconnect: ReturnType<typeof device.service.status> | null = null;
+    device.hooks.onMainDownload = async () => {
+      device.hooks.onMainDownload = null;
+      await device.service.disconnect();
+      await device.service.connect();
+      afterReconnect = device.service.status();
+    };
+    await device.service.sync();
+    expect(afterReconnect).toMatchObject({ state: 'idle' });
+    // The old session finished (markSynced moved lastSyncAt), but its emissions belong to a past generation.
+    expect(device.service.status()).toEqual(afterReconnect);
+  });
+
+  it('a mistyped passphrase while waiting for it (KeyMismatch) is reported, not hidden', async () => {
+    const world = createWorld();
+    const { first, second } = await pair(world);
+    await first.service.changePassphrase(NEW_PASSPHRASE);
+    await second.service.sync();
+    expect(second.service.status()).toEqual({ state: 'needs-passphrase', reason: 'KeyMismatch' });
+    await second.service.setPassphrase('otra frase equivocada');
+    expect(second.service.status()).toEqual({ state: 'needs-passphrase', reason: 'WrongPassphraseOrTamper' });
   });
 });
 

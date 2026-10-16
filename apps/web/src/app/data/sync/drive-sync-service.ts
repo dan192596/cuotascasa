@@ -33,6 +33,7 @@ import { syncStatusText } from './sync-status-text.ts';
 const DEFAULT_APP_VERSION = '1.0.0';
 const PASSPHRASE_RETRIES = 3;
 const BUSY_TEXT = 'Otro dispositivo está sincronizando; inténtalo de nuevo';
+const OFFLINE_TEXT = 'Sin conexión con Drive';
 
 interface Runtime {
   readonly provider: SyncProvider;
@@ -130,6 +131,8 @@ export class DriveSyncService implements SyncService {
    */
   async connect(): Promise<void> {
     this.requireConfigured();
+    const gen = this.generation;
+    const previous = this.mutableStatus();
     let runtime: Runtime;
     try {
       runtime = this.runtime ?? (await this.ensureRuntime());
@@ -137,62 +140,79 @@ export class DriveSyncService implements SyncService {
         await runtime.provider.connect();
       }
     } catch (error) {
-      await this.applyFailure(error);
+      if (!this.connected && error instanceof SyncError && error.code === 'NetworkError') {
+        // Not connected: 'offline' would claim pending changes of a session that never started. Keep the state.
+        this.setStatusIf(gen, previous, OFFLINE_TEXT);
+        return;
+      }
+      await this.applyFailure(error, gen);
       return;
+    }
+    if (gen !== this.generation) {
+      return; // disconnect() ran while the popup was pending: stay disconnected.
     }
     this.connected = true;
     await this.setIntent(true);
-    await this.afterAuthorized(runtime);
+    await this.afterAuthorized(runtime, gen);
   }
 
   async setPassphrase(passphrase: string): Promise<void> {
     const runtime = this.requireConnected();
     this.requirePassphrase(passphrase);
+    const gen = this.generation;
     const previous = this.mutableStatus();
     const authorizing = this.authorizeIfNeeded(runtime);
     try {
       await authorizing;
       await this.deps.locks.request(SYNC_LOCK_NAME, () => this.deriveForRemote(runtime, passphrase));
     } catch (error) {
-      if (error instanceof SyncError && error.code === 'WrongPassphraseOrTamper' && (await this.hasKey(runtime))) {
-        // A working key is already saved: a mistyped passphrase changes nothing.
-        this.setStatus(previous);
+      if (
+        error instanceof SyncError &&
+        error.code === 'WrongPassphraseOrTamper' &&
+        previous.state !== 'needs-passphrase' &&
+        (await this.hasKey(runtime))
+      ) {
+        // The device was not waiting for a passphrase and already has a working key: a mistyped one changes nothing.
+        // (In 'needs-passphrase' the failure is reported, so the user sees that the new passphrase was wrong.)
+        this.setStatusIf(gen, previous);
         return;
       }
-      await this.applyFailure(error);
+      await this.applyFailure(error, gen);
       return;
     }
-    await this.refreshIdle();
+    await this.refreshIdle(gen);
   }
 
   async changePassphrase(passphrase: string): Promise<void> {
     const runtime = this.requireConnected();
     this.requirePassphrase(passphrase);
+    const gen = this.generation;
+    const previous = this.mutableStatus();
     const authorizing = this.authorizeIfNeeded(runtime);
     try {
       await authorizing;
       await this.deps.locks.request(SYNC_LOCK_NAME, () => this.rotateKey(runtime, passphrase));
     } catch (error) {
       if (error instanceof RemoteBusyError) {
-        const meta = await createLocalDataset(this.deps.store).getSyncMeta();
-        this.setStatus({ state: 'offline', pendingChanges: meta.pendingChanges });
-        this.notice.set(BUSY_TEXT);
+        // Nothing changed locally or remotely: keep what the user was seeing and explain.
+        this.setStatusIf(gen, previous, BUSY_TEXT);
         return;
       }
-      await this.applyFailure(error);
+      await this.applyFailure(error, gen);
       return;
     }
-    await this.refreshIdle();
+    await this.refreshIdle(gen);
   }
 
   async sync(): Promise<void> {
     const runtime = this.requireConnected();
+    const gen = this.generation;
     // A renewed token needs a popup, so it is requested here, before any other await, inside the user's click.
     const authorizing = this.authorizeIfNeeded(runtime);
     try {
       await authorizing;
     } catch (error) {
-      await this.applyFailure(error);
+      await this.applyFailure(error, gen);
       return;
     }
     await this.runSession(runtime);
@@ -200,14 +220,15 @@ export class DriveSyncService implements SyncService {
 
   async disconnect(): Promise<void> {
     const runtime = this.runtime;
-    this.connected = false;
+    // Bump first, then publish the final state once and synchronously: every in-flight operation holds an older
+    // generation, so nothing it does after an await can overwrite it.
     this.generation += 1;
+    this.connected = false;
     this.setStatus({ state: 'disconnected' });
     if (runtime !== null) {
       await runtime.provider.disconnect();
     }
     await this.setIntent(false);
-    this.setStatus({ state: 'disconnected' });
   }
 
   /* ---------- runtime ---------- */
@@ -233,9 +254,16 @@ export class DriveSyncService implements SyncService {
     }
   }
 
-  private setStatus(next: SyncStatus): void {
-    this.notice.set(null);
+  private setStatus(next: SyncStatus, notice: string | null = null): void {
+    this.notice.set(notice);
     this.mutableStatus.set(next);
+  }
+
+  /** Every status write that follows an await goes through here: a disconnect() in between wins. */
+  private setStatusIf(gen: number, next: SyncStatus, notice: string | null = null): void {
+    if (gen === this.generation) {
+      this.setStatus(next, notice);
+    }
   }
 
   private ensureRuntime(): Promise<Runtime> {
@@ -309,22 +337,22 @@ export class DriveSyncService implements SyncService {
 
   /* ---------- status ---------- */
 
-  private async afterAuthorized(runtime: Runtime): Promise<void> {
+  private async afterAuthorized(runtime: Runtime, gen: number): Promise<void> {
     try {
       const key = await runtime.keys.load();
       if (key === null) {
-        this.setStatus({ state: 'needs-passphrase', reason: 'no-key' });
+        this.setStatusIf(gen, { state: 'needs-passphrase', reason: 'no-key' });
         return;
       }
     } catch (error) {
       throw this.storageError(error);
     }
-    await this.refreshIdle();
+    await this.refreshIdle(gen);
   }
 
-  private async refreshIdle(): Promise<void> {
+  private async refreshIdle(gen: number): Promise<void> {
     const meta = await createLocalDataset(this.deps.store).getSyncMeta();
-    this.setStatus({ state: 'idle', pendingChanges: meta.pendingChanges, lastSyncAt: meta.lastSyncAt });
+    this.setStatusIf(gen, { state: 'idle', pendingChanges: meta.pendingChanges, lastSyncAt: meta.lastSyncAt });
   }
 
   /** Keeps the pending-changes count of 'idle' and 'offline' current while the user edits. */
@@ -333,8 +361,12 @@ export class DriveSyncService implements SyncService {
     if (current.state !== 'idle' && current.state !== 'offline') {
       return;
     }
+    const gen = this.generation;
     try {
       const meta = await createLocalDataset(this.deps.store).getSyncMeta();
+      if (gen !== this.generation) {
+        return;
+      }
       const latest = this.mutableStatus();
       if (latest.state === 'idle') {
         this.mutableStatus.set({ ...latest, pendingChanges: meta.pendingChanges });
@@ -347,27 +379,27 @@ export class DriveSyncService implements SyncService {
   }
 
   /** SyncErrors become statuses (the session does the same); anything else is a storage failure. */
-  private async applyFailure(error: unknown): Promise<void> {
+  private async applyFailure(error: unknown, gen: number): Promise<void> {
     if (!(error instanceof SyncError)) {
       throw this.storageError(error);
     }
     switch (error.code) {
       case 'NetworkError': {
         const meta = await createLocalDataset(this.deps.store).getSyncMeta();
-        this.setStatus({ state: 'offline', pendingChanges: meta.pendingChanges });
+        this.setStatusIf(gen, { state: 'offline', pendingChanges: meta.pendingChanges });
         return;
       }
       case 'AuthError':
-        this.setStatus({ state: 'needs-auth' });
+        this.setStatusIf(gen, { state: 'needs-auth' });
         return;
       case 'KeyMismatch':
       case 'WrongPassphraseOrTamper':
-        this.setStatus({ state: 'needs-passphrase', reason: error.code });
+        this.setStatusIf(gen, { state: 'needs-passphrase', reason: error.code });
         return;
       case 'UnsupportedVersion':
       case 'WeakParams':
       case 'InvalidRemote':
-        this.setStatus({ state: 'error', code: error.code });
+        this.setStatusIf(gen, { state: 'error', code: error.code });
         return;
     }
   }
@@ -444,9 +476,13 @@ export class DriveSyncService implements SyncService {
   /**
    * ADR-0009 decision 6 and D25. Decrypts the remote with the current key, re-encrypts with a key from the new
    * passphrase and a new salt, uploads (previous remote kept as cuotascasa.prev.json) and only then saves the new key.
-   * If the remote changed while the key was derived, the pass repeats. An upload that failed ambiguously (network error)
-   * or a key save that failed after the upload is resolved by re-reading the remote: the new key is saved only if it
-   * opens the remote, otherwise the old key stays. Without a remote file there is nothing to re-encrypt.
+   * If the remote changed while the key was derived, the pass repeats (3 passes at most, then RemoteBusyError).
+   * - A NetworkError from the upload is ambiguous: the remote is re-read once with findFile. If rotated.key opens it,
+   *   the new key is saved; otherwise (including when that re-read fails too, the device being offline) the old key
+   *   stays, and if the upload did land the next sync() reports KeyMismatch and asks for the new passphrase.
+   * - A keys.save failure after the upload is retried once, and only if the remote opens with the new key; a second
+   *   failure rejects and leaves the old key, with the same KeyMismatch outcome on the next sync().
+   * Without a remote file there is nothing to re-encrypt.
    */
   private async rotateKey(runtime: Runtime, passphrase: string): Promise<void> {
     const { provider, keys, crypto } = runtime;
@@ -501,10 +537,11 @@ export class DriveSyncService implements SyncService {
 
   /** After a reload the token is gone: a device that had Drive on shows 'needs-auth' without contacting Google. */
   private async restoreIntent(): Promise<void> {
+    const gen = this.generation;
     try {
       const device = await (await this.deps.store).settings.getDevice();
       if (device?.driveSyncEnabled === true && this.mutableStatus().state === 'disconnected') {
-        this.setStatus({ state: 'needs-auth' });
+        this.setStatusIf(gen, { state: 'needs-auth' });
       }
     } catch {
       // Leave 'disconnected'.
