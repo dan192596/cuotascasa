@@ -17,7 +17,7 @@ import type { BackupImportError, BackupService, PendingImport, StorageHealth } f
 import { CLOCK, DATA_STORE, ID_GENERATOR } from '../data-layer.tokens.ts';
 import { provideStores } from '../stores/provide-stores.ts';
 import { BACKUP_SERVICE, LOANS_STORE, STORAGE_HEALTH } from '../tokens.ts';
-import { provideBackup, UNDO_WINDOW_MS } from './provide-backup.ts';
+import { PENDING_WINDOW_MS, provideBackup, UNDO_WINDOW_MS } from './provide-backup.ts';
 
 const ITERATIONS = 1000;
 const PASSPHRASE = 'frase de prueba ñandú';
@@ -91,6 +91,7 @@ function failure(
   return result.error;
 }
 
+const settle = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 15));
 const file = (text: string): Blob => new Blob([text], { type: 'application/json' });
 
 afterEach(() => {
@@ -227,6 +228,7 @@ describe('counters and undo', () => {
       1,
     );
     const document = JSON.parse(await exported.blob.text()) as { exportedAt: string };
+    await settle();
     return { b, exported, total, exportedAt: document.exportedAt };
   }
 
@@ -283,11 +285,106 @@ describe('counters and undo', () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     const receipt = await b.backup.confirmImport(pending.id);
     await vi.advanceTimersByTimeAsync(UNDO_WINDOW_MS - 1);
-    vi.useRealTimers();
+    // Still inside the window: the token is alive (not consumed here, so check with a wrong token only).
     await expect(b.backup.undoImport('wrong')).rejects.toMatchObject({ code: 'NOT_FOUND' });
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     await vi.advanceTimersByTimeAsync(2);
     await expect(b.backup.undoImport(receipt.undoToken)).rejects.toMatchObject({ code: 'NOT_FOUND' });
+  });
+
+  it('a sync-style replaceAll after the import invalidates the undo', async () => {
+    const { b, exported } = await prepared();
+    const receipt = await b.backup.confirmImport(must(await b.backup.previewImport(exported.blob)).id);
+    await settle();
+    await b.store.replaceAll(await b.store.exportAll(), { pending: 'keep', backedUpAt: 'keep' });
+    await settle();
+    await expect(b.backup.undoImport(receipt.undoToken)).rejects.toMatchObject({ code: 'NOT_FOUND' });
+  });
+
+  it('a markSynced after the import blocks an immediate undo (fingerprint)', async () => {
+    const { b, exported } = await prepared();
+    const receipt = await b.backup.confirmImport(must(await b.backup.previewImport(exported.blob)).id);
+    await b.store.markSynced('2026-10-05T00:00:00.000Z');
+    await expect(b.backup.undoImport(receipt.undoToken)).rejects.toMatchObject({ code: 'NOT_FOUND' });
+  });
+
+  it('a write followed by an immediate undo is NOT_FOUND', async () => {
+    const { b, exported } = await prepared();
+    const receipt = await b.backup.confirmImport(must(await b.backup.previewImport(exported.blob)).id);
+    await settle();
+    await b.store.loans.create(sampleLoan());
+    await expect(b.backup.undoImport(receipt.undoToken)).rejects.toMatchObject({ code: 'NOT_FOUND' });
+  });
+
+  it('another import or undo arriving as replaceAll/restoreSnapshot invalidates the undo', async () => {
+    const { b, exported } = await prepared();
+    const receipt = await b.backup.confirmImport(must(await b.backup.previewImport(exported.blob)).id);
+    await settle();
+    const snapshot = await b.store.createSnapshot();
+    await b.store.restoreSnapshot(snapshot);
+    await settle();
+    await expect(b.backup.undoImport(receipt.undoToken)).rejects.toMatchObject({ code: 'NOT_FOUND' });
+  });
+
+  it('queues concurrent confirms and leaves at most one live snapshot', async () => {
+    const { b, exported } = await prepared();
+    const created = vi.spyOn(b.store, 'createSnapshot');
+    const discarded = vi.spyOn(b.store, 'discardSnapshot');
+    const first = must(await b.backup.previewImport(exported.blob));
+    const firstConfirm = b.backup.confirmImport(first.id);
+    const second = must(await b.backup.previewImport(exported.blob));
+    const secondConfirm = b.backup.confirmImport(second.id);
+    const [one, two] = await Promise.all([firstConfirm, secondConfirm]);
+    await settle();
+    expect(created).toHaveBeenCalledTimes(2);
+    expect(discarded).toHaveBeenCalledTimes(1);
+    await expect(b.backup.undoImport(one.undoToken)).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    await expect(b.backup.undoImport(two.undoToken)).resolves.toBeUndefined();
+    const again = must(await b.backup.previewImport(exported.blob));
+    await expect(
+      Promise.all([b.backup.confirmImport(again.id), b.backup.confirmImport(again.id)]),
+    ).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+    });
+  });
+
+  it('a write between the snapshot and replaceAll discards the snapshot', async () => {
+    const { b, exported } = await prepared();
+    const original = b.store.createSnapshot.bind(b.store);
+    vi.spyOn(b.store, 'createSnapshot').mockImplementationOnce(async () => {
+      const id = await original();
+      await b.store.loans.create(sampleLoan());
+      await settle();
+      return id;
+    });
+    const discarded = vi.spyOn(b.store, 'discardSnapshot');
+    const receipt = await b.backup.confirmImport(must(await b.backup.previewImport(exported.blob)).id);
+    expect(discarded).toHaveBeenCalledTimes(1);
+    await expect(b.backup.undoImport(receipt.undoToken)).rejects.toMatchObject({ code: 'NOT_FOUND' });
+  });
+
+  it('keeps the undo token when the restore fails, so it can be retried', async () => {
+    const { b, exported } = await prepared();
+    const receipt = await b.backup.confirmImport(must(await b.backup.previewImport(exported.blob)).id);
+    await settle();
+    vi.spyOn(b.store, 'restoreSnapshot').mockRejectedValueOnce(new Error('boom'));
+    await expect(b.backup.undoImport(receipt.undoToken)).rejects.toMatchObject({ code: 'STORAGE' });
+    await expect(b.backup.undoImport(receipt.undoToken)).resolves.toBeUndefined();
+  });
+
+  it('keeps one pending import: a new preview replaces the previous one', async () => {
+    const { b, exported } = await prepared();
+    const first = must(await b.backup.previewImport(exported.blob));
+    const second = must(await b.backup.previewImport(exported.blob));
+    await expect(b.backup.confirmImport(first.id)).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    await expect(b.backup.confirmImport(second.id)).resolves.toBeDefined();
+  });
+
+  it('forgets the pending import after 10 minutes', async () => {
+    const { b, exported } = await prepared();
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const pending = must(await b.backup.previewImport(exported.blob));
+    await vi.advanceTimersByTimeAsync(PENDING_WINDOW_MS + 1);
+    await expect(b.backup.confirmImport(pending.id)).rejects.toMatchObject({ code: 'NOT_FOUND' });
   });
 
   it('a second import replaces the undo entry of the first', async () => {
@@ -340,17 +437,29 @@ describe('encryption', () => {
     expect(error.code).toBe('WRONG_PASSPHRASE');
   });
 
-  it('never derives with iterations above the cap or below the floor', async () => {
+  it.each([
+    [10_000_001, 'VALIDATION'],
+    [2 ** 40, 'VALIDATION'],
+    [ITERATIONS - 1, 'VALIDATION'],
+    [0, 'VALIDATION'],
+    [-5, 'VALIDATION'],
+    [1.5, 'WRONG_PASSPHRASE'],
+  ])('never derives with iterations %s (%s)', async (iterations, code) => {
     const { text } = await encrypted();
     const b = await world();
-    for (const iterations of [10_000_001, 2 ** 40, ITERATIONS - 1, 0, -5, 1.5]) {
-      const envelope = JSON.parse(text) as { kdf: { iterations: number } };
-      envelope.kdf.iterations = iterations;
-      const started = Date.now();
-      const error = failure(await b.backup.previewImport(file(JSON.stringify(envelope)), { passphrase: PASSPHRASE }));
-      expect(Date.now() - started).toBeLessThan(2000);
-      expect(['VALIDATION', 'WRONG_PASSPHRASE']).toContain(error.code);
-    }
+    const envelope = JSON.parse(text) as { kdf: { iterations: number } };
+    envelope.kdf.iterations = iterations;
+    const started = Date.now();
+    const error = failure(await b.backup.previewImport(file(JSON.stringify(envelope)), { passphrase: PASSPHRASE }));
+    expect(Date.now() - started).toBeLessThan(2000);
+    expect(error.code).toBe(code);
+  });
+
+  it('decrypts a file that starts with a BOM', async () => {
+    const { text } = await encrypted();
+    const b = await world();
+    const result = await b.backup.previewImport(file(`\uFEFF${text}`), { passphrase: PASSPHRASE });
+    expect(must(result).encrypted).toBe(true);
   });
 
   it('maps an unknown envelope version to UNSUPPORTED_VERSION', async () => {
@@ -384,6 +493,33 @@ describe('reminderDue through the service', () => {
     expect(backup.reminderDue()).toBe(false);
     clock.advance(31 * 24 * 60 * 60 * 1000);
     await store.settings.saveDevice({ theme: 'dark', driveSyncEnabled: false });
+    await vi.waitFor(() => expect(backup.reminderDue()).toBe(true));
+  });
+});
+
+describe('export and reminder races', () => {
+  it('does not mark the backup when a write lands during the export', async () => {
+    const { store, backup } = await world();
+    await seed(store);
+    const original = store.exportAll.bind(store);
+    vi.spyOn(store, 'exportAll').mockImplementationOnce(async () => {
+      const data = await original();
+      await store.loans.create(sampleLoan());
+      await settle();
+      return data;
+    });
+    await backup.exportJson();
+    expect((await store.getMeta()).lastBackupAt).toBeNull();
+    expect(backup.lastBackupAt()).toBeNull();
+  });
+
+  it('re-evaluates reminderDue when the page becomes visible again', async () => {
+    const { store, backup, clock } = await world();
+    await store.loans.create(sampleLoan());
+    await vi.waitFor(() => expect(backup.changesSinceBackup()).toBe(1));
+    expect(backup.reminderDue()).toBe(false);
+    clock.advance(31 * 24 * 60 * 60 * 1000);
+    document.dispatchEvent(new Event('visibilitychange'));
     await vi.waitFor(() => expect(backup.reminderDue()).toBe(true));
   });
 });

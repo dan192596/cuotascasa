@@ -29,6 +29,8 @@ import { BackupState } from './backup-state.ts';
 export const APP_VERSION = '1.0.0';
 /** ADR-0007 decision 5: the snapshot is discarded after 10 minutes. */
 export const UNDO_WINDOW_MS = 10 * 60 * 1000;
+/** A previewed import (it holds the decrypted data) is forgotten after this long. */
+export const PENDING_WINDOW_MS = 10 * 60 * 1000;
 
 export interface BackupOptions {
   /** Test seam: PBKDF2 iterations of an encrypted export. Defaults to PBKDF2_ITERATIONS (600000). */
@@ -37,16 +39,28 @@ export interface BackupOptions {
   readonly minIterations?: number;
   readonly appVersion?: string;
   readonly undoWindowMs?: number;
+  readonly pendingWindowMs?: number;
 }
 
 interface PendingEntry {
+  readonly id: string;
   readonly data: BackupData;
   readonly exportedAt: IsoInstant;
+  readonly timer: ReturnType<typeof setTimeout>;
+}
+
+/** The store state right after our replaceAll; any other value at undo time means someone else wrote since. */
+interface Fingerprint {
+  readonly lastBackupAt: IsoInstant | null;
+  readonly lastSyncAt: IsoInstant | null;
+  readonly changesSinceBackup: number;
+  readonly pendingChanges: number;
 }
 
 interface UndoEntry {
   readonly token: string;
   readonly snapshotId: string;
+  readonly fingerprint: Fingerprint;
   readonly timer: ReturnType<typeof setTimeout>;
 }
 
@@ -64,18 +78,35 @@ function toDataError(error: unknown): DataError {
 
 function looksLikeEnvelope(text: string): boolean {
   try {
-    const value: unknown = JSON.parse(text.charCodeAt(0) === 0xfeff ? text.slice(1) : text);
+    const value: unknown = JSON.parse(text);
     return typeof value === 'object' && value !== null && (value as { format?: unknown }).format === 'cuotascasa-enc';
   } catch {
     return false;
   }
 }
 
+function sameFingerprint(a: Fingerprint, b: Fingerprint): boolean {
+  return (
+    a.lastBackupAt === b.lastBackupAt &&
+    a.lastSyncAt === b.lastSyncAt &&
+    a.changesSinceBackup === b.changesSinceBackup &&
+    a.pendingChanges === b.pendingChanges
+  );
+}
+
 class BackupServiceImpl extends BackupState implements BackupService {
-  private readonly pending = new Map<string, PendingEntry>();
+  private pending: PendingEntry | undefined;
   private undo: UndoEntry | undefined;
   private unsubscribe: (() => void) | undefined;
   private ownReplaceNotifications = 0;
+  private confirmTail: Promise<unknown> = Promise.resolve();
+  /** True while a confirm is running; a foreign notification then means a write may have slipped in. */
+  private importing = false;
+  private writeDuringImport = false;
+  private restoring = false;
+  /** Counts notifications, to notice a write that lands while an export runs. */
+  private notifications = 0;
+  private removeVisibility: (() => void) | undefined;
 
   private readonly ids: IdGenerator;
   private readonly options: BackupOptions;
@@ -92,8 +123,17 @@ class BackupServiceImpl extends BackupState implements BackupService {
     this.options = options;
     destroyRef.onDestroy(() => {
       this.unsubscribe?.();
+      this.removeVisibility?.();
       this.dropUndo();
+      this.dropPending();
     });
+    if (typeof document !== 'undefined') {
+      const onVisible = (): void => {
+        void this.refresh();
+      };
+      document.addEventListener('visibilitychange', onVisible);
+      this.removeVisibility = () => document.removeEventListener('visibilitychange', onVisible);
+    }
     void this.start().then((unsubscribe) => {
       this.unsubscribe = unsubscribe;
     });
@@ -103,11 +143,16 @@ class BackupServiceImpl extends BackupState implements BackupService {
     try {
       const store = await this.source;
       const unsubscribe = store.subscribe((event) => {
-        // Notifications arrive in commit order. Until our own replaceAll one is consumed, a 'write' belongs to a commit
-        // that came before the import, so it must not discard the snapshot.
+        this.notifications += 1;
+        // Exactly one own replaceAll keeps the undo alive. Anything else (a write, a sync save, another tab's import or
+        // undo) means the data moved on, so undoing would overwrite it. A stale notification from before the import
+        // lands here too: that only costs the undo, the safe side.
         if (event.origin === 'replaceAll' && this.ownReplaceNotifications > 0) {
           this.ownReplaceNotifications -= 1;
-        } else if (event.origin === 'write' && this.ownReplaceNotifications === 0) {
+        } else {
+          if (this.importing) {
+            this.writeDuringImport = true;
+          }
           this.discardUndo();
         }
         void this.refresh();
@@ -127,6 +172,7 @@ class BackupServiceImpl extends BackupState implements BackupService {
     try {
       const store = await this.source;
       const exportedAt = this.clockNow();
+      const seen = this.notifications;
       const [data, meta] = await Promise.all([store.exportAll(), store.getMeta()]);
       const document: BackupDocument = {
         format: 'cuotascasa',
@@ -142,7 +188,11 @@ class BackupServiceImpl extends BackupState implements BackupService {
         const key = await deriveStoredKey(passphrase, { iterations: this.options.kdfIterations ?? PBKDF2_ITERATIONS });
         body = serializeEnvelope(await encrypt(key, text));
       }
-      await store.markBackedUp(exportedAt);
+      // A write that committed after exportAll is not in the file, so marking the backup would hide it. We only see it
+      // here once its notification arrived; a commit whose notification is still in flight can still slip through.
+      if (this.notifications === seen) {
+        await store.markBackedUp(exportedAt);
+      }
       await this.refresh();
       return {
         fileName: `cuotascasa-respaldo-${this.clockToday()}.json`,
@@ -164,6 +214,9 @@ class BackupServiceImpl extends BackupState implements BackupService {
     } catch {
       return importError('INVALID_JSON');
     }
+    if (text.charCodeAt(0) === 0xfeff) {
+      text = text.slice(1);
+    }
     const encrypted = looksLikeEnvelope(text);
     if (encrypted) {
       const opened = await this.openEnvelope(text, options.passphrase);
@@ -177,7 +230,13 @@ class BackupServiceImpl extends BackupState implements BackupService {
       return importError(parsed.error.code);
     }
     const id = this.ids.newId();
-    this.pending.set(id, { data: parsed.value.document.data, exportedAt: parsed.value.document.exportedAt });
+    this.dropPending();
+    const timer = setTimeout(() => {
+      if (this.pending?.id === id) {
+        this.pending = undefined;
+      }
+    }, this.options.pendingWindowMs ?? PENDING_WINDOW_MS);
+    this.pending = { id, data: parsed.value.document.data, exportedAt: parsed.value.document.exportedAt, timer };
     return { ok: true, value: { id, preview: parsed.value.preview, encrypted } };
   }
 
@@ -203,12 +262,21 @@ class BackupServiceImpl extends BackupState implements BackupService {
     }
   }
 
-  async confirmImport(pendingId: string): Promise<ImportReceipt> {
-    const entry = this.pending.get(pendingId);
-    if (!entry) {
-      throw new DataError('NOT_FOUND');
+  confirmImport(pendingId: string): Promise<ImportReceipt> {
+    const entry = this.pending;
+    if (!entry || entry.id !== pendingId) {
+      return Promise.reject(new DataError('NOT_FOUND'));
     }
-    this.pending.delete(pendingId);
+    this.dropPending();
+    // One confirm at a time, so two imports never interleave their snapshots and timers.
+    const run = this.confirmTail.then(() => this.runConfirm(entry));
+    this.confirmTail = run.catch(() => undefined);
+    return run;
+  }
+
+  private async runConfirm(entry: PendingEntry): Promise<ImportReceipt> {
+    this.importing = true;
+    this.writeDuringImport = false;
     let snapshotId: string | undefined;
     try {
       const store = await this.source;
@@ -221,36 +289,76 @@ class BackupServiceImpl extends BackupState implements BackupService {
         this.ownReplaceNotifications -= 1;
         throw error;
       }
+      const fingerprint = await this.fingerprint(store);
+      const token = this.ids.newId();
+      if (this.writeDuringImport) {
+        // Something else wrote around our snapshot: undoing would drop it, so no undo is offered.
+        await this.discardSnapshot(snapshotId);
+      } else {
+        const timer = setTimeout(() => {
+          if (this.undo?.token === token) {
+            this.discardUndo();
+          }
+        }, this.options.undoWindowMs ?? UNDO_WINDOW_MS);
+        this.undo = { token, snapshotId, fingerprint, timer };
+      }
+      await this.refresh();
+      return { undoToken: token };
     } catch (error) {
-      if (snapshotId !== undefined) {
+      if (snapshotId !== undefined && this.undo?.snapshotId !== snapshotId) {
         await this.discardSnapshot(snapshotId);
       }
       throw toDataError(error);
+    } finally {
+      this.importing = false;
     }
-    const token = this.ids.newId();
-    const timer = setTimeout(() => this.discardUndo(), this.options.undoWindowMs ?? UNDO_WINDOW_MS);
-    this.undo = { token, snapshotId, timer };
-    await this.refresh();
-    return { undoToken: token };
   }
 
   cancelImport(pendingId: string): void {
-    this.pending.delete(pendingId);
+    if (this.pending?.id === pendingId) {
+      this.dropPending();
+    }
   }
 
   async undoImport(undoToken: string): Promise<void> {
     const undo = this.undo;
-    if (!undo || undo.token !== undoToken) {
+    if (!undo || undo.token !== undoToken || this.restoring) {
       throw new DataError('NOT_FOUND');
     }
-    this.dropUndo();
+    this.restoring = true;
     try {
       const store = await this.source;
+      const now = await this.fingerprint(store);
+      if (this.undo !== undo || !sameFingerprint(now, undo.fingerprint)) {
+        this.discardUndo();
+        throw new DataError('NOT_FOUND');
+      }
       await store.restoreSnapshot(undo.snapshotId);
+      if (this.undo === undo) {
+        this.dropUndo();
+      }
     } catch (error) {
       throw toDataError(error);
+    } finally {
+      this.restoring = false;
     }
     await this.refresh();
+  }
+
+  private async fingerprint(store: DataStore): Promise<Fingerprint> {
+    const [meta, changesSinceBackup, pendingChanges] = await Promise.all([
+      store.getMeta(),
+      store.changesSinceBackup(),
+      store.pendingChanges(),
+    ]);
+    return { lastBackupAt: meta.lastBackupAt, lastSyncAt: meta.lastSyncAt, changesSinceBackup, pendingChanges };
+  }
+
+  private dropPending(): void {
+    if (this.pending) {
+      clearTimeout(this.pending.timer);
+      this.pending = undefined;
+    }
   }
 
   /** Forgets the undo entry and releases its snapshot. */
