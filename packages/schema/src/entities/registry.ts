@@ -1,4 +1,4 @@
-import type { z } from 'zod';
+import type * as z from 'zod';
 import { actualPaymentSchema, type ActualPayment } from './actual-payment.ts';
 import { loanSchema, type Loan } from './loan.ts';
 import { loanEventSchema, type LoanEvent } from './loan-event.ts';

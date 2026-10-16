@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from 'zod';
 import { baseRecordShape, uuidSchema } from '../common.ts';
 
 /** Fixed ids: every device writes the same two settings records, so LWW merges them as one each. */
