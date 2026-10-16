@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { QuickSimulatorComponent } from '../simulator/quick-simulator.component.ts';
 
@@ -71,8 +71,10 @@ import { QuickSimulatorComponent } from '../simulator/quick-simulator.component.
     </main>
     <footer>
       <p>
-        Código abierto ·
-        <a href="https://github.com/dan192596/cuotascasa" rel="noopener noreferrer">Repositorio</a>
+        Código abierto
+        @if (repoUrl(); as url) {
+          · <a [href]="url" rel="noopener noreferrer">Repositorio</a>
+        }
         · Sin analítica ni cookies de rastreo
       </p>
       <p>Cifras estimadas; el banco tiene la última palabra. No es asesoría financiera.</p>
@@ -244,4 +246,13 @@ import { QuickSimulatorComponent } from '../simulator/quick-simulator.component.
   host: { 'data-testid': 'page-landing' },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class LandingPageComponent {}
+export class LandingPageComponent {
+  /** Route data (ISSUES_URL, injected at build time): the public Issues URL, '' in dev builds. */
+  readonly issuesUrl = input<string | undefined>('');
+
+  /** Repository URL derived from the issues URL; '' unless it is an https URL (never a literal in the sources). */
+  protected readonly repoUrl = computed(() => {
+    const url = (this.issuesUrl() ?? '').replace(/\/+$/, '').replace(/\/issues$/, '');
+    return url.startsWith('https://') ? url : '';
+  });
+}

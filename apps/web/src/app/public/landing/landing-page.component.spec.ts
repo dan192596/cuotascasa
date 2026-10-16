@@ -1,12 +1,16 @@
+import { readdirSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { provideRouter } from '@angular/router';
 import { TestBed } from '@angular/core/testing';
 
 import { describe, expect, it } from 'vitest';
 import { LandingPageComponent } from './landing-page.component.ts';
 
-function render(): HTMLElement {
+function render(issuesUrl?: string | undefined): HTMLElement {
   TestBed.configureTestingModule({ providers: [provideRouter([])] });
   const fixture = TestBed.createComponent(LandingPageComponent);
+  if (issuesUrl !== undefined) fixture.componentRef.setInput('issuesUrl', issuesUrl);
   fixture.detectChanges();
   return fixture.nativeElement as HTMLElement;
 }
@@ -47,13 +51,48 @@ describe('LandingPageComponent (HU-01, R1)', () => {
     expect(root.querySelector('.house-caption')?.textContent).toContain('capital pagado (ilustrativo)');
   });
 
-  it('ends with a footer: repository link, no tracking note and the disclaimer', () => {
-    const footer = render().querySelector('footer');
-    expect(footer?.textContent).toContain(
+  it('ends with a footer with the disclaimer', () => {
+    expect(render().querySelector('footer')?.textContent).toContain(
       'Cifras estimadas; el banco tiene la última palabra. No es asesoría financiera.',
     );
-    const repo = footer?.querySelector('a[href^="https://github.com/"]');
+  });
+
+  it('renders no repository link when the issues URL is empty (dev build)', () => {
+    const footer = render().querySelector('footer');
+    expect(footer?.querySelector('a')).toBeNull();
+    expect(footer?.textContent).not.toContain('Repositorio');
+  });
+
+  it('derives the repository link from the injected issues URL', () => {
+    const repo = render('https://example.test/owner/repo/issues').querySelector('footer a');
     expect(repo?.textContent).toContain('Repositorio');
+    expect(repo?.getAttribute('href')).toBe('https://example.test/owner/repo');
     expect(repo?.getAttribute('rel')).toContain('noopener');
+  });
+
+  it('keeps a URL that does not end in /issues as is, and ignores a trailing slash', () => {
+    expect(render('https://example.test/o/r/').querySelector('footer a')?.getAttribute('href')).toBe(
+      'https://example.test/o/r',
+    );
+  });
+
+  it('treats an unbound (undefined) issues URL as empty', () => {
+    TestBed.configureTestingModule({ providers: [provideRouter([])] });
+    const fixture = TestBed.createComponent(LandingPageComponent);
+    fixture.componentRef.setInput('issuesUrl', undefined);
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('footer a')).toBeNull();
+  });
+
+  it('ignores non-https issues URLs', () => {
+    expect(render('javascript:alert(1)').querySelector('footer a')).toBeNull();
+  });
+
+  it('has no literal github.com URL in the landing sources', () => {
+    const dir = dirname(fileURLToPath(import.meta.url));
+    const offenders = readdirSync(dir)
+      .filter((f) => f.endsWith('.ts') && !f.endsWith('.spec.ts'))
+      .filter((f) => readFileSync(join(dir, f), 'utf8').includes('github.com/'));
+    expect(offenders).toEqual([]);
   });
 });
