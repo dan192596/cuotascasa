@@ -32,7 +32,7 @@ export const PARSED_TEXT_TEMPLATE = `
     }
   </span>
   @if (touched() && shownErrors().length > 0) {
-    <ul [id]="inputId() + '-errors'" class="errors" role="alert">
+    <ul [id]="inputId() + '-errors'" class="errors">
       @for (error of shownErrors(); track $index) {
         <li>{{ error.message }}</li>
       }

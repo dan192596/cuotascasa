@@ -370,4 +370,9 @@ export default defineConfig(
     files: ['packages/export/src/excel/**/*.ts'],
     rules: { 'no-restricted-syntax': 'off' },
   },
+  {
+    // ADR-0003 §6 (enmienda W5): the chart's y-values are the only other conversion, display only, in one helper.
+    files: ['apps/web/src/app/features/scenarios/compare/chart-series.ts'],
+    rules: { 'no-restricted-syntax': ['error', ...ANGULAR_SELECTORS] },
+  },
 );

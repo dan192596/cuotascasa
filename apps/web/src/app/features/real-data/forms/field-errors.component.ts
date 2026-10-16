@@ -9,7 +9,7 @@ import type { FieldTree } from '@angular/forms/signals';
   selector: 'cc-field-errors',
   template: `
     @if (visible()) {
-      <ul class="errors" role="alert" [id]="controlId() + '-errors'">
+      <ul class="errors" [id]="controlId() + '-errors'">
         @for (error of errors(); track $index) {
           <li>{{ error.message }}</li>
         }
