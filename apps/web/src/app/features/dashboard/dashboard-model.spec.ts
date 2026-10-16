@@ -48,8 +48,23 @@ describe('errorMessage', () => {
 });
 
 describe('backupDateText', () => {
-  it('shows the stored date as dd/mm/aaaa or a fixed text without a backup', () => {
-    expect(backupDateText('2026-10-04T15:00:00.000Z')).toBe('04/10/2026');
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const localText = (at: string) => {
+    const d = new Date(at);
+    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+  };
+
+  it('shows the LOCAL calendar day of the instant as dd/mm/aaaa', () => {
+    const at = '2026-10-05T02:00:00.000Z';
+    expect(backupDateText(at)).toBe(localText(at));
+    if (new Date(at).getTimezoneOffset() > 0) {
+      const utcDay = `${at.slice(8, 10)}/${at.slice(5, 7)}/${at.slice(0, 4)}`;
+      expect(backupDateText(at)).not.toBe(utcDay);
+    }
+  });
+
+  it('has fixed Spanish texts without a backup or with an invalid instant', () => {
     expect(backupDateText(null)).toBe('Aún sin respaldo');
+    expect(backupDateText('no es una fecha')).toBe('Fecha no disponible');
   });
 });

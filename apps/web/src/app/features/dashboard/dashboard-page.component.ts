@@ -27,17 +27,17 @@ const CURRENCY_ROWS: readonly { readonly currency: Currency; readonly label: str
     <h1>Mis préstamos</h1>
 
     <section class="status" aria-label="Estado de sincronización y respaldo" data-testid="status-widget">
-      <p data-testid="sync-status">Drive: {{ sync.statusText() }}</p>
+      <p role="status" data-testid="sync-status">Drive: {{ sync.statusText() }}</p>
       <p data-testid="backup-status">Último respaldo: {{ lastBackup() }}</p>
       @if (backup.reminderDue()) {
-        <p class="reminder" data-testid="backup-reminder">
+        <p class="reminder" role="status" data-testid="backup-reminder">
           Conviene hacer un respaldo. <a routerLink="/app/ajustes">Ir a Ajustes</a>
         </p>
       }
     </section>
 
     @if (!store.ready()) {
-      <p data-testid="loading">Cargando tus préstamos…</p>
+      <p role="status" data-testid="loading">Cargando tus préstamos…</p>
     } @else if (store.loans().length === 0) {
       <cc-empty-state heading="Aún no tienes préstamos">
         Empieza creando uno, restaura un respaldo o conecta tu Google Drive.

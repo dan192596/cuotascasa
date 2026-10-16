@@ -1,4 +1,4 @@
-import type { DomainError } from '@cuotascasa/domain';
+import { type DomainError, makeLocalDate } from '@cuotascasa/domain';
 import type { LoansStore } from '../../data/api.ts';
 import { formatLocalDate } from '../../ui/format/format.ts';
 
@@ -39,7 +39,10 @@ export function errorMessage(error: DomainError): string {
   }
 }
 
-/** Date part of the stored instant as dd/mm/aaaa (no relative-time or threshold logic: the service decides). */
+/** Local calendar day of the stored instant as dd/mm/aaaa (no relative-time or threshold logic: the service decides). */
 export function backupDateText(lastBackupAt: string | null): string {
-  return lastBackupAt === null ? 'Aún sin respaldo' : formatLocalDate(lastBackupAt.slice(0, 10));
+  if (lastBackupAt === null) return 'Aún sin respaldo';
+  const at = new Date(lastBackupAt);
+  if (Number.isNaN(at.getTime())) return 'Fecha no disponible';
+  return formatLocalDate(makeLocalDate(at.getFullYear(), at.getMonth() + 1, at.getDate()));
 }

@@ -25,7 +25,7 @@ import { type DashboardLoan, errorMessage, STATUS_LABELS } from './dashboard-mod
         <span class="status" data-testid="card-status">{{ statusLabel() }}</span>
       </header>
       @if (p.error(); as error) {
-        <p class="error" role="alert" data-testid="card-error">{{ message(error) }}</p>
+        <p class="error" role="status" data-testid="card-error">{{ message(error) }}</p>
       } @else {
         <div class="body">
           @if (p.percentPaid(); as percent) {

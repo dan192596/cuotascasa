@@ -173,6 +173,7 @@ describe('DashboardPageComponent: cards', () => {
       loans: [loan('a')],
       projections: { a: { error, percent: null, balance: null, next: null, due: null, end: null } },
     });
+    expect(byId(f, 'card-error')?.getAttribute('role')).toBe('status');
     expect(text(f, 'card-error')).not.toContain('99999.99');
     expect(text(f, 'card-error')).toContain('cuota');
     expect(byId(f, 'card-balance')).toBeNull();
@@ -253,7 +254,7 @@ describe('DashboardPageComponent: status filter', () => {
 
 describe('DashboardPageComponent: status widget', () => {
   it('shows the reminder exactly when BackupService.reminderDue() is true', () => {
-    expect(byId(mount({ reminderDue: true }), 'backup-reminder')).not.toBeNull();
+    expect(byId(mount({ reminderDue: true }), 'backup-reminder')?.getAttribute('role')).toBe('status');
     TestBed.resetTestingModule();
     expect(byId(mount({ reminderDue: false }), 'backup-reminder')).toBeNull();
   });
@@ -263,8 +264,12 @@ describe('DashboardPageComponent: status widget', () => {
     expect(byId(f, 'backup-reminder')?.querySelector('a')?.getAttribute('href')).toBe('/app/ajustes');
   });
 
+  it('announces the sync status politely', () => {
+    expect(byId(mount(), 'sync-status')?.getAttribute('role')).toBe('status');
+  });
+
   it('shows the sync status text and the last backup date', () => {
-    const f = mount({ syncText: 'Cambios sin sincronizar (3)', lastBackupAt: '2026-10-04T15:00:00.000Z' });
+    const f = mount({ syncText: 'Cambios sin sincronizar (3)', lastBackupAt: '2026-10-04T12:00:00.000Z' });
     expect(text(f, 'sync-status')).toContain('Cambios sin sincronizar (3)');
     expect(text(f, 'backup-status')).toContain('04/10/2026');
   });
@@ -278,9 +283,11 @@ describe('DashboardPageComponent: status widget', () => {
     const sources = readdirSync(dir).filter((n) => n.endsWith('.ts') && !n.endsWith('.spec.ts'));
     expect(sources.length).toBeGreaterThan(2);
     for (const name of sources) {
-      const source = readFileSync(`${dir}/${name}`, 'utf8')
+      let source = readFileSync(`${dir}/${name}`, 'utf8')
         .replace(/\/\*[\s\S]*?\*\//g, '')
         .replace(/\/\/.*$/gm, '');
+      // `new Date` is allowed only inside backupDateText (local calendar day of the stored instant).
+      if (name === 'dashboard-model.ts') source = source.replace(/export function backupDateText[\s\S]*?\n}\n/, '');
       expect(source, name).not.toMatch(/changesSinceBackup|\b30\b|\b20\b|86_?400|Date\.now|new Date/);
     }
   });
@@ -306,6 +313,6 @@ describe('DashboardPageComponent: empty state', () => {
   it('shows nothing definitive while the stores are not ready', () => {
     const f = mount({ ready: false });
     expect(byId(f, 'empty-state')).toBeNull();
-    expect(byId(f, 'loading')).not.toBeNull();
+    expect(byId(f, 'loading')?.getAttribute('role')).toBe('status');
   });
 });
