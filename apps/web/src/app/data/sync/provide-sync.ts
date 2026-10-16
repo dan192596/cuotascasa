@@ -43,6 +43,7 @@ export function provideSync(options: SyncOptions = {}): EnvironmentProviders {
           clock: inject(CLOCK),
           locks: settings.locks ?? browserLocks(),
           loadDriveModule: settings.loadDriveModule ?? (() => import('@cuotascasa/sync/google-drive')),
+          loadCryptoModule: settings.loadCryptoModule ?? (() => import('@cuotascasa/sync/crypto')),
         });
         inject(DestroyRef).onDestroy(() => {
           service.destroy();

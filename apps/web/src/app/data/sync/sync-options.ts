@@ -1,9 +1,13 @@
 import { InjectionToken } from '@angular/core';
 import type { GisOAuth2, LockManagerLike } from '@cuotascasa/sync';
+import type * as CryptoModule from '@cuotascasa/sync/crypto';
 import type * as DriveModule from '@cuotascasa/sync/google-drive';
 
-/** The module `@cuotascasa/sync/google-drive`, loaded only by the dynamic import in sync-runtime.ts. */
+/** The module `@cuotascasa/sync/google-drive`, loaded only by the dynamic import in provide-sync.ts. */
 export type DriveModuleShape = typeof DriveModule;
+
+/** The module `@cuotascasa/sync/crypto`. */
+export type CryptoModuleShape = typeof CryptoModule;
 
 /**
  * Seams of the sync service. Production passes nothing: the build-time client ID, the real fetch, navigator.locks,
@@ -15,6 +19,8 @@ export interface SyncOptions {
   readonly clientId?: string;
   /** Defaults to `import('@cuotascasa/sync/google-drive')`. */
   readonly loadDriveModule?: () => Promise<DriveModuleShape>;
+  /** Defaults to `import('@cuotascasa/sync/crypto')`; tests wrap it to spy on key derivation. */
+  readonly loadCryptoModule?: () => Promise<CryptoModuleShape>;
   /** Defaults to the module's createGisLoader(); tests pass a loader backed by the GIS fake. */
   readonly loadGis?: () => Promise<GisOAuth2>;
   readonly fetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;

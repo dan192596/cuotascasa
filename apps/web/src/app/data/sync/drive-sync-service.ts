@@ -17,25 +17,28 @@ import {
 } from '@cuotascasa/sync';
 import { DataError, type SyncService } from '../api.ts';
 import { createLocalDataset } from './local-dataset.ts';
-import type { DriveModuleShape, SyncOptions } from './sync-options.ts';
+import type { CryptoModuleShape, DriveModuleShape, SyncOptions } from './sync-options.ts';
 import { syncStatusText } from './sync-status-text.ts';
 
 /**
  * Drive sync service (ADR-0008, ADR-0009, ADR-0024). Everything that touches Google is created on demand:
- * - `ensureRuntime()` imports the Drive module, the crypto and the session and builds the provider. It contacts no one.
- * - `prepare()` additionally loads the GIS script, so a later `connect()` click only has to call requestAccessToken
- *   (WebKit opens the consent popup only inside the user gesture). The connect screen calls it when it becomes visible.
+ * - Construction and reading `status()` / `statusText()` load nothing and contact no one.
+ * - `prepare()` imports the Drive module, the crypto and the session, builds the provider and loads the GIS script.
+ *   It contacts Google, so the UI calls it ONLY after an explicit user action to connect (never on screen load); the
+ *   connect screen then offers a second button that calls `connect()`.
+ * - `connect()` is gesture-safe (the consent popup opens inside the click) only after `prepare()` resolved.
  * - The access token lives in the provider's closure; the passphrase is never stored (only the non-extractable key).
  */
 
 const DEFAULT_APP_VERSION = '1.0.0';
 const PASSPHRASE_RETRIES = 3;
+const BUSY_TEXT = 'Otro dispositivo está sincronizando; inténtalo de nuevo';
 
 interface Runtime {
   readonly provider: SyncProvider;
   readonly keys: KeyStore;
   readonly session: SyncSession;
-  readonly crypto: typeof import('@cuotascasa/sync/crypto');
+  readonly crypto: CryptoModuleShape;
   /** The memoized GIS loader the provider uses, so a preload and the provider share one script load. */
   readonly loadGis: () => Promise<GisOAuth2>;
 }
@@ -47,7 +50,11 @@ export interface DriveSyncDeps {
   readonly clock: SyncClock;
   readonly locks: LockManagerLike;
   readonly loadDriveModule: () => Promise<DriveModuleShape>;
+  readonly loadCryptoModule: () => Promise<CryptoModuleShape>;
 }
+
+/** The remote kept changing under a passphrase change; shown with its own text, not as 'offline'. */
+class RemoteBusyError extends Error {}
 
 function memoize<T>(load: () => Promise<T>): () => Promise<T> {
   let cached: Promise<T> | null = null;
@@ -69,10 +76,17 @@ export class DriveSyncService implements SyncService {
   readonly statusText: Signal<string>;
 
   private readonly mutableStatus: ReturnType<typeof signal<SyncStatus>>;
+  private readonly notice = signal<string | null>(null);
   private readonly deps: DriveSyncDeps;
   private runtime: Runtime | null = null;
   private runtimeLoad: Promise<Runtime> | null = null;
   private unsubscribeStore: (() => void) | null = null;
+  private destroyed = false;
+  /** True between a successful connect() and disconnect(). */
+  private connected = false;
+  /** Bumped by disconnect(): session emissions of an older generation are ignored. */
+  private generation = 0;
+  private sessionGeneration = -1;
 
   constructor(deps: DriveSyncDeps) {
     this.deps = deps;
@@ -80,7 +94,7 @@ export class DriveSyncService implements SyncService {
     this.configured = signal(isConfigured).asReadonly();
     this.mutableStatus = signal<SyncStatus>(isConfigured ? { state: 'disconnected' } : { state: 'not-configured' });
     this.status = this.mutableStatus.asReadonly();
-    this.statusText = computed(() => syncStatusText(this.mutableStatus()));
+    this.statusText = computed(() => this.notice() ?? syncStatusText(this.mutableStatus()));
     if (isConfigured) {
       void this.restoreIntent();
     }
@@ -88,14 +102,15 @@ export class DriveSyncService implements SyncService {
 
   /** Releases the DataStore subscription. */
   destroy(): void {
+    this.destroyed = true;
     this.unsubscribeStore?.();
     this.unsubscribeStore = null;
   }
 
   /**
-   * Called when the connect screen becomes visible: loads the Drive module and the GIS script ahead of the click so
-   * that connect() reaches requestAccessToken inside the gesture. Does nothing when sync is not configured. Never
-   * rejects: a failed preload is retried by connect().
+   * Loads the Drive module and the GIS script ahead of the connect click, so connect() reaches requestAccessToken
+   * inside the gesture. Contacts Google: call it only after the user explicitly chose to connect. Does nothing when
+   * sync is not configured. Never rejects: a failed preload is retried by connect().
    */
   async prepare(): Promise<void> {
     if (!this.configured()) {
@@ -109,16 +124,23 @@ export class DriveSyncService implements SyncService {
     }
   }
 
+  /**
+   * Consent popup. Gesture-safe only after prepare() resolved: with a prepared runtime nothing is awaited before
+   * requestAccessToken, so the popup opens inside the user's click. A token still valid skips the consent prompt.
+   */
   async connect(): Promise<void> {
     this.requireConfigured();
-    // With a prepared runtime nothing is awaited before provider.connect(): the popup opens inside the user gesture.
-    const runtime = this.runtime ?? (await this.ensureRuntime());
+    let runtime: Runtime;
     try {
-      await runtime.provider.connect();
+      runtime = this.runtime ?? (await this.ensureRuntime());
+      if (!runtime.provider.isAuthorized()) {
+        await runtime.provider.connect();
+      }
     } catch (error) {
       await this.applyFailure(error);
       return;
     }
+    this.connected = true;
     await this.setIntent(true);
     await this.afterAuthorized(runtime);
   }
@@ -126,11 +148,17 @@ export class DriveSyncService implements SyncService {
   async setPassphrase(passphrase: string): Promise<void> {
     const runtime = this.requireConnected();
     this.requirePassphrase(passphrase);
+    const previous = this.mutableStatus();
     const authorizing = this.authorizeIfNeeded(runtime);
     try {
       await authorizing;
       await this.deps.locks.request(SYNC_LOCK_NAME, () => this.deriveForRemote(runtime, passphrase));
     } catch (error) {
+      if (error instanceof SyncError && error.code === 'WrongPassphraseOrTamper' && (await this.hasKey(runtime))) {
+        // A working key is already saved: a mistyped passphrase changes nothing.
+        this.setStatus(previous);
+        return;
+      }
       await this.applyFailure(error);
       return;
     }
@@ -145,6 +173,12 @@ export class DriveSyncService implements SyncService {
       await authorizing;
       await this.deps.locks.request(SYNC_LOCK_NAME, () => this.rotateKey(runtime, passphrase));
     } catch (error) {
+      if (error instanceof RemoteBusyError) {
+        const meta = await createLocalDataset(this.deps.store).getSyncMeta();
+        this.setStatus({ state: 'offline', pendingChanges: meta.pendingChanges });
+        this.notice.set(BUSY_TEXT);
+        return;
+      }
       await this.applyFailure(error);
       return;
     }
@@ -152,17 +186,7 @@ export class DriveSyncService implements SyncService {
   }
 
   async sync(): Promise<void> {
-    this.requireConfigured();
-    const runtime = this.runtime;
-    if (runtime === null) {
-      // Nothing connected in this page load (for example after a reload): connect first.
-      await this.connect();
-      if (this.runtime === null || this.mutableStatus().state !== 'idle') {
-        return;
-      }
-      await this.runSession(this.runtime);
-      return;
-    }
+    const runtime = this.requireConnected();
     // A renewed token needs a popup, so it is requested here, before any other await, inside the user's click.
     const authorizing = this.authorizeIfNeeded(runtime);
     try {
@@ -176,11 +200,14 @@ export class DriveSyncService implements SyncService {
 
   async disconnect(): Promise<void> {
     const runtime = this.runtime;
-    this.mutableStatus.set({ state: 'disconnected' });
+    this.connected = false;
+    this.generation += 1;
+    this.setStatus({ state: 'disconnected' });
     if (runtime !== null) {
       await runtime.provider.disconnect();
     }
     await this.setIntent(false);
+    this.setStatus({ state: 'disconnected' });
   }
 
   /* ---------- runtime ---------- */
@@ -191,9 +218,10 @@ export class DriveSyncService implements SyncService {
     }
   }
 
+  /** The runtime of a connected service; otherwise the status is left as it is and the call is rejected. */
   private requireConnected(): Runtime {
     this.requireConfigured();
-    if (this.runtime === null) {
+    if (this.runtime === null || !this.connected) {
       throw new DataError('VALIDATION', 'SYNC_NOT_CONNECTED');
     }
     return this.runtime;
@@ -203,6 +231,11 @@ export class DriveSyncService implements SyncService {
     if (typeof passphrase !== 'string' || passphrase.length === 0) {
       throw new DataError('VALIDATION', 'PASSPHRASE_EMPTY');
     }
+  }
+
+  private setStatus(next: SyncStatus): void {
+    this.notice.set(null);
+    this.mutableStatus.set(next);
   }
 
   private ensureRuntime(): Promise<Runtime> {
@@ -217,12 +250,14 @@ export class DriveSyncService implements SyncService {
   }
 
   private async createRuntime(): Promise<Runtime> {
-    const { options, clientId, store, clock, locks, loadDriveModule } = this.deps;
-    const [drive, crypto, sessionModule] = await Promise.all([
-      loadDriveModule(),
-      import('@cuotascasa/sync/crypto'),
-      import('@cuotascasa/sync/session'),
-    ]);
+    const { options, clientId, store, clock, locks, loadDriveModule, loadCryptoModule } = this.deps;
+    let modules: readonly [DriveModuleShape, CryptoModuleShape, typeof import('@cuotascasa/sync/session')];
+    try {
+      modules = await Promise.all([loadDriveModule(), loadCryptoModule(), import('@cuotascasa/sync/session')]);
+    } catch {
+      throw new SyncError('NetworkError');
+    }
+    const [drive, crypto, sessionModule] = modules;
     const loadGis = memoize(options.loadGis ?? drive.createGisLoader());
     const provider = drive.createGoogleDriveProvider({
       clientId,
@@ -239,15 +274,23 @@ export class DriveSyncService implements SyncService {
       },
     );
     session.subscribe((next) => {
-      this.mutableStatus.set(next);
+      if (this.connected && this.sessionGeneration === this.generation) {
+        this.setStatus(next);
+      }
     });
     const runtime: Runtime = { provider, keys, session, crypto, loadGis };
     this.runtime = runtime;
-    void store.then((opened) => {
-      this.unsubscribeStore = opened.subscribe(() => {
-        void this.refreshPending();
-      });
-    });
+    store.then(
+      (opened) => {
+        if (this.destroyed) {
+          return;
+        }
+        this.unsubscribeStore = opened.subscribe(() => {
+          void this.refreshPending();
+        });
+      },
+      () => undefined,
+    );
     return runtime;
   }
 
@@ -256,13 +299,21 @@ export class DriveSyncService implements SyncService {
     return runtime.provider.isAuthorized() ? Promise.resolve() : runtime.provider.authorize();
   }
 
+  private async hasKey(runtime: Runtime): Promise<boolean> {
+    try {
+      return (await runtime.keys.load()) !== null;
+    } catch {
+      return false;
+    }
+  }
+
   /* ---------- status ---------- */
 
   private async afterAuthorized(runtime: Runtime): Promise<void> {
     try {
       const key = await runtime.keys.load();
       if (key === null) {
-        this.mutableStatus.set({ state: 'needs-passphrase', reason: 'no-key' });
+        this.setStatus({ state: 'needs-passphrase', reason: 'no-key' });
         return;
       }
     } catch (error) {
@@ -273,7 +324,7 @@ export class DriveSyncService implements SyncService {
 
   private async refreshIdle(): Promise<void> {
     const meta = await createLocalDataset(this.deps.store).getSyncMeta();
-    this.mutableStatus.set({ state: 'idle', pendingChanges: meta.pendingChanges, lastSyncAt: meta.lastSyncAt });
+    this.setStatus({ state: 'idle', pendingChanges: meta.pendingChanges, lastSyncAt: meta.lastSyncAt });
   }
 
   /** Keeps the pending-changes count of 'idle' and 'offline' current while the user edits. */
@@ -303,20 +354,20 @@ export class DriveSyncService implements SyncService {
     switch (error.code) {
       case 'NetworkError': {
         const meta = await createLocalDataset(this.deps.store).getSyncMeta();
-        this.mutableStatus.set({ state: 'offline', pendingChanges: meta.pendingChanges });
+        this.setStatus({ state: 'offline', pendingChanges: meta.pendingChanges });
         return;
       }
       case 'AuthError':
-        this.mutableStatus.set({ state: 'needs-auth' });
+        this.setStatus({ state: 'needs-auth' });
         return;
       case 'KeyMismatch':
       case 'WrongPassphraseOrTamper':
-        this.mutableStatus.set({ state: 'needs-passphrase', reason: error.code });
+        this.setStatus({ state: 'needs-passphrase', reason: error.code });
         return;
       case 'UnsupportedVersion':
       case 'WeakParams':
       case 'InvalidRemote':
-        this.mutableStatus.set({ state: 'error', code: error.code });
+        this.setStatus({ state: 'error', code: error.code });
         return;
     }
   }
@@ -328,9 +379,15 @@ export class DriveSyncService implements SyncService {
   /* ---------- sync ---------- */
 
   private async runSession(runtime: Runtime): Promise<void> {
+    this.sessionGeneration = this.generation;
+    const before = this.mutableStatus();
     try {
       await runtime.session.sync();
     } catch (error) {
+      // The session restores ITS previous status, which is not ours: put back what the user was seeing.
+      if (this.connected && this.sessionGeneration === this.generation) {
+        this.setStatus(before);
+      }
       throw this.storageError(error);
     }
   }
@@ -369,11 +426,27 @@ export class DriveSyncService implements SyncService {
     await keys.save(stored);
   }
 
+  /** True when the current remote file opens with `key` (used to resolve an ambiguous upload). */
+  private async remoteOpensWith(runtime: Runtime, key: StoredKey): Promise<boolean> {
+    try {
+      const file = await runtime.provider.findFile(REMOTE_FILE_NAME);
+      if (file === null) {
+        return false;
+      }
+      const envelope = runtime.crypto.parseEnvelope(await runtime.provider.downloadFile(file));
+      await runtime.crypto.decrypt(key, envelope, { minIterations: this.minIterations });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   /**
    * ADR-0009 decision 6 and D25. Decrypts the remote with the current key, re-encrypts with a key from the new
    * passphrase and a new salt, uploads (previous remote kept as cuotascasa.prev.json) and only then saves the new key.
-   * If the remote changed while the key was derived, the pass repeats. Without a remote file there is nothing to
-   * re-encrypt: the new key is saved directly.
+   * If the remote changed while the key was derived, the pass repeats. An upload that failed ambiguously (network error)
+   * or a key save that failed after the upload is resolved by re-reading the remote: the new key is saved only if it
+   * opens the remote, otherwise the old key stays. Without a remote file there is nothing to re-encrypt.
    */
   private async rotateKey(runtime: Runtime, passphrase: string): Promise<void> {
     const { provider, keys, crypto } = runtime;
@@ -396,12 +469,32 @@ export class DriveSyncService implements SyncService {
       if (latest === null || latest.id !== file.id || latest.version !== file.version) {
         continue;
       }
-      await provider.copyFile(file, REMOTE_PREV_FILE_NAME);
-      await provider.updateFile(file, crypto.serializeEnvelope(rotated.envelope));
-      await keys.save(rotated.key);
+      try {
+        await provider.copyFile(file, REMOTE_PREV_FILE_NAME);
+        await provider.updateFile(file, crypto.serializeEnvelope(rotated.envelope));
+      } catch (error) {
+        if (
+          error instanceof SyncError &&
+          error.code === 'NetworkError' &&
+          (await this.remoteOpensWith(runtime, rotated.key))
+        ) {
+          await keys.save(rotated.key);
+          return;
+        }
+        throw error;
+      }
+      try {
+        await keys.save(rotated.key);
+      } catch (error) {
+        if (await this.remoteOpensWith(runtime, rotated.key)) {
+          await keys.save(rotated.key);
+          return;
+        }
+        throw error;
+      }
       return;
     }
-    throw new SyncError('NetworkError');
+    throw new RemoteBusyError();
   }
 
   /* ---------- intent (driveSyncEnabled, device-local) ---------- */
@@ -411,7 +504,7 @@ export class DriveSyncService implements SyncService {
     try {
       const device = await (await this.deps.store).settings.getDevice();
       if (device?.driveSyncEnabled === true && this.mutableStatus().state === 'disconnected') {
-        this.mutableStatus.set({ state: 'needs-auth' });
+        this.setStatus({ state: 'needs-auth' });
       }
     } catch {
       // Leave 'disconnected'.

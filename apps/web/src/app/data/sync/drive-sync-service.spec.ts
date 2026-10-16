@@ -50,14 +50,29 @@ function createWorld(): World {
 }
 
 /** Locks that run callbacks one after another, like navigator.locks within a single tab. */
-function serialLocks(): LockManagerLike & { readonly names: string[] } {
+function serialLocks(): LockManagerLike & { readonly names: string[]; readonly held: boolean } {
   let tail: Promise<unknown> = Promise.resolve();
   const names: string[] = [];
+  let held = false;
+  const guarded = async <T>(callback: () => Promise<T>): Promise<T> => {
+    held = true;
+    try {
+      return await callback();
+    } finally {
+      held = false;
+    }
+  };
   return {
     names,
+    get held() {
+      return held;
+    },
     request<T>(name: string, callback: () => Promise<T>): Promise<T> {
       names.push(name);
-      const run = tail.then(callback, callback);
+      const run = tail.then(
+        () => guarded(callback),
+        () => guarded(callback),
+      );
       tail = run.catch(() => undefined);
       return run;
     },
@@ -71,6 +86,20 @@ interface Device {
   readonly locks: ReturnType<typeof serialLocks>;
   readonly loadDriveModule: ReturnType<typeof vi.fn>;
   readonly clock: ReturnType<typeof createManualClock>;
+  readonly hooks: Hooks;
+}
+
+/** Fault and race injection at the fetch boundary of one device (the Drive fake itself stays frozen). */
+interface Hooks {
+  /** Rejects PATCH requests of the main file before they reach Drive. */
+  failMainUpdate: boolean;
+  /** Lets the PATCH of the main file succeed on Drive, then fails the response (ambiguous upload). */
+  ambiguousMainUpdate: boolean;
+  /** Runs after every download of the main file, before the response is returned (another device writes). */
+  onMainDownload: (() => Promise<void>) | null;
+  mainDownloads: number;
+  /** Whether the sync lock was held at each Drive request. */
+  heldAtRequest: boolean[];
 }
 
 async function createDevice(
@@ -94,6 +123,32 @@ async function createDevice(
     }));
   const indexedDb = existing?.indexedDb ?? new IDBFactory();
   const locks = serialLocks();
+  const hooks: Hooks = {
+    failMainUpdate: false,
+    ambiguousMainUpdate: false,
+    onMainDownload: null,
+    mainDownloads: 0,
+    heldAtRequest: [],
+  };
+  const hookedFetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+    const method = init?.method ?? 'GET';
+    hooks.heldAtRequest.push(locks.held);
+    const main = world.drive.fileByName(REMOTE_FILE_NAME);
+    const isMain = main !== undefined && url.includes(`/${main.id}`);
+    if (method === 'PATCH' && isMain && hooks.failMainUpdate) {
+      throw new TypeError('Failed to fetch');
+    }
+    const response = await world.drive.fetch(input, init);
+    if (method === 'PATCH' && isMain && hooks.ambiguousMainUpdate) {
+      throw new TypeError('Failed to fetch');
+    }
+    if (method === 'GET' && isMain && url.includes('alt=media')) {
+      hooks.mainDownloads += 1;
+      await hooks.onMainDownload?.();
+    }
+    return response;
+  };
   const loadDriveModule = vi.fn(() => import('@cuotascasa/sync/google-drive'));
   const loadGis = (): Promise<GisOAuth2> => {
     world.gisLoads += 1;
@@ -103,7 +158,7 @@ async function createDevice(
     clientId: CLIENT_ID,
     loadDriveModule,
     loadGis,
-    fetch: (input, init) => world.drive.fetch(input, init),
+    fetch: hookedFetch,
     nowMs: () => world.now,
     locks,
     indexedDb,
@@ -118,8 +173,9 @@ async function createDevice(
     clock,
     locks: options.locks ?? locks,
     loadDriveModule: options.loadDriveModule ?? loadDriveModule,
+    loadCryptoModule: options.loadCryptoModule ?? (() => import('@cuotascasa/sync/crypto')),
   });
-  return { service, store, indexedDb, locks, loadDriveModule, clock };
+  return { service, store, indexedDb, locks, loadDriveModule, clock, hooks };
 }
 
 async function addLoan(device: Device, name: string): Promise<void> {
@@ -233,6 +289,7 @@ describe('DriveSyncService', () => {
         }
       }
       haystacks.push(globalThis.document?.cookie ?? '');
+      haystacks.push(JSON.stringify(await device.store.exportAll()));
       // The only persistent store this service writes is the key store: one record, no token, no passphrase.
       const dump = await dumpDatabases(device.indexedDb);
       haystacks.push(JSON.stringify(dump.shape));
@@ -271,7 +328,7 @@ describe('DriveSyncService', () => {
       expect(remote?.parents).toEqual(['appDataFolder']);
     }, 30_000);
 
-    it('disconnect() revokes the token, forgets it and the next sync starts a new authorization', async () => {
+    it('disconnect() revokes the token and forgets it; sync() is then rejected and reconnecting asks for consent again', async () => {
       const world = createWorld();
       const device = await createDevice(world, 1);
       await enroll(device);
@@ -282,8 +339,19 @@ describe('DriveSyncService', () => {
       expect(device.service.status()).toEqual({ state: 'disconnected' });
       expect(device.service.statusText()).toBe('Drive desconectado');
 
-      await device.service.sync();
+      for (const call of [
+        () => device.service.sync(),
+        () => device.service.setPassphrase(PASSPHRASE),
+        () => device.service.changePassphrase(PASSPHRASE),
+      ]) {
+        await expect(call()).rejects.toMatchObject({ code: 'VALIDATION' });
+        expect(device.service.status()).toEqual({ state: 'disconnected' });
+      }
+      expect(world.gis.requests).toHaveLength(1);
+
+      await device.service.connect();
       expect(world.gis.requests).toHaveLength(2);
+      expect(world.gis.requests[1]?.prompt).toBe('consent');
       expect(world.gis.issuedTokens).toHaveLength(2);
     });
 
@@ -585,6 +653,409 @@ describe('DriveSyncService', () => {
         expect(Date.now() - started).toBeLessThan(5_000);
         expect(await createIndexedDbKeyStore({ indexedDB: device.indexedDb }).load()).toBeNull();
       }
+    });
+  });
+});
+
+const NEW_PASSPHRASE = 'frase nueva de prueba';
+const BUSY_TEXT = 'Otro dispositivo está sincronizando; inténtalo de nuevo';
+
+async function realCrypto() {
+  return import('@cuotascasa/sync/crypto');
+}
+
+async function remoteKeySalt(world: World): Promise<string> {
+  return parseEnvelope(world.drive.fileByName(REMOTE_FILE_NAME)?.content ?? '').kdf.salt;
+}
+
+async function localKeySalt(device: Device): Promise<string | undefined> {
+  return (await createIndexedDbKeyStore({ indexedDB: device.indexedDb }).load())?.saltId;
+}
+
+/** Two enrolled devices that share a passphrase, the first one already synced. */
+async function pair(world: World, overrides: Partial<SyncOptions> = {}) {
+  const first = await createDevice(world, 1, overrides);
+  await enroll(first);
+  await addLoan(first, 'Casa A');
+  await first.service.sync();
+  const second = await createDevice(world, 2, overrides);
+  await enroll(second);
+  return { first, second };
+}
+
+describe('DriveSyncService: review fixes', () => {
+  describe('lazy loading and the connect gesture', () => {
+    it('constructing the service and reading status()/statusText() never loads GIS, the Drive module or crypto', async () => {
+      const world = createWorld();
+      const loadCryptoModule = vi.fn(realCrypto);
+      const device = await createDevice(world, 1, { loadCryptoModule });
+      void device.service.status();
+      void device.service.statusText();
+      void device.service.configured();
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      expect(device.loadDriveModule).not.toHaveBeenCalled();
+      expect(loadCryptoModule).not.toHaveBeenCalled();
+      expect(world.gisLoads).toBe(0);
+      expect(world.drive.requests).toEqual([]);
+    });
+
+    it('sync() without a runtime (after a reload, needs-auth) neither connects nor changes the status', async () => {
+      const world = createWorld();
+      const first = await createDevice(world, 1);
+      await enroll(first);
+      const reloaded = await createDevice(world, 1, {}, first);
+      await vi.waitFor(() => {
+        expect(reloaded.service.status()).toEqual({ state: 'needs-auth' });
+      });
+      await expect(reloaded.service.sync()).rejects.toMatchObject({ code: 'VALIDATION' });
+      expect(reloaded.service.status()).toEqual({ state: 'needs-auth' });
+      expect(reloaded.loadDriveModule).not.toHaveBeenCalled();
+      expect(world.gis.requests).toHaveLength(1);
+    });
+
+    it('a prepared but not connected service rejects sync(), setPassphrase() and changePassphrase()', async () => {
+      const world = createWorld();
+      const device = await createDevice(world, 1);
+      await device.service.prepare();
+      for (const call of [
+        () => device.service.sync(),
+        () => device.service.setPassphrase(PASSPHRASE),
+        () => device.service.changePassphrase(PASSPHRASE),
+      ]) {
+        await expect(call()).rejects.toMatchObject({ code: 'VALIDATION' });
+      }
+      expect(device.service.status()).toEqual({ state: 'disconnected' });
+      expect(world.gis.requests).toEqual([]);
+    });
+
+    it('a failed dynamic import reads offline and no raw error escapes connect()', async () => {
+      const world = createWorld();
+      const device = await createDevice(world, 1, { loadDriveModule: () => Promise.reject(new Error('chunk failed')) });
+      await expect(device.service.connect()).resolves.toBeUndefined();
+      expect(device.service.status()).toEqual({ state: 'offline', pendingChanges: 0 });
+    });
+
+    it('connect() skips the consent prompt while the token is still valid', async () => {
+      const world = createWorld();
+      const device = await createDevice(world, 1);
+      await device.service.connect();
+      await device.service.connect();
+      expect(world.gis.requests).toHaveLength(1);
+      expect(device.service.status()).toEqual({ state: 'needs-passphrase', reason: 'no-key' });
+    });
+  });
+
+  describe('disconnect during a sync', () => {
+    it('leaves the final state disconnected: later session emissions are ignored', async () => {
+      const world = createWorld();
+      const device = await createDevice(world, 1);
+      await enroll(device);
+      await addLoan(device, 'Casa A');
+      await device.service.sync();
+      await addLoan(device, 'Casa B');
+      device.hooks.onMainDownload = async () => {
+        device.hooks.onMainDownload = null;
+        await device.service.disconnect();
+      };
+      await device.service.sync();
+      expect(device.service.status()).toEqual({ state: 'disconnected' });
+      expect(device.service.statusText()).toBe('Drive desconectado');
+    });
+  });
+
+  describe('crypto guards and the sync lock', () => {
+    it('never derives a key when the remote iterations are below the minimum (WeakParams)', async () => {
+      const world = createWorld();
+      const crypto = await realCrypto();
+      const weak = await crypto.deriveStoredKey(PASSPHRASE, { iterations: 1_000 });
+      world.drive.seed({ name: REMOTE_FILE_NAME, content: serializeEnvelope(await crypto.encrypt(weak, 'x')) });
+      const derive = vi.fn(crypto.deriveStoredKey);
+      const device = await createDevice(world, 1, {
+        minIterations: 5_000,
+        loadCryptoModule: () => Promise.resolve({ ...crypto, deriveStoredKey: derive }),
+      });
+      await enroll(device);
+      expect(device.service.status()).toEqual({ state: 'error', code: 'WeakParams' });
+      expect(derive).not.toHaveBeenCalled();
+    });
+
+    it('holds SYNC_LOCK_NAME during every Drive request of setPassphrase and changePassphrase', async () => {
+      const world = createWorld();
+      const device = await createDevice(world, 1);
+      await device.service.connect();
+      await device.service.setPassphrase(PASSPHRASE);
+      await addLoan(device, 'Casa A');
+      await device.service.sync();
+      expect(device.locks.names).toContain(SYNC_LOCK_NAME);
+
+      device.hooks.heldAtRequest.length = 0;
+      device.locks.names.length = 0;
+      await device.service.setPassphrase(PASSPHRASE);
+      expect(device.locks.names).toEqual([SYNC_LOCK_NAME]);
+      expect(device.hooks.heldAtRequest.length).toBeGreaterThan(0);
+      expect(device.hooks.heldAtRequest.every(Boolean)).toBe(true);
+
+      device.hooks.heldAtRequest.length = 0;
+      await device.service.changePassphrase(NEW_PASSPHRASE);
+      expect(device.hooks.heldAtRequest.length).toBeGreaterThan(0);
+      expect(device.hooks.heldAtRequest.every(Boolean)).toBe(true);
+    });
+
+    it('a mistyped passphrase on a device that already has a working key restores the previous status', async () => {
+      const world = createWorld();
+      const device = await createDevice(world, 1);
+      await enroll(device);
+      await addLoan(device, 'Casa A');
+      await device.service.sync();
+      const before = device.service.status();
+      const salt = await localKeySalt(device);
+      await device.service.setPassphrase('otra frase distinta');
+      expect(device.service.status()).toEqual(before);
+      expect(await localKeySalt(device)).toBe(salt);
+    });
+  });
+
+  describe('changePassphrase under races and ambiguous uploads', () => {
+    it('another device uploads between download and upload: the pass repeats and its data is kept', async () => {
+      const world = createWorld();
+      const { first, second } = await pair(world);
+      await addLoan(second, 'Casa B');
+      first.hooks.mainDownloads = 0;
+      first.hooks.onMainDownload = async () => {
+        first.hooks.onMainDownload = null;
+        await second.service.sync();
+      };
+
+      await first.service.changePassphrase(NEW_PASSPHRASE);
+
+      expect(first.hooks.mainDownloads).toBeGreaterThanOrEqual(2);
+      expect(first.service.status().state).toBe('idle');
+      await first.service.sync();
+      expect(await loanNames(first)).toEqual(['Casa A', 'Casa B']);
+      expect(await localKeySalt(first)).toBe(await remoteKeySalt(world));
+    });
+
+    it('when the remote keeps changing it gives up with its own text and keeps the old key', async () => {
+      const world = createWorld();
+      const { first, second } = await pair(world);
+      const salt = await localKeySalt(first);
+      first.hooks.onMainDownload = async () => {
+        await second.service.sync();
+      };
+      await first.service.changePassphrase(NEW_PASSPHRASE);
+      expect(first.service.statusText()).toBe(BUSY_TEXT);
+      expect(first.service.status().state).toBe('offline');
+      expect(await localKeySalt(first)).toBe(salt);
+      expect(await remoteKeySalt(world)).toBe(salt);
+    });
+
+    it('an upload whose answer was lost but reached Drive: the new key is saved because it opens the remote', async () => {
+      const world = createWorld();
+      const { first, second } = await pair(world);
+      first.hooks.ambiguousMainUpdate = true;
+      await first.service.changePassphrase(NEW_PASSPHRASE);
+      first.hooks.ambiguousMainUpdate = false;
+      expect(await localKeySalt(first)).toBe(await remoteKeySalt(world));
+      expect(first.service.status().state).toBe('idle');
+      await first.service.sync();
+      expect(first.service.status().state).toBe('idle');
+      await second.service.setPassphrase(NEW_PASSPHRASE);
+      expect(second.service.status().state).toBe('idle');
+    });
+
+    it('an upload that never reached Drive keeps the old key', async () => {
+      const world = createWorld();
+      const { first } = await pair(world);
+      const salt = await localKeySalt(first);
+      const remote = world.drive.fileByName(REMOTE_FILE_NAME)?.content;
+      first.hooks.failMainUpdate = true;
+      await first.service.changePassphrase(NEW_PASSPHRASE);
+      first.hooks.failMainUpdate = false;
+      expect(await localKeySalt(first)).toBe(salt);
+      expect(world.drive.fileByName(REMOTE_FILE_NAME)?.content).toBe(remote);
+      await first.service.sync();
+      expect(first.service.status().state).toBe('idle');
+    });
+
+    it('a key save that fails after the upload is retried once the remote is seen to open with the new key', async () => {
+      const world = createWorld();
+      let failSave = false;
+      const crypto = await realCrypto();
+      const { first } = await pair(world, {
+        loadCryptoModule: () =>
+          Promise.resolve({
+            ...crypto,
+            createIndexedDbKeyStore: (options) => {
+              const real = crypto.createIndexedDbKeyStore(options);
+              return {
+                ...real,
+                save: (entry) => {
+                  if (failSave) {
+                    failSave = false;
+                    return Promise.reject(new Error('quota'));
+                  }
+                  return real.save(entry);
+                },
+              };
+            },
+          }),
+      });
+      failSave = true;
+      await first.service.changePassphrase(NEW_PASSPHRASE);
+      expect(await localKeySalt(first)).toBe(await remoteKeySalt(world));
+      expect(first.service.status().state).toBe('idle');
+    });
+
+    it('with a stale local key the remote, the previous copy and the key stay as they were', async () => {
+      const world = createWorld();
+      const { first, second } = await pair(world);
+      await first.service.changePassphrase(NEW_PASSPHRASE);
+      const main = world.drive.fileByName(REMOTE_FILE_NAME)?.content;
+      const prev = world.drive.fileByName(REMOTE_PREV_FILE_NAME)?.content;
+      const salt = await localKeySalt(second);
+
+      await second.service.changePassphrase('otra frase todavia mas nueva');
+
+      expect(second.service.status()).toEqual({ state: 'needs-passphrase', reason: 'KeyMismatch' });
+      expect(world.drive.fileByName(REMOTE_FILE_NAME)?.content).toBe(main);
+      expect(world.drive.fileByName(REMOTE_PREV_FILE_NAME)?.content).toBe(prev);
+      expect(await localKeySalt(second)).toBe(salt);
+    });
+  });
+
+  describe('data is preserved when a sync cannot finish', () => {
+    it('a failed upload leaves the remote files, pendingChanges and lastSyncAt alone and keeps the merged local data', async () => {
+      const world = createWorld();
+      const { first, second } = await pair(world);
+      await addLoan(first, 'Casa A2');
+      await first.service.sync();
+      await addLoan(second, 'Casa C');
+      await second.service.sync();
+      await addLoan(first, 'Casa B');
+      const lastSyncAt = (await first.store.getMeta()).lastSyncAt;
+      const main = world.drive.fileByName(REMOTE_FILE_NAME)?.content;
+
+      first.hooks.failMainUpdate = true;
+      await first.service.sync();
+
+      expect(first.service.status()).toEqual({ state: 'offline', pendingChanges: 1 });
+      expect(first.service.statusText()).toBe('Cambios sin sincronizar (1)');
+      expect(world.drive.fileByName(REMOTE_FILE_NAME)?.content).toBe(main);
+      expect(world.drive.fileByName(REMOTE_PREV_FILE_NAME)?.content).toBe(main);
+      expect(await first.store.pendingChanges()).toBe(1);
+      expect((await first.store.getMeta()).lastSyncAt).toBe(lastSyncAt);
+      expect(await loanNames(first)).toEqual(['Casa A', 'Casa A2', 'Casa B', 'Casa C']);
+    });
+
+    it.each(['KeyMismatch', 'WrongPassphraseOrTamper', 'WeakParams'] as const)(
+      '%s during sync() changes neither the local data nor the remote file',
+      async (code) => {
+        const world = createWorld();
+        const crypto = await realCrypto();
+        const device = await createDevice(world, 1, code === 'WeakParams' ? { minIterations: 5_000 } : {});
+        await enroll(device);
+        await addLoan(device, 'Casa A');
+        const key = await createIndexedDbKeyStore({ indexedDB: device.indexedDb }).load();
+        if (key === null) throw new Error('no key');
+        const foreign =
+          code === 'KeyMismatch'
+            ? await crypto.deriveStoredKey('frase ajena', { iterations: TEST_ITERATIONS })
+            : await crypto.deriveStoredKey(code === 'WeakParams' ? PASSPHRASE : 'frase ajena', {
+                saltId: key.saltId,
+                iterations: code === 'WeakParams' ? 1_000 : TEST_ITERATIONS,
+              });
+        // WeakParams: the device accepts >= 5 000 iterations, the file says 1 000; the others use the test iterations.
+        world.drive.seed({ name: REMOTE_FILE_NAME, content: serializeEnvelope(await crypto.encrypt(foreign, 'x')) });
+        const localBefore = JSON.stringify(await device.store.exportAll());
+        const remoteBefore = world.drive.fileByName(REMOTE_FILE_NAME)?.content;
+
+        await device.service.sync();
+
+        const expected = code === 'WeakParams' ? { state: 'error', code } : { state: 'needs-passphrase', reason: code };
+        expect(device.service.status()).toEqual(expected);
+        expect(JSON.stringify(await device.store.exportAll())).toBe(localBefore);
+        expect(world.drive.fileByName(REMOTE_FILE_NAME)?.content).toBe(remoteBefore);
+      },
+    );
+
+    it('a replaceAll that rejects makes sync() reject with DataError(STORAGE) and restores the previous status', async () => {
+      const world = createWorld();
+      const clock = createManualClock(new Date(T0 + 1000).toISOString());
+      const real = await createInMemoryDataStore({
+        clock,
+        ids: {
+          newId: (() => {
+            let n = 0;
+            return () => deviceUuid(1, (n += 1));
+          })(),
+        },
+      });
+      const failing = new Proxy(real, {
+        get(target, property) {
+          if (property === 'replaceAll') {
+            return () => Promise.reject(new Error('disk full'));
+          }
+          const value: unknown = Reflect.get(target, property);
+          return typeof value === 'function' ? (value as (...args: unknown[]) => unknown).bind(target) : value;
+        },
+      });
+      const device = await createDevice(world, 1, {}, { store: failing, indexedDb: new IDBFactory(), clock });
+      await enroll(device);
+      await real.loans.create({ ...sampleLoan(), name: 'Casa A' });
+      await vi.waitFor(() => {
+        expect(device.service.statusText()).toBe('Cambios sin sincronizar (1)');
+      });
+      const before = device.service.status();
+
+      await expect(device.service.sync()).rejects.toBeInstanceOf(DataError);
+      await expect(device.service.sync()).rejects.toMatchObject({ code: 'STORAGE' });
+      expect(device.service.status()).toEqual(before);
+    });
+  });
+
+  describe('subscription lifecycle', () => {
+    it('does not subscribe to the DataStore when the service was destroyed before the store resolved', async () => {
+      const world = createWorld();
+      const clock = createManualClock();
+      const real = await createInMemoryDataStore({ clock, ids: { newId: () => deviceUuid(1, 1) } });
+      const subscribe = vi.spyOn(real, 'subscribe');
+      let resolveStore: (store: DataStore) => void = () => undefined;
+      const store = new Promise<DataStore>((resolve) => {
+        resolveStore = resolve;
+      });
+      const service = new DriveSyncService({
+        options: { clientId: CLIENT_ID, loadGis: () => Promise.resolve(world.gis.oauth2) },
+        clientId: CLIENT_ID,
+        store,
+        clock,
+        locks: serialLocks(),
+        loadDriveModule: () => import('@cuotascasa/sync/google-drive'),
+        loadCryptoModule: realCrypto,
+      });
+      await service.prepare();
+      service.destroy();
+      resolveStore(real);
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      expect(subscribe).not.toHaveBeenCalled();
+    });
+
+    it('a rejecting DataStore promise leaves no unhandled rejection', async () => {
+      const world = createWorld();
+      const unhandled = vi.fn();
+      process.on('unhandledRejection', unhandled);
+      const service = new DriveSyncService({
+        options: { clientId: CLIENT_ID, loadGis: () => Promise.resolve(world.gis.oauth2) },
+        clientId: CLIENT_ID,
+        store: Promise.reject(new Error('no storage')),
+        clock: createManualClock(),
+        locks: serialLocks(),
+        loadDriveModule: () => import('@cuotascasa/sync/google-drive'),
+        loadCryptoModule: realCrypto,
+      });
+      await service.prepare();
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      process.off('unhandledRejection', unhandled);
+      expect(unhandled).not.toHaveBeenCalled();
     });
   });
 });
