@@ -56,12 +56,24 @@ describe('provideAppPwa (ADR-0023)', () => {
     expect(spy).not.toHaveBeenCalled();
   });
 
-  it('reports a failed registration to the ErrorHandler instead of throwing', async () => {
-    const failure = new Error('register failed');
-    const { router, handleError } = setup(true, () => Promise.reject(failure));
+  it('a failed registration is not an app error (no toast) and is retried on the next /app navigation', async () => {
+    // WebKit rejects register() with a TypeError when a quick navigation cancels the worker download (W5-07 review).
+    let fail = true;
+    const { router, spy, handleError } = setup(true, () =>
+      fail ? Promise.reject(new TypeError('Script load failed')) : Promise.resolve(),
+    );
     await router.navigateByUrl('/app');
     await vi.waitFor(() => {
-      expect(handleError).toHaveBeenCalledWith(failure);
+      expect(spy).toHaveBeenCalledTimes(1);
     });
+    await Promise.resolve();
+    fail = false;
+    await router.navigateByUrl('/privacidad');
+    expect(spy).toHaveBeenCalledTimes(1);
+    await router.navigateByUrl('/app/ajustes');
+    expect(spy).toHaveBeenCalledTimes(2);
+    await router.navigateByUrl('/app');
+    expect(spy).toHaveBeenCalledTimes(2);
+    expect(handleError).not.toHaveBeenCalled();
   });
 });
