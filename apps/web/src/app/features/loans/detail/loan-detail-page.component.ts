@@ -321,6 +321,12 @@ type Pending = 'paid' | 'delete' | null;
             <dt>Ahorro neto</dt>
             <dd class="cc-det-num" data-testid="metric-net">{{ m.netSaving | money: currency }}</dd>
           </dl>
+          @if (hasNegative(m)) {
+            <p class="cc-wiz-hint" data-testid="negative-note">
+              Un valor negativo significa que, con tus datos reales, pagas más que en el plan original. Un abono no
+              siempre reduce el interés.
+            </p>
+          }
         </section>
       }
 
@@ -409,7 +415,7 @@ type Pending = 'paid' | 'delete' | null;
             <button type="button" data-testid="action-unarchive" [disabled]="busy()" (click)="unarchive()">
               Desarchivar
             </button>
-          } @else {
+          } @else if (l.status === 'active') {
             <button type="button" data-testid="action-archive" [disabled]="busy()" (click)="archive()">Archivar</button>
           }
           <button type="button" class="cc-det-danger" data-testid="action-delete" (click)="pending.set('delete')">
@@ -489,6 +495,15 @@ export class LoanDetailPageComponent {
   });
 
   private readonly title = viewChild.required<ElementRef<HTMLHeadingElement>>('title');
+
+  /** [ALG.METRICS] A saving can be negative: the real path may cost more than the original plan. */
+  protected hasNegative(metrics: {
+    readonly monthsSaved: number;
+    readonly interestSaved: string;
+    readonly netSaving: string;
+  }): boolean {
+    return metrics.monthsSaved < 0 || metrics.interestSaved.startsWith('-') || metrics.netSaving.startsWith('-');
+  }
 
   protected openEdit(): void {
     this.actionError.set(null);

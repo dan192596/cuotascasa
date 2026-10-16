@@ -231,6 +231,31 @@ describe('LoanEditFormComponent', () => {
     expect(field('principal').value).toMatch(/^600,?000/);
   });
 
+  it('saves a loan whose template is no longer in the catalog and leaves its templateRef unchanged', async () => {
+    const { submit, store, saved } = await setup({ loan: loan({ templateRef: { id: 'custom', version: 7 } }) });
+    await submit();
+    expect(saved).toHaveBeenCalledTimes(1);
+    expect(store.updates[0]?.templateRef).toEqual({ id: 'custom', version: 7 });
+  });
+
+  it('does not overwrite a newer synced version: it blocks, explains, and saves after reloading the current data', async () => {
+    const { fixture, submit, store, q, field, click, type } = await setup();
+    await type('principal', '600000');
+    fixture.componentRef.setInput('loan', loan({ updatedAt: '2026-10-02T00:00:00.000Z', name: 'Casa remota' }));
+    await fixture.whenStable();
+    await submit();
+    expect(store.updates).toHaveLength(0);
+    expect(q('[data-testid="conflict"]')?.textContent).toContain(
+      'Este préstamo cambió en otro dispositivo o pestaña. Revisa los datos y vuelve a guardar.',
+    );
+    await click('Recargar datos actuales');
+    expect(field('name').value).toBe('Casa remota');
+    expect(q('[data-testid="conflict"]')).toBeNull();
+    await submit();
+    expect(store.updates).toHaveLength(1);
+    expect(store.updates[0]?.name).toBe('Casa remota');
+  });
+
   it('cancel emits cancelled and writes nothing', async () => {
     const { click, store, cancelled } = await setup();
     await click('Cancelar');

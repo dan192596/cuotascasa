@@ -198,7 +198,7 @@ export class DeleteLoanDialogComponent {
   }
 
   protected onEscape(): void {
-    if (this.open()) this.cancelled.emit();
+    if (this.open() && !this.busy()) this.cancelled.emit();
   }
 
   protected onBackdropClick(event: MouseEvent): void {

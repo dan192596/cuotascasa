@@ -6,10 +6,12 @@ import {
   applyTemplate,
   type ChargeRow,
   DEFAULT_ANCHOR_SOURCE,
+  DEFAULT_TEMPLATE_KEY,
   END_OF_MONTH_VALUE,
   INSURANCE_LABELS,
   levelOf,
   moneyOf,
+  templateOptions,
   toLoanDraft,
   type WizardModel,
 } from '../wizard/wizard-model.ts';
@@ -42,8 +44,10 @@ export function bankTotalOf(level: Money, charges: readonly ChargeRow[]): string
  * untouched form reproduces the stored loan.
  */
 export function modelOfLoan(loan: Loan): WizardModel {
+  const storedKey = `${loan.templateRef.id}@${String(loan.templateRef.version)}`;
   const base: WizardModel = {
-    templateKey: `${loan.templateRef.id}@${String(loan.templateRef.version)}`,
+    // A retired template stays on the loan (toLoanUpdate restores its reference); the form needs a valid key.
+    templateKey: templateOptions().some((option) => option.value === storedKey) ? storedKey : DEFAULT_TEMPLATE_KEY,
     name: loan.name,
     bank: loan.bank,
     currency: loan.currency,
@@ -63,7 +67,7 @@ export function modelOfLoan(loan: Loan): WizardModel {
     anchorDate: '',
     anchorSource: DEFAULT_ANCHOR_SOURCE,
   };
-  const kinds = templateKinds(base);
+  const kinds = templateKinds({ ...base, templateKey: storedKey });
   const withInsurance: WizardModel = {
     ...base,
     insurance: loan.insuranceRates.map((rate, index) => ({ kind: kinds[index] ?? 'other', rate })),
@@ -85,7 +89,7 @@ export function toLoanUpdate(
   model: WizardModel,
   lines: readonly { label: string; amount: Money }[],
 ): LoanUpdate {
-  const draft = toLoanDraft(model, lines);
+  const draft = toLoanDraft({ ...model, templateKey: DEFAULT_TEMPLATE_KEY }, lines);
   const fixedCharges = draft.fixedCharges.map((charge) => {
     const previous = loan.fixedCharges.find(
       (candidate) => candidate.label === charge.label && parseMoney(candidate.amount) === charge.amount,

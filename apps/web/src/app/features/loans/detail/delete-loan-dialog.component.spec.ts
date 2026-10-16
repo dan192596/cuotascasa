@@ -77,6 +77,14 @@ describe('DeleteLoanDialogComponent', () => {
     expect(cancelled).toHaveBeenCalledTimes(2);
   });
 
+  it('ignores Escape while the deletion runs', async () => {
+    const { fixture, cancelled } = await setup();
+    fixture.componentRef.setInput('busy', true);
+    await fixture.whenStable();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(cancelled).not.toHaveBeenCalled();
+  });
+
   it('forgets the typed text when it is reopened and blocks the button while busy', async () => {
     const { fixture, ok, type, input } = await setup();
     await type('Casa A');

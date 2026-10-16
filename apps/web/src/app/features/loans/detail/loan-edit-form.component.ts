@@ -133,6 +133,12 @@ const NO_BREAKDOWN: Breakdown = { state: 'none', total: '0.00' as Money, lines: 
       @if (saveError(); as message) {
         <p class="cc-wiz-issue" role="alert" data-testid="save-error">{{ message }}</p>
       }
+      @if (conflict()) {
+        <div class="cc-wiz-issue" role="alert" data-testid="conflict">
+          <p>Este préstamo cambió en otro dispositivo o pestaña. Revisa los datos y vuelve a guardar.</p>
+          <button type="button" (click)="reload()">Recargar datos actuales</button>
+        </div>
+      }
       <div class="cc-wiz-actions">
         <button type="button" data-testid="edit-cancel" (click)="cancelled.emit()">Cancelar</button>
         <button type="submit" class="cc-wiz-primary" [disabled]="saving()">Guardar cambios</button>
@@ -159,6 +165,8 @@ export class LoanEditFormComponent {
   protected readonly invalid = fieldInvalid;
   protected readonly saving = signal(false);
   protected readonly saveError = signal<string | null>(null);
+  /** The stored loan changed (sync, another tab) after this form was loaded: saving would overwrite it. */
+  protected readonly conflict = signal(false);
 
   /**
    * Filled from the stored loan as soon as the input is bound (a required input cannot be read while the form is
@@ -242,6 +250,7 @@ export class LoanEditFormComponent {
   });
 
   private loadedId: Uuid | null = null;
+  private loadedUpdatedAt = '';
   private lastPaymentDay: string | null = null;
   /** The bank total this component last wrote; a different value means the user typed one. */
   private autoBankTotal: string | null = null;
@@ -253,10 +262,7 @@ export class LoanEditFormComponent {
       untracked(() => {
         if (this.loadedId === id) return;
         this.loadedId = id;
-        const model = modelOfLoan(this.loan());
-        this.lastPaymentDay = model.paymentDay;
-        this.autoBankTotal = null;
-        this.model.set(model);
+        this.load();
       });
     });
     // [ALG.DATES] Changing paymentDay re-derives the day of firstDueDate.
@@ -289,6 +295,23 @@ export class LoanEditFormComponent {
     });
   }
 
+  private load(): void {
+    const loan = this.loan();
+    const model = modelOfLoan(loan);
+    this.loadedUpdatedAt = loan.updatedAt;
+    this.lastPaymentDay = model.paymentDay;
+    this.autoBankTotal = null;
+    this.conflict.set(false);
+    this.saveError.set(null);
+    this.model.set(model);
+  }
+
+  /** Replaces what was typed with the current stored loan. */
+  protected reload(): void {
+    this.load();
+    this.afterRender(() => this.heading().nativeElement.focus());
+  }
+
   /** Runs after `form.submission` validated every field: only the engine-level checks are left. */
   private async save(): Promise<undefined> {
     if (this.saving()) return undefined;
@@ -300,6 +323,10 @@ export class LoanEditFormComponent {
       breakdown.state === 'mismatch'
     ) {
       this.afterRender(() => this.host.nativeElement.querySelector<HTMLElement>('[data-wizard-issue]')?.focus());
+      return undefined;
+    }
+    if (this.loan().updatedAt !== this.loadedUpdatedAt) {
+      this.conflict.set(true);
       return undefined;
     }
     this.saving.set(true);

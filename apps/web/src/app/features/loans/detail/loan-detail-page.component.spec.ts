@@ -142,18 +142,19 @@ function fakeProjection(store: FakeLoansStore) {
   const suggestedPaid = signal(false);
   const error = signal<DomainError | null>(null);
   const current = computed(() => store.loan(LOAN_ID)());
+  const negative = signal(false);
   const metrics = computed<LoanMetrics | null>(() => {
     const principal = current()?.principal ?? '0.00';
     return {
       realVsOriginal: {
         currency: 'GTQ',
-        interestSaved: '1234.50' as Money,
-        monthsSaved: 12,
+        interestSaved: (negative() ? '-1234.50' : '1234.50') as Money,
+        monthsSaved: negative() ? -3 : 12,
         baseEndDate: '2047-01-31',
         endDate: '2046-01-31',
         baseTotalPaid: principal as Money,
         totalPaid: '998765.43' as Money,
-        netSaving: '4321.00' as Money,
+        netSaving: (negative() ? '-4321.00' : '4321.00') as Money,
       },
       activeScenarioVsReal: null,
     } as LoanMetrics;
@@ -174,7 +175,7 @@ function fakeProjection(store: FakeLoansStore) {
     suggestedPaid: suggestedPaid.asReadonly(),
   } as unknown as LoanProjection;
   const service = { forLoan: () => projection, toLoanTerms } as unknown as LoanProjectionService;
-  return { service, suggestedPaid, error };
+  return { service, suggestedPaid, error, negative };
 }
 
 async function setup(initial: Partial<{ status: LoanStatus; ready: boolean; missing: boolean }> = {}) {
@@ -372,6 +373,12 @@ describe('archive and unarchive', () => {
     expect(document.activeElement).toBe(q('h1'));
   });
 
+  it('does not offer to archive a paid loan', async () => {
+    const { button } = await setup({ status: 'paid' });
+    expect(button('Archivar')).toBeUndefined();
+    expect(button('Desarchivar')).toBeUndefined();
+  });
+
   it('unarchives back to active', async () => {
     const { click, store, announce, text } = await setup({ status: 'archived' });
     await click('Desarchivar');
@@ -388,6 +395,26 @@ describe('archive and unarchive', () => {
     expect(text('action-error')).not.toContain('1.00');
     expect(announce).not.toHaveBeenCalled();
     expect(text('loan-status')).toBe('Activo');
+  });
+});
+
+describe('negative savings', () => {
+  const NOTE = 'Un valor negativo significa que, con tus datos reales, pagas más que en el plan original.';
+
+  it('shows no note while the savings are not negative', async () => {
+    const { q } = await setup();
+    expect(q('[data-testid="negative-note"]')).toBeNull();
+  });
+
+  it('shows the signed values and the explanation when any saving is negative', async () => {
+    const { projection, text, q, settle } = await setup();
+    projection.negative.set(true);
+    await settle();
+    expect(text('metric-months')).toContain('-3');
+    expect(text('metric-interest')).toContain('-');
+    expect(text('metric-net')).toContain('-');
+    expect(q('[data-testid="negative-note"]')?.textContent).toContain(NOTE);
+    expect(q('[data-testid="negative-note"]')?.textContent).toContain('Un abono no siempre reduce el interés.');
   });
 });
 

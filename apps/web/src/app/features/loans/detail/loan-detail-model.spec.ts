@@ -73,6 +73,10 @@ describe('modelOfLoan', () => {
     expect(model.insurance.map((row) => row.rate)).toEqual(['0.01', '0.0026', '0.005']);
   });
 
+  it('uses a valid template key in the model when the stored template is retired, so the form stays valid', () => {
+    expect(modelOfLoan(loan({ templateRef: { id: 'custom', version: 7 } })).templateKey).toBe('fha-gt@1');
+  });
+
   it('keeps «other» for a template that is not in the catalog', () => {
     const model = modelOfLoan(loan({ templateRef: { id: 'custom', version: 7 } }));
     expect(model.insurance.map((row) => row.kind)).toEqual(['other', 'other']);
@@ -117,6 +121,13 @@ describe('toLoanUpdate', () => {
     expect(update.principal).toBe('600000.00');
     expect(update.name).toBe('Casa B');
     expect('createdAt' in update).toBe(false);
+  });
+
+  it('builds the update for an unknown template and keeps its reference and the stored insurance rates', () => {
+    const stored = loan({ templateRef: { id: 'custom', version: 7 } });
+    const update = toLoanUpdate(stored, modelOfLoan(stored), []);
+    expect(update.templateRef).toEqual({ id: 'custom', version: 7 });
+    expect(update.insuranceRates).toEqual(['0.01', '0.0026']);
   });
 
   it('follows a new first due date for charges that started at the old one, and keeps later starts', () => {
