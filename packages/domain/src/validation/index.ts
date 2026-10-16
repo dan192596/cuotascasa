@@ -4,7 +4,7 @@ import { buildSchedule } from '../schedule/index.ts';
 import type { ValidateAgainstReportedBalanceFn } from '../types/engine.ts';
 import type { DomainEvent, ReportedBalanceEvent } from '../types/events.ts';
 import type { LoanTerms } from '../types/loan.ts';
-import { InvalidInputError, type Money } from '../types/primitives.ts';
+import { InvalidInputError, type Money, NegativeAmortizationError } from '../types/primitives.ts';
 import type { DeltaCause, TemplateValidationResult, TrafficLight } from '../types/schedule.ts';
 
 /** [ALG.VALIDATE] Umbral de GREEN, en unidades de la moneda del préstamo. */
@@ -57,7 +57,8 @@ function isNear(reported: Money, opening: Money | undefined): boolean {
 /**
  * [ALG.VALIDATE] Compara el saldo reportado `Bᵣ` con la apertura modelada de su cuota `k`. El modelado hereda los
  * eventos reales que conserva (sin revalidar su rango). Si `k` no está entre 1 y la última cuota del calendario
- * modelado, lanza `InvalidInputError('INSTALLMENT_OUT_OF_RANGE')` con `details.k` ([ALG.EVENTS.ANCHOR]).
+ * modelado, lanza `InvalidInputError('INSTALLMENT_OUT_OF_RANGE')` con `details.k` ([ALG.EVENTS.ANCHOR]). Si el calendario
+ * modelado lanza `NegativeAmortizationError`, el resultado es `UNVALIDATED` ([ALG.VALIDATE]); otros errores se propagan.
  */
 export const validateAgainstReportedBalance: ValidateAgainstReportedBalanceFn = (request, ctx) => {
   const { terms, realEvents, reported } = request;
@@ -65,7 +66,16 @@ export const validateAgainstReportedBalance: ValidateAgainstReportedBalanceFn = 
   if (k < 1) {
     throw new InvalidInputError('INSTALLMENT_OUT_OF_RANGE', 'installmentNumber must be at least 1', { k });
   }
-  const schedule = buildSchedule(terms, [], ctx, { inheritedEvents: keptEvents(terms, realEvents, k) });
+  let schedule;
+  try {
+    schedule = buildSchedule(terms, [], ctx, { inheritedEvents: keptEvents(terms, realEvents, k) });
+  } catch (error) {
+    if (error instanceof NegativeAmortizationError) {
+      // [ALG.VALIDATE] calendario modelado que no amortiza: UNVALIDATED, sin comparar; el error no se propaga.
+      return { k, reported: reported.balance, modeled: null, realDelta: null, status: 'UNVALIDATED', cause: null };
+    }
+    throw error;
+  }
   if (k > schedule.installmentCount) {
     throw new InvalidInputError(
       'INSTALLMENT_OUT_OF_RANGE',

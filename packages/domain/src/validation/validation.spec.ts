@@ -3,10 +3,12 @@ import { thrownBy } from '../../test/support/errors.ts';
 import { createEngineContext } from '../engine-context.ts';
 import * as api from '../index.ts';
 import { moneyAdd, moneySub, parseMoney } from '../money/index.ts';
+import { parseLocalDate } from '../dates/index.ts';
+import { parseRate } from '../money/index.ts';
 import { buildSchedule } from '../schedule/index.ts';
 import { actualPayment, recordingContext, reported, shortTerms } from '../schedule/testing/builders.ts';
 import type { EngineContext } from '../types/engine.ts';
-import { InvalidInputError, type Money } from '../types/primitives.ts';
+import { InvalidInputError, type Money, NegativeAmortizationError } from '../types/primitives.ts';
 import type { TemplateValidationRequest } from '../types/schedule.ts';
 import { loadValidationExampleCases } from './testing/examples.ts';
 import { validateAgainstReportedBalance } from './index.ts';
@@ -291,5 +293,57 @@ describe('public API', () => {
     expect(api.validateAgainstReportedBalance(request)).toEqual(
       validateAgainstReportedBalance(request, createEngineContext()),
     );
+  });
+});
+
+describe('modeled schedule that does not amortize [ALG.VALIDATE]', () => {
+  const terms = shortTerms();
+  // Un cambio de tasa posterior (k = 8) con KEEP_INSTALLMENT_ADJUST_TERM solo amortiza sobre el saldo re-anclado.
+  const lateRateChange = {
+    type: 'RateChange' as const,
+    id: 'rc8',
+    date: parseLocalDate('2026-08-31'),
+    interestRate: parseRate('3.00'),
+    policy: 'KEEP_INSTALLMENT_ADJUST_TERM' as const,
+  };
+  const realEvents = [reported('rb5', '2026-05-31', '600.00', 5), lateRateChange];
+  const request: TemplateValidationRequest = {
+    terms,
+    realEvents,
+    reported: reported('rb-v', '2026-05-31', '690.00', 5),
+  };
+
+  it('the real path computes fine (the re-anchored balance amortizes)', () => {
+    const ctx = createEngineContext();
+    expect(() => buildSchedule(terms, realEvents, ctx)).not.toThrow();
+  });
+
+  it('the modeled path throws NegativeAmortizationError', () => {
+    const ctx = createEngineContext();
+    const modeled = realEvents.filter((event) => event.type !== 'ReportedBalance');
+    expect(thrownBy(() => buildSchedule(terms, [], ctx, { inheritedEvents: modeled }))).toBeInstanceOf(
+      NegativeAmortizationError,
+    );
+  });
+
+  it('is UNVALIDATED with null cause, modeled and realDelta, and does not propagate the error', () => {
+    expect(validateAgainstReportedBalance(request, createEngineContext())).toEqual({
+      k: 5,
+      reported: parseMoney('690.00'),
+      modeled: null,
+      realDelta: null,
+      status: 'UNVALIDATED',
+      cause: null,
+    });
+  });
+
+  it('an out-of-range k still throws InvalidInputError', () => {
+    const thrown = thrownBy(() =>
+      validateAgainstReportedBalance(
+        { ...request, reported: reported('rb-v', '2026-05-31', '690.00', 99) },
+        createEngineContext(),
+      ),
+    );
+    expect(thrown).toBeInstanceOf(InvalidInputError);
   });
 });
