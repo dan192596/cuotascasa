@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { parseLocalDate, parseMoney, PathKind } from '@cuotascasa/domain';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { buildComparisonReport } from '../model/comparison-report.ts';
 import { buildScheduleReport } from '../model/schedule-report.ts';
 import { syntheticGtqSchedule, syntheticUsdSchedule } from '../model/synthetic.ts';
@@ -176,6 +176,71 @@ describe('pdfWriter', () => {
     const text = await extractText(await pdfWriter.write(comparison));
     expect(text).toContain('Comparación de escenarios');
     expect(text).toContain('Plan original');
+  });
+});
+
+async function maxRightEdge(bytes: Uint8Array): Promise<number> {
+  const task = getDocument({ data: bytes.slice(), useSystemFonts: false, standardFontDataUrl: FONTS });
+  const doc = await task.promise;
+  let max = 0;
+  for (let n = 1; n <= doc.numPages; n++) {
+    const content = await (await doc.getPage(n)).getTextContent();
+    for (const item of content.items) {
+      if ('str' in item) max = Math.max(max, item.transform[4] + item.width);
+    }
+  }
+  await task.destroy();
+  return max;
+}
+
+describe('determinismo y maquetación', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('el mismo modelo da los mismos bytes aunque pase el tiempo', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-10-16T12:00:00Z'));
+    const first = await pdfWriter.write(gtq);
+    vi.setSystemTime(new Date('2026-10-16T12:00:05Z'));
+    const second = await pdfWriter.write(gtq);
+    expect(Buffer.from(second).equals(Buffer.from(first))).toBe(true);
+    expect(new TextDecoder('latin1').decode(first)).toContain("/CreationDate (D:20261016000000+00'00')");
+  });
+
+  it('un monto negativo conserva el signo y no lleva símbolo de moneda', async () => {
+    const model = bigModel(1);
+    const table = model.tables[0]!;
+    const withNegative: ReportModel = {
+      ...model,
+      tables: [
+        {
+          ...table,
+          rows: [
+            {
+              role: 'data',
+              cells: [
+                { kind: 'integer', value: 2026 },
+                { kind: 'integer', value: 1 },
+                { kind: 'money', value: parseMoney('-1234.50') },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const text = await extractText(await pdfWriter.write(withNegative));
+    expect(text).toContain('-1,234.50');
+    expect(text).not.toContain('Q -1,234.50');
+  });
+
+  it('el título y los datos largos se parten dentro del ancho útil', async () => {
+    const long = 'palabra '.repeat(60).trim();
+    const model: ReportModel = {
+      ...bigModel(1),
+      title: `Título ${long}`,
+      meta: [{ label: 'Préstamo', value: long }],
+    };
+    const right = await maxRightEdge(await pdfWriter.write(model));
+    expect(right).toBeLessThanOrEqual(612 - 28 + 1);
   });
 });
 

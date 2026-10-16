@@ -27,6 +27,10 @@ function rowStyles(role: PdfRow['role']): Partial<CellDef['styles']> {
   }
 }
 
+/*
+ * Las celdas de dinero no llevan símbolo de moneda a propósito: el rótulo ('Q' o 'US$') ya va en el encabezado de
+ * cada columna y en la línea «Moneda». Los montos negativos conservan su signo.
+ */
 function toRows(rows: readonly PdfRow[]): RowInput[] {
   return rows.map((row) =>
     row.cells.map((cell): CellDef => ({
@@ -44,20 +48,24 @@ function render(model: ReportModel): Uint8Array {
 
   doc.setProperties({ title: model.title, creator: 'CuotasCasa' });
   doc.setFileId('00000000000000000000000000000000');
+  // Salida determinista: jsPDF sellaría la fecha de creación con el reloj y la zona horaria locales.
+  doc.setCreationDate(`D:${model.generatedOn.replaceAll('-', '')}000000+00'00'`);
 
   let y = MARGIN.top;
   doc.setTextColor(...INK);
   doc.setFont('times', 'bold');
   doc.setFontSize(18);
-  doc.text(model.title, MARGIN.left, y);
-  y += 18;
+  const titleLines = doc.splitTextToSize(model.title, usable);
+  doc.text(titleLines, MARGIN.left, y);
+  y += 18 + (titleLines.length - 1) * 20;
 
   doc.setFont('times', 'normal');
   doc.setFontSize(9);
   doc.setTextColor(...MUTED);
   for (const entry of model.meta) {
-    doc.text(`${entry.label}: ${entry.value}`, MARGIN.left, y);
-    y += 12;
+    const lines = doc.splitTextToSize(`${entry.label}: ${entry.value}`, usable);
+    doc.text(lines, MARGIN.left, y);
+    y += 12 * lines.length;
   }
   doc.text(`Moneda: ${model.currencyLabel}`, MARGIN.left, y);
   y += 12;
