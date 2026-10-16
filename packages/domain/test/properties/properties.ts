@@ -242,7 +242,7 @@ function isLaterThan(terms: Parameters<typeof dueDateOf>[0], event: DomainEvent,
   return true;
 }
 
-// 6. Un abono válido nunca aumenta el interés total -----------------------------------------------------------------
+// 6. Un abono no garantiza menos interés: variantes acotadas ([ALG.METRICS], dictamen de W3) -----------------------------------------------------------------
 /** Monto de un abono extra: centavos sueltos (el caso borde) o una fracción del principal. */
 const extraAmountArbitrary = fc.oneof(
   fc.integer({ min: 1, max: 5_000 }).map((cents) => ({ cents, permille: 0 })),
@@ -267,27 +267,6 @@ function extraPrepayment(
       ? amount.cents
       : Math.max(1, Math.floor((moneyToCents(terms.principal) * amount.permille) / 1_000));
   return { type: 'Prepayment', id: 'evt-extra', date: dueDateOf(terms, k), amount: centsToMoney(cents), mode };
-}
-
-for (const mode of ['REDUCE_TERM', 'REDUCE_INSTALLMENT'] as const) {
-  define(
-    `prepayment-never-increases-interest-${mode.toLowerCase().replace('_', '-')}`,
-    `adding a ${mode} prepayment never increases total interest (interest + insurance)`,
-    ['ALG.PREPAY', 'ALG.METRICS'],
-    300,
-    () =>
-      fc.property(prepayCase(3), ({ terms, events, k, amount }) => {
-        const before = attempt(terms, events);
-        const after = attempt(terms, [...events, extraPrepayment(terms, k, amount, mode)]);
-        fc.pre(before.kind === 'ok' && after.kind === 'ok');
-        if (before.kind !== 'ok' || after.kind !== 'ok') {
-          return;
-        }
-        expect(
-          compareMoney(compareSchedules(before.schedule, after.schedule).interestSaved, ZERO_MONEY),
-        ).toBeGreaterThanOrEqual(0);
-      }) as fc.IPropertyWithHooks<unknown[]>,
-  );
 }
 
 define(
