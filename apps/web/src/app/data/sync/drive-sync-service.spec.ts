@@ -235,7 +235,7 @@ describe('DriveSyncService', () => {
     it('prepare() loads the module and GIS ahead of the click; the click then reaches requestAccessToken in microtasks only', async () => {
       const world = createWorld();
       const device = await createDevice(world, 1);
-      await device.service.prepare();
+      await expect(device.service.prepare()).resolves.toBe(true);
       expect(device.loadDriveModule).toHaveBeenCalledTimes(1);
       expect(world.gisLoads).toBe(1);
       expect(world.gis.requests).toEqual([]);
@@ -256,11 +256,11 @@ describe('DriveSyncService', () => {
       expect(world.gisLoads).toBe(1);
     });
 
-    it('prepare() on a failing GIS load resolves; connect() keeps the state and says there is no connection', async () => {
+    it('prepare() on a failing GIS load resolves false; connect() keeps the state and says there is no connection', async () => {
       const world = createWorld();
       const failing = vi.fn(() => Promise.reject(new Error('blocked')));
       const device = await createDevice(world, 1, { loadGis: failing });
-      await expect(device.service.prepare()).resolves.toBeUndefined();
+      await expect(device.service.prepare()).resolves.toBe(false);
       await device.service.connect();
       expect(device.service.status()).toEqual({ state: 'disconnected' });
       expect(device.service.statusText()).toBe('Sin conexión con Drive');
@@ -863,7 +863,7 @@ describe('DriveSyncService: review fixes', () => {
         await second.service.sync();
       };
       const before = first.service.status();
-      await first.service.changePassphrase(NEW_PASSPHRASE);
+      await expect(first.service.changePassphrase(NEW_PASSPHRASE)).resolves.toBe('busy');
       expect(first.service.statusText()).toBe(BUSY_TEXT);
       expect(first.service.status()).toEqual(before);
       expect(await localKeySalt(first)).toBe(salt);
@@ -874,7 +874,7 @@ describe('DriveSyncService: review fixes', () => {
       const world = createWorld();
       const { first, second } = await pair(world);
       first.hooks.ambiguousMainUpdate = true;
-      await first.service.changePassphrase(NEW_PASSPHRASE);
+      await expect(first.service.changePassphrase(NEW_PASSPHRASE)).resolves.toBe('changed');
       first.hooks.ambiguousMainUpdate = false;
       expect(await localKeySalt(first)).toBe(await remoteKeySalt(world));
       expect(first.service.status().state).toBe('idle');
@@ -890,7 +890,7 @@ describe('DriveSyncService: review fixes', () => {
       const salt = await localKeySalt(first);
       const remote = world.drive.fileByName(REMOTE_FILE_NAME)?.content;
       first.hooks.failMainUpdate = true;
-      await first.service.changePassphrase(NEW_PASSPHRASE);
+      await expect(first.service.changePassphrase(NEW_PASSPHRASE)).resolves.toBe('failed');
       first.hooks.failMainUpdate = false;
       expect(await localKeySalt(first)).toBe(salt);
       expect(world.drive.fileByName(REMOTE_FILE_NAME)?.content).toBe(remote);
@@ -922,7 +922,7 @@ describe('DriveSyncService: review fixes', () => {
           }),
       });
       failSave = true;
-      await first.service.changePassphrase(NEW_PASSPHRASE);
+      await expect(first.service.changePassphrase(NEW_PASSPHRASE)).resolves.toBe('changed');
       expect(await localKeySalt(first)).toBe(await remoteKeySalt(world));
       expect(first.service.status().state).toBe('idle');
     });
@@ -935,7 +935,7 @@ describe('DriveSyncService: review fixes', () => {
       const prev = world.drive.fileByName(REMOTE_PREV_FILE_NAME)?.content;
       const salt = await localKeySalt(second);
 
-      await second.service.changePassphrase('otra frase todavia mas nueva');
+      await expect(second.service.changePassphrase('otra frase todavia mas nueva')).resolves.toBe('failed');
 
       expect(second.service.status()).toEqual({ state: 'needs-passphrase', reason: 'KeyMismatch' });
       expect(world.drive.fileByName(REMOTE_FILE_NAME)?.content).toBe(main);
