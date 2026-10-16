@@ -162,6 +162,8 @@ test('encrypted round trip: the import asks for the passphrase and a wrong one c
 test('undo after an import restores the previous data; cancel leaves it untouched', async ({ page }) => {
   await page.goto('/app');
   await expect(page.getByTestId('empty-state')).toBeVisible();
+  // A fast navigation would cancel the service worker registration in flight (WebKit reports a TypeError).
+  await page.evaluate(() => navigator.serviceWorker.ready);
   await seedFromBackup(page, syntheticBackupDocument());
   await page.goto('/app/ajustes');
 
@@ -173,7 +175,7 @@ test('undo after an import restores the previous data; cancel leaves it untouche
 
   await page.getByTestId('import-file').setInputFiles(FIXTURE);
   await page.getByTestId('import-confirm').click();
-  await expect(page.getByTestId('undo')).toBeVisible();
+  await expect(page.getByTestId('undo')).toBeFocused();
   await expect
     .poll(async () => ((await readStore(page, 'loans')) as StoredLoan[]).map((l) => l.name))
     .toEqual(['Casa B']);

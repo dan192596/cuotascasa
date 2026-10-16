@@ -17,9 +17,13 @@ import {
   dataErrorText,
   formatBytes,
   importErrorText,
+  localDateText,
   lastBackupText,
   PlainExportSession,
 } from './backup-model.ts';
+
+/** ADR-0007 §5: the undo snapshot lives 10 minutes. */
+const UNDO_WINDOW_MS = 10 * 60 * 1000;
 
 interface Notice {
   readonly tone: 'status' | 'alert';
@@ -84,7 +88,7 @@ interface Notice {
             id="cc-passphrase"
             data-testid="passphrase"
             [type]="show() ? 'text' : 'password'"
-            autocomplete="off"
+            autocomplete="new-password"
             autocapitalize="off"
             spellcheck="false"
             [value]="passphrase()"
@@ -106,7 +110,7 @@ interface Notice {
             id="cc-passphrase-confirm"
             data-testid="passphrase-confirm"
             [type]="show() ? 'text' : 'password'"
-            autocomplete="off"
+            autocomplete="new-password"
             autocapitalize="off"
             spellcheck="false"
             [attr.aria-describedby]="mismatch() ? 'cc-passphrase-mismatch' : null"
@@ -139,6 +143,7 @@ interface Notice {
           type="file"
           accept="application/json,.json"
           data-testid="import-file"
+          #importFile
           [disabled]="busy()"
           (change)="onFile($event)"
         />
@@ -151,7 +156,7 @@ interface Notice {
             id="cc-import-passphrase"
             data-testid="import-passphrase"
             [type]="showImport() ? 'text' : 'password'"
-            autocomplete="off"
+            autocomplete="current-password"
             autocapitalize="off"
             spellcheck="false"
             [value]="importPassphrase()"
@@ -241,13 +246,24 @@ interface Notice {
       @if (undoToken(); as token) {
         <p class="undo">
           Importación lista.
-          <button type="button" class="action" data-testid="undo" (click)="onUndo(token)">Deshacer</button>
+          <button
+            type="button"
+            class="action"
+            data-testid="undo"
+            [disabled]="busy()"
+            (click)="onUndo(token)"
+            #undoButton
+          >
+            Deshacer
+          </button>
         </p>
       }
 
       <h3>Almacenamiento</h3>
       <p data-testid="persist-status">{{ persistText() }}</p>
-      @if (health.persisted() === false) {
+      @if (persistOutcome(); as outcome) {
+        <p data-testid="persist-outcome">{{ outcome }}</p>
+      } @else if (health.persisted() === false) {
         <p>
           <button type="button" class="action" data-testid="persist-request" (click)="onPersist()">
             Solicitar almacenamiento persistente
@@ -365,6 +381,8 @@ export class SettingsBackupComponent {
   private readonly injector = inject(Injector);
 
   private readonly previewTitle = viewChild<ElementRef<HTMLElement>>('previewTitle');
+  private readonly undoButton = viewChild<ElementRef<HTMLElement>>('undoButton');
+  private readonly importFile = viewChild<ElementRef<HTMLElement>>('importFile');
   private readonly warningBox = viewChild<ElementRef<HTMLElement>>('warningBox');
 
   protected readonly notice = signal<Notice | null>(null);
@@ -380,7 +398,10 @@ export class SettingsBackupComponent {
   protected readonly needsPassphrase = signal(false);
   protected readonly pending = signal<PendingImport | null>(null);
   protected readonly undoToken = signal<string | null>(null);
+  protected readonly persistOutcome = signal<string | null>(null);
   private file: File | null = null;
+  private destroyed = false;
+  private undoTimer: ReturnType<typeof setTimeout> | undefined;
 
   protected readonly lastBackup = computed(() => lastBackupText(this.backup.lastBackupAt(), Date.now()));
   protected readonly mismatch = computed(() => this.confirmation() !== '' && this.confirmation() !== this.passphrase());
@@ -410,6 +431,8 @@ export class SettingsBackupComponent {
 
   constructor() {
     inject(DestroyRef).onDestroy(() => {
+      this.destroyed = true;
+      this.clearUndoTimer();
       const current = this.pending();
       if (current !== null) this.backup.cancelImport(current.id);
     });
@@ -420,8 +443,7 @@ export class SettingsBackupComponent {
   }
 
   protected exportedOn(current: PendingImport): string {
-    const [year, month, day] = current.preview.exportedAt.slice(0, 10).split('-');
-    return `${day ?? ''}/${month ?? ''}/${year ?? ''}`;
+    return localDateText(current.preview.exportedAt);
   }
 
   /* ---------- export ---------- */
@@ -514,11 +536,17 @@ export class SettingsBackupComponent {
     const file = this.file;
     if (file === null) return;
     this.busy.set(true);
+    this.notice.set(null);
     try {
       const result = await (passphrase === undefined
         ? this.backup.previewImport(file)
         : this.backup.previewImport(file, { passphrase }));
+      if (this.destroyed) {
+        if (result.ok) this.backup.cancelImport(result.value.id);
+        return;
+      }
       if (result.ok) {
+        this.showImport.set(false);
         this.needsPassphrase.set(false);
         this.importPassphrase.set('');
         this.notice.set(null);
@@ -534,7 +562,7 @@ export class SettingsBackupComponent {
         });
       }
     } catch (error) {
-      this.notice.set({ tone: 'alert', text: dataErrorText(error, 'confirm') });
+      if (!this.destroyed) this.notice.set({ tone: 'alert', text: dataErrorText(error, 'confirm') });
     } finally {
       this.busy.set(false);
     }
@@ -545,15 +573,33 @@ export class SettingsBackupComponent {
     this.pending.set(null);
     this.file = null;
     this.notice.set({ tone: 'status', text: 'Importación cancelada. Tus datos no cambiaron.' });
+    this.focusFileControl();
+  }
+
+  private focusFileControl(): void {
+    afterNextRender(() => this.importFile()?.nativeElement.focus(), { injector: this.injector });
+  }
+
+  private clearUndoTimer(): void {
+    if (this.undoTimer !== undefined) clearTimeout(this.undoTimer);
+    this.undoTimer = undefined;
   }
 
   protected async onConfirm(current: PendingImport): Promise<void> {
     this.busy.set(true);
+    this.notice.set(null);
     try {
       const receipt = await this.backup.confirmImport(current.id);
       this.pending.set(null);
       this.file = null;
       this.undoToken.set(receipt.undoToken);
+      this.clearUndoTimer();
+      // The service forgets the snapshot after 10 minutes (ADR-0007 §5), so the button goes away with it.
+      this.undoTimer = setTimeout(() => {
+        this.undoToken.set(null);
+        this.undoTimer = undefined;
+      }, UNDO_WINDOW_MS);
+      afterNextRender(() => this.undoButton()?.nativeElement.focus(), { injector: this.injector });
       this.notice.set({
         tone: 'status',
         text: 'Importación lista. Puedes deshacerla durante 10 minutos si no haces otros cambios.',
@@ -562,6 +608,7 @@ export class SettingsBackupComponent {
       this.pending.set(null);
       this.file = null;
       this.notice.set({ tone: 'alert', text: dataErrorText(error, 'confirm') });
+      this.focusFileControl();
     } finally {
       this.busy.set(false);
     }
@@ -569,14 +616,17 @@ export class SettingsBackupComponent {
 
   protected async onUndo(token: string): Promise<void> {
     this.busy.set(true);
+    this.notice.set(null);
     try {
       await this.backup.undoImport(token);
       this.notice.set({ tone: 'status', text: 'Se restauraron tus datos anteriores a la importación.' });
     } catch (error) {
       this.notice.set({ tone: 'alert', text: dataErrorText(error, 'undo') });
     } finally {
+      this.clearUndoTimer();
       this.undoToken.set(null);
       this.busy.set(false);
+      this.focusFileControl();
     }
   }
 
@@ -590,6 +640,9 @@ export class SettingsBackupComponent {
 
   protected async onPersist(): Promise<void> {
     const granted = await this.health.requestPersist();
+    this.persistOutcome.set(
+      granted ? null : 'Ya lo solicitamos y el navegador no lo concedió. Haz respaldos seguidos.',
+    );
     this.notice.set({
       tone: 'status',
       text: granted

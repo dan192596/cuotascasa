@@ -275,9 +275,11 @@ describe('import with preview', () => {
 
   it('clears the file control so the same file can be chosen again after cancelling', async () => {
     const h = mount({ previews: [pendingOk(), pendingOk()] });
-    await chooseFile(h.fixture);
     const input = byId(h.fixture, 'import-file') as HTMLInputElement;
-    expect(input.value).toBe('');
+    const setter = vi.fn();
+    Object.defineProperty(input, 'value', { set: setter, get: () => 'C:\\fakepath\\x.json', configurable: true });
+    await chooseFile(h.fixture);
+    expect(setter).toHaveBeenCalledWith('');
     await click(h.fixture, 'import-cancel');
     await chooseFile(h.fixture);
     expect(h.backup.previewImport).toHaveBeenCalledTimes(2);
@@ -312,7 +314,7 @@ describe('import with preview', () => {
     await chooseFile(h.fixture);
     await click(h.fixture, 'import-confirm');
     await click(h.fixture, 'undo');
-    expect(text(h.fixture, 'notice-alert')).toBe('Ya no se puede deshacer porque hubo cambios después.');
+    expect(text(h.fixture, 'notice-alert')).toBe('Ya no se puede deshacer: pasaron 10 minutos o hubo cambios después.');
     expect(byId(h.fixture, 'undo')).toBeNull();
   });
 
@@ -405,5 +407,142 @@ describe('storage persistence', () => {
     TestBed.resetTestingModule();
     const safari = mount({ safari: true });
     expect(text(safari.fixture, 'safari-explanation')).toContain('7 días');
+  });
+});
+
+const active = () => document.activeElement?.getAttribute('data-testid') ?? document.activeElement?.tagName;
+
+describe('focus management', () => {
+  it('moves focus to «Deshacer» after confirm', async () => {
+    const h = mount({ previews: [pendingOk()] });
+    await chooseFile(h.fixture);
+    await click(h.fixture, 'import-confirm');
+    expect(active()).toBe('undo');
+  });
+
+  it('moves focus to the file control after undo and after cancel', async () => {
+    const h = mount({ previews: [pendingOk(), pendingOk()] });
+    await chooseFile(h.fixture);
+    await click(h.fixture, 'import-cancel');
+    expect(active()).toBe('import-file');
+    await chooseFile(h.fixture);
+    await click(h.fixture, 'import-confirm');
+    await click(h.fixture, 'undo');
+    expect(active()).toBe('import-file');
+  });
+
+  it('moves focus to the file control when undo is no longer possible', async () => {
+    const h = mount({ previews: [pendingOk()] });
+    h.backup.undoImport.mockRejectedValueOnce(new DataError('NOT_FOUND'));
+    await chooseFile(h.fixture);
+    await click(h.fixture, 'import-confirm');
+    await click(h.fixture, 'undo');
+    expect(active()).toBe('import-file');
+  });
+});
+
+describe('review fixes', () => {
+  it('clears the previous message when a new action starts, so a repeat is announced again', async () => {
+    const h = mount({ previews: [failure('FOREIGN_FORMAT')] });
+    await chooseFile(h.fixture);
+    expect(text(h.fixture, 'notice-alert')).not.toBe('');
+    let release: (value: PreviewResult) => void = () => undefined;
+    h.backup.previewImport.mockReturnValueOnce(new Promise<PreviewResult>((resolve) => (release = resolve)));
+    await chooseFile(h.fixture);
+    expect(text(h.fixture, 'notice-alert')).toBe('');
+    release(failure('FOREIGN_FORMAT'));
+    await settle(h.fixture);
+    expect(text(h.fixture, 'notice-alert')).not.toBe('');
+  });
+
+  it('clears the message when confirm and undo start', async () => {
+    const h = mount({ previews: [pendingOk()] });
+    await chooseFile(h.fixture);
+    let release: (value: { undoToken: string }) => void = () => undefined;
+    h.backup.confirmImport.mockReturnValueOnce(new Promise((resolve) => (release = resolve)));
+    void byId(h.fixture, 'import-confirm')?.click();
+    await settle(h.fixture);
+    expect(text(h.fixture, 'notice-status')).toBe('');
+    release({ undoToken: 'u1' });
+    await settle(h.fixture);
+    let done: () => void = () => undefined;
+    h.backup.undoImport.mockReturnValueOnce(new Promise<void>((resolve) => (done = resolve)));
+    void byId(h.fixture, 'undo')?.click();
+    await settle(h.fixture);
+    expect(text(h.fixture, 'notice-status')).toBe('');
+    done();
+    await settle(h.fixture);
+  });
+
+  it('disables «Deshacer» while undoing, so a double click cannot repeat it', async () => {
+    const h = mount({ previews: [pendingOk()] });
+    await chooseFile(h.fixture);
+    await click(h.fixture, 'import-confirm');
+    let done: () => void = () => undefined;
+    h.backup.undoImport.mockReturnValueOnce(new Promise<void>((resolve) => (done = resolve)));
+    void byId(h.fixture, 'undo')?.click();
+    await settle(h.fixture);
+    expect((byId(h.fixture, 'undo') as HTMLButtonElement).disabled).toBe(true);
+    done();
+    await settle(h.fixture);
+    expect(h.backup.undoImport).toHaveBeenCalledTimes(1);
+  });
+
+  it('hides «Deshacer» 10 minutes after confirm', async () => {
+    const h = mount({ previews: [pendingOk()] });
+    await chooseFile(h.fixture);
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      await click(h.fixture, 'import-confirm');
+      expect(byId(h.fixture, 'undo')).not.toBeNull();
+      vi.advanceTimersByTime(9 * 60 * 1000);
+      h.fixture.detectChanges();
+      expect(byId(h.fixture, 'undo')).not.toBeNull();
+      vi.advanceTimersByTime(60 * 1000 + 1);
+      await settle(h.fixture);
+      expect(byId(h.fixture, 'undo')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('shows the backup date as a local calendar day', async () => {
+    const night = new Date(2026, 9, 4, 23, 30).toISOString();
+    const preview = { ok: true, value: { id: 'p1', preview: { ...PREVIEW, exportedAt: night }, encrypted: false } };
+    const h = mount({ previews: [preview as PreviewResult] });
+    await chooseFile(h.fixture);
+    expect(text(h.fixture, 'import-preview')).toContain('Respaldo del 04/10/2026');
+  });
+
+  it('lets a password manager offer to save the passphrases and hides the import one after decrypting', async () => {
+    const h = mount({ previews: [failure('PASSPHRASE_REQUIRED'), pendingOk(true)] });
+    expect(byId(h.fixture, 'passphrase')?.getAttribute('autocomplete')).toBe('new-password');
+    expect(byId(h.fixture, 'passphrase-confirm')?.getAttribute('autocomplete')).toBe('new-password');
+    await chooseFile(h.fixture);
+    expect(byId(h.fixture, 'import-passphrase')?.getAttribute('autocomplete')).toBe('current-password');
+    await click(h.fixture, 'import-passphrase-toggle');
+    await type(h.fixture, 'import-passphrase', 'x');
+    await click(h.fixture, 'import-decrypt');
+    await chooseFile(h.fixture);
+    expect(byId(h.fixture, 'import-passphrase')).toBeNull();
+  });
+
+  it('cancels a preview that resolves after the component was destroyed', async () => {
+    const h = mount();
+    let release: (value: PreviewResult) => void = () => undefined;
+    h.backup.previewImport.mockReturnValueOnce(new Promise<PreviewResult>((resolve) => (release = resolve)));
+    void chooseFile(h.fixture);
+    h.fixture.destroy();
+    release(pendingOk());
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(h.backup.cancelImport).toHaveBeenCalledWith('p1');
+  });
+
+  it('replaces the persistence button with the outcome after the first request', async () => {
+    const h = mount({ persisted: false });
+    h.health.requestPersist.mockImplementationOnce(() => Promise.resolve(false));
+    await click(h.fixture, 'persist-request');
+    expect(byId(h.fixture, 'persist-request')).toBeNull();
+    expect(text(h.fixture, 'persist-outcome')).toContain('no lo concedió');
   });
 });

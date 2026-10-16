@@ -5,6 +5,7 @@ import {
   dataErrorText,
   formatBytes,
   importErrorText,
+  localDateText,
   lastBackupText,
   PlainExportSession,
 } from './backup-model.ts';
@@ -29,6 +30,18 @@ describe('lastBackupText', () => {
   });
 });
 
+describe('localDateText', () => {
+  it('uses the local calendar day, not the UTC one', () => {
+    const night = new Date(2026, 9, 4, 23, 30).toISOString();
+    expect(localDateText(night)).toBe('04/10/2026');
+    const early = new Date(2026, 0, 1, 0, 15).toISOString();
+    expect(localDateText(early)).toBe('01/01/2026');
+  });
+  it('tolerates an unreadable instant', () => {
+    expect(localDateText('basura')).toBe('fecha no disponible');
+  });
+});
+
 describe('importErrorText', () => {
   it('maps every code to fixed Spanish text', () => {
     for (const code of [
@@ -50,7 +63,7 @@ describe('dataErrorText', () => {
   it('explains an expired preview and a lost undo without echoing the error message', () => {
     expect(dataErrorText(new DataError('NOT_FOUND', 'secret 123.45'), 'confirm')).toContain('venció');
     expect(dataErrorText(new DataError('NOT_FOUND', 'secret'), 'undo')).toBe(
-      'Ya no se puede deshacer porque hubo cambios después.',
+      'Ya no se puede deshacer: pasaron 10 minutos o hubo cambios después.',
     );
     expect(dataErrorText(new DataError('STORAGE', 'secret 123.45'), 'confirm')).not.toContain('123.45');
     expect(dataErrorText(new DataError('VALIDATION'), 'confirm')).toContain('dañado');

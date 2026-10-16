@@ -1,4 +1,6 @@
 import { Injectable, signal } from '@angular/core';
+import { makeLocalDate } from '@cuotascasa/domain';
+import { formatLocalDate } from '../../../ui/format/format.ts';
 import { DataError, type BackupImportErrorCode, type PendingImport } from '../../../data/api.ts';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -11,6 +13,13 @@ export function lastBackupText(lastBackupAt: string | null, nowMs: number): stri
   const days = Math.max(0, Math.floor((nowMs - at) / DAY_MS));
   if (days === 0) return 'Último respaldo: hoy';
   return days === 1 ? 'Último respaldo: hace 1 día' : `Último respaldo: hace ${String(days)} días`;
+}
+
+/** Local calendar day of a stored instant as dd/mm/aaaa (never a UTC slice). */
+export function localDateText(instant: string): string {
+  const at = new Date(instant);
+  if (Number.isNaN(at.getTime())) return 'fecha no disponible';
+  return formatLocalDate(makeLocalDate(at.getFullYear(), at.getMonth() + 1, at.getDate()));
 }
 
 const IMPORT_ERRORS: Readonly<Record<BackupImportErrorCode, string>> = {
@@ -36,7 +45,7 @@ export function dataErrorText(error: unknown, action: BackupAction): string {
   const code = error instanceof DataError ? error.code : 'STORAGE';
   if (code === 'NOT_FOUND') {
     return action === 'undo'
-      ? 'Ya no se puede deshacer porque hubo cambios después.'
+      ? 'Ya no se puede deshacer: pasaron 10 minutos o hubo cambios después.'
       : 'La vista previa venció (dura 10 minutos). Selecciona el archivo otra vez.';
   }
   if (code === 'VALIDATION') {
