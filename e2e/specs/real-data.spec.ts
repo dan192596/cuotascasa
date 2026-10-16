@@ -26,12 +26,12 @@ async function fill(page: Page, label: string, text: string): Promise<void> {
   await field.blur();
 }
 
-/** 'Fin proyectado con tus datos reales: dd/mm/aaaa' → 'aaaammdd', to compare dates as text. */
-async function projectedEnd(page: Page): Promise<string> {
+/** 'Fin proyectado con tus datos reales: dd/mm/aaaa' → 'aaaammdd' as a number, to compare dates. */
+async function projectedEnd(page: Page): Promise<number> {
   const text = (await page.getByTestId('real-end-date').textContent()) ?? '';
   const match = /(\d{2})\/(\d{2})\/(\d{4})/.exec(text);
   if (match === null) throw new Error(`No date in «${text}»`);
-  return `${match[3] ?? ''}${match[2] ?? ''}${match[1] ?? ''}`;
+  return Number(`${match[3] ?? ''}${match[2] ?? ''}${match[1] ?? ''}`);
 }
 
 test.afterEach(({ page }) => {
