@@ -11,8 +11,7 @@ import { expect, test } from '../support/test.ts';
  * Settings → Google Drive (W5-08, HU-21, HU-22, R12) against the production build and the frozen Google fakes.
  * Nothing reaches Google: accounts.google.com/gsi/client and Drive v3 are answered by installGoogleMock.
  *
- * The connect screen needs a build with a Google client ID (`ng build --define GOOGLE_CLIENT_ID=...`, ADR-0015 §9).
- * The default `pnpm build` leaves it empty and the app then says «No configurado»: those tests skip with that reason.
+ * The e2e build injects a synthetic Google client ID, so the connect screen is always available.
  */
 
 // WebKit's context.route does not see requests the app's service worker re-issues (see google-mock.spec.ts).
@@ -23,8 +22,6 @@ test.setTimeout(90_000);
 const PHRASE = 'frase sintetica de prueba 2031';
 const OTHER_PHRASE = 'otra frase sintetica distinta 4417';
 const SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
-const NOT_CONFIGURED_REASON =
-  'This build has no GOOGLE_CLIENT_ID (the default `pnpm build` leaves it empty): build with ng build --define GOOGLE_CLIENT_ID.';
 
 const isGoogle = (url: string): boolean => /(^|\.)google(apis)?\.com$/.test(new URL(url).hostname);
 
@@ -35,11 +32,6 @@ async function openSettingsSeeded(page: Page): Promise<void> {
   await seedFromBackup(page, syntheticBackupDocument());
   await page.goto('/app/ajustes');
   await expect(page.getByTestId('drive-status')).toBeVisible();
-}
-
-async function skipUnlessConfigured(page: Page): Promise<void> {
-  const configured = (await page.getByTestId('drive-status').innerText()).trim() !== 'No configurado';
-  test.skip(!configured, NOT_CONFIGURED_REASON);
 }
 
 /** The two clicks of the connection; the popup of the mock is approved by default. */
@@ -54,6 +46,14 @@ async function setPassphrase(page: Page, phrase: string, confirm = true): Promis
   await page.getByTestId('passphrase-input').fill(phrase);
   if (confirm) await page.getByTestId('passphrase-confirm').fill(phrase);
   await page.getByTestId('passphrase-submit').click();
+}
+
+/** Sets the first passphrase of a device and, in a second click of the owner, runs the sync. */
+async function setPassphraseAndSync(page: Page, phrase: string, confirm = true): Promise<void> {
+  await setPassphrase(page, phrase, confirm);
+  await expect(page.getByTestId('passphrase-done')).toContainText('sincronizar');
+  await expect(page.getByTestId('drive-sync')).toBeFocused();
+  await page.getByTestId('drive-sync').click();
 }
 
 /** A second device: its own context, IndexedDB and Google mock. */
@@ -125,7 +125,6 @@ test('visiting Ajustes makes zero requests to Google and offers only «Conectar 
 
 test('the privacy link and the scope explanation are shown before connecting', async ({ page }) => {
   await page.goto('/app/ajustes');
-  await skipUnlessConfigured(page);
   await expect(page.getByTestId('drive-scope')).toContainText('drive.appdata');
   await expect(page.getByTestId('drive-privacy-link')).toHaveAttribute('href', '/privacidad');
   await expect(page.getByTestId('drive-connect')).toHaveText('Conectar Drive');
@@ -139,7 +138,6 @@ test('connect in two steps, set the passphrase and leave an encrypted copy; a se
   baseURL,
 }) => {
   await openSettingsSeeded(page);
-  await skipUnlessConfigured(page);
   const gsi: string[] = [];
   page.on('request', (request) => {
     if (request.url().startsWith('https://accounts.google.com/gsi/client')) gsi.push(request.url());
@@ -158,7 +156,7 @@ test('connect in two steps, set the passphrase and leave an encrypted copy; a se
   await expect(page.getByTestId('drive-status')).toHaveText('Falta la frase de cifrado');
   await expect(page.getByTestId('passphrase-warning')).toContainText('no se puede recuperar');
   await expectNoA11yViolations(page);
-  await setPassphrase(page, PHRASE);
+  await setPassphraseAndSync(page, PHRASE);
   await expect(page.getByTestId('drive-status')).toHaveText('Sincronizado');
   await expect(page.getByTestId('drive-last-sync')).toContainText('Última sincronización');
   await expect(page.getByTestId('passphrase-form')).toHaveCount(0);
@@ -181,7 +179,7 @@ test('connect in two steps, set the passphrase and leave an encrypted copy; a se
   await expect(device.page.getByTestId('drive-status')).toHaveText(
     'La frase no coincide con la copia de Drive: revísala e inténtalo de nuevo',
   );
-  await setPassphrase(device.page, PHRASE, false);
+  await setPassphraseAndSync(device.page, PHRASE, false);
   await expect(device.page.getByTestId('drive-status')).toHaveText('Sincronizado');
   await device.page.getByRole('link', { name: 'CuotasCasa' }).click();
   await expect(device.page.getByTestId('loan-card')).toContainText('Casa A');
@@ -193,9 +191,8 @@ test('after a reload the status is «Falta autorizar Drive» and the screen rout
   googleMock,
 }) => {
   await openSettingsSeeded(page);
-  await skipUnlessConfigured(page);
   await connectDrive(page, googleMock);
-  await setPassphrase(page, PHRASE);
+  await setPassphraseAndSync(page, PHRASE);
   await expect(page.getByTestId('drive-status')).toHaveText('Sincronizado');
 
   await page.reload();
@@ -213,9 +210,8 @@ test('offline edits show «Cambios sin sincronizar (n)»; syncing again clears t
   googleMock,
 }) => {
   await openSettingsSeeded(page);
-  await skipUnlessConfigured(page);
   await connectDrive(page, googleMock);
-  await setPassphrase(page, PHRASE);
+  await setPassphraseAndSync(page, PHRASE);
   await expect(page.getByTestId('drive-status')).toHaveText('Sincronizado');
 
   // Edit inside the app (client-side navigation keeps the connection): a second loan.
@@ -259,16 +255,15 @@ test('changing the passphrase makes the other device ask for the new one', async
   baseURL,
 }) => {
   await openSettingsSeeded(page);
-  await skipUnlessConfigured(page);
   await connectDrive(page, googleMock);
-  await setPassphrase(page, PHRASE);
+  await setPassphraseAndSync(page, PHRASE);
   await expect(page.getByTestId('drive-status')).toHaveText('Sincronizado');
 
   const device = await newDevice(browser, baseURL ?? '');
   shareDrive(googleMock, device.mock);
   await device.page.goto('/app/ajustes');
   await connectDrive(device.page, device.mock);
-  await setPassphrase(device.page, PHRASE);
+  await setPassphraseAndSync(device.page, PHRASE);
   await expect(device.page.getByTestId('drive-status')).toHaveText('Sincronizado');
 
   // Change on the first device.
@@ -290,16 +285,15 @@ test('changing the passphrase makes the other device ask for the new one', async
   await expect(device.page.getByTestId('drive-status')).toHaveText(
     'La frase cambió en otro dispositivo: ingrésala de nuevo',
   );
-  await setPassphrase(device.page, OTHER_PHRASE, false);
+  await setPassphraseAndSync(device.page, OTHER_PHRASE, false);
   await expect(device.page.getByTestId('drive-status')).toHaveText('Sincronizado');
   await device.page.context().close();
 });
 
 test('«Desconectar Drive» revokes the token and keeps the local data', async ({ page, googleMock }) => {
   await openSettingsSeeded(page);
-  await skipUnlessConfigured(page);
   await connectDrive(page, googleMock);
-  await setPassphrase(page, PHRASE);
+  await setPassphraseAndSync(page, PHRASE);
   await expect(page.getByTestId('drive-status')).toHaveText('Sincronizado');
   const token = googleMock.gis.issuedTokens[0];
   expect(googleMock.gis.revokedTokens).toEqual([]);

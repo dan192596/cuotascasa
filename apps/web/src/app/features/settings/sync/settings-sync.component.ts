@@ -20,9 +20,6 @@ import { MIN_RECOMMENDED_LENGTH, passphraseStrength } from './passphrase-strengt
 /** First step of the connection: nothing has contacted Google until the owner chooses «Conectar Drive». */
 type ConnectStep = 'idle' | 'preparing' | 'ready';
 
-/** Start of the service text of a passphrase change that did not happen because another device was syncing. */
-const BUSY_PREFIX = 'Otro dispositivo está sincronizando';
-
 /** Spanish text of a rejected service call. Never the raw error: its message could carry data. */
 function errorText(error: unknown): string {
   if (error instanceof DataError) {
@@ -381,7 +378,12 @@ export class SettingsSyncComponent {
     this.error.set(null);
     this.step.set('preparing');
     this.sync.prepare().then(
-      () => {
+      (ready) => {
+        if (!ready) {
+          this.step.set('idle');
+          this.error.set('No se pudo preparar la conexión con Google. Revisa tu conexión e inténtalo de nuevo.');
+          return;
+        }
         this.step.set('ready');
         this.focusLater('drive-continue');
       },
@@ -464,17 +466,23 @@ export class SettingsSyncComponent {
     this.error.set(null);
     try {
       // The service already received the string: nothing of it stays in this component while it works.
-      const run = changing ? this.sync.changePassphrase(phrase) : this.sync.setPassphrase(phrase);
-      this.clearPhrase();
-      await run;
       if (changing) {
-        if (this.sync.statusText().startsWith(BUSY_PREFIX)) {
+        const run = this.sync.changePassphrase(phrase);
+        this.clearPhrase();
+        // Only 'changed' is a success; 'busy' and 'failed' keep the form open and the status line explains why.
+        if ((await run) !== 'changed') {
           return;
         }
         this.changing.set(false);
         this.doneText.set('Frase cambiada. Los otros dispositivos te pedirán la frase nueva.');
         this.focusLater('passphrase-change-open');
-      } else if (this.mode() === 'connected') {
+      } else {
+        const run = this.sync.setPassphrase(phrase);
+        this.clearPhrase();
+        await run;
+        if (this.mode() !== 'connected') {
+          return;
+        }
         // No automatic sync: a token renewal after an await would fall outside the owner's click.
         this.doneText.set('Frase guardada. Ya puedes sincronizar ahora.');
       }

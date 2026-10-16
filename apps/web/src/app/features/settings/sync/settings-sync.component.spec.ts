@@ -2,7 +2,7 @@ import { signal, type WritableSignal } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { DataError, type SyncService } from '../../../data/api.ts';
+import { DataError, type PassphraseChangeOutcome, type SyncService } from '../../../data/api.ts';
 import { SYNC_SERVICE } from '../../../data/tokens.ts';
 import { SettingsSyncComponent } from './settings-sync.component.ts';
 
@@ -14,10 +14,10 @@ const PHRASE = 'frase sintetica de prueba 2031';
 interface FakeSync extends SyncService {
   readonly status: WritableSignal<SyncStatus>;
   readonly statusText: WritableSignal<string>;
-  readonly prepare: ReturnType<typeof vi.fn<() => Promise<void>>>;
+  readonly prepare: ReturnType<typeof vi.fn<() => Promise<boolean>>>;
   readonly connect: ReturnType<typeof vi.fn<() => Promise<void>>>;
   readonly setPassphrase: ReturnType<typeof vi.fn<(p: string) => Promise<void>>>;
-  readonly changePassphrase: ReturnType<typeof vi.fn<(p: string) => Promise<void>>>;
+  readonly changePassphrase: ReturnType<typeof vi.fn<(p: string) => Promise<PassphraseChangeOutcome>>>;
   readonly sync: ReturnType<typeof vi.fn<() => Promise<void>>>;
   readonly disconnect: ReturnType<typeof vi.fn<() => Promise<void>>>;
 }
@@ -27,10 +27,10 @@ function fakeSync(status: SyncStatus, text: string, configured = true): FakeSync
     configured: signal(configured).asReadonly(),
     status: signal(status),
     statusText: signal(text),
-    prepare: vi.fn(() => Promise.resolve()),
+    prepare: vi.fn(() => Promise.resolve(true)),
     connect: vi.fn(() => Promise.resolve()),
     setPassphrase: vi.fn(() => Promise.resolve()),
-    changePassphrase: vi.fn(() => Promise.resolve()),
+    changePassphrase: vi.fn(() => Promise.resolve<PassphraseChangeOutcome>('changed')),
     sync: vi.fn(() => Promise.resolve()),
     disconnect: vi.fn(() => Promise.resolve()),
   } as unknown as FakeSync;
@@ -107,6 +107,19 @@ describe('cc-settings-sync: two-step connect', () => {
     // No await between the click and this assertion: the call happened inside the gesture.
     expect(sync.connect).toHaveBeenCalledTimes(1);
     expect(sync.prepare).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows a fixed error and keeps «Conectar Drive» when prepare() reports false', async () => {
+    const sync = fakeSync({ state: 'disconnected' }, 'Drive desconectado');
+    sync.prepare.mockResolvedValueOnce(false);
+    const f = mount(sync);
+    click(f, 'drive-connect');
+    await settle(f);
+    expect(el(f, 'drive-continue')).toBeNull();
+    expect(text(f, 'drive-connect')).toBe('Conectar Drive');
+    expect(text(f, 'drive-error')).toBe(
+      'No se pudo preparar la conexión con Google. Revisa tu conexión e inténtalo de nuevo.',
+    );
   });
 
   it('after a reload (needs-auth) it routes through prepare then connect again, and never through sync()', async () => {
@@ -354,7 +367,7 @@ describe('cc-settings-sync: change passphrase', () => {
     const sync = fakeSync(idle, 'Sincronizado');
     sync.changePassphrase.mockImplementation(() => {
       sync.statusText.set('Otro dispositivo está sincronizando; inténtalo de nuevo');
-      return Promise.resolve();
+      return Promise.resolve<PassphraseChangeOutcome>('busy');
     });
     const f = mount(sync);
     click(f, 'passphrase-change-open');
@@ -366,6 +379,39 @@ describe('cc-settings-sync: change passphrase', () => {
     expect(el(f, 'passphrase-done')).toBeNull();
     expect((el(f, 'passphrase-input') as HTMLInputElement).value).toBe('');
     expect(text(f, 'drive-status')).toContain('Otro dispositivo está sincronizando');
+  });
+
+  it.each([
+    ['offline', { state: 'offline', pendingChanges: 1 }, 'Cambios sin sincronizar (1)'],
+    ['needs-auth', { state: 'needs-auth' }, 'Falta autorizar Drive'],
+  ] as const)('shows no success text when the change failed and the status is %s', async (_name, status, label) => {
+    const sync = fakeSync(idle, 'Sincronizado');
+    sync.changePassphrase.mockImplementation(() => {
+      sync.status.set(status as SyncStatus);
+      sync.statusText.set(label);
+      return Promise.resolve<PassphraseChangeOutcome>('failed');
+    });
+    const f = mount(sync);
+    click(f, 'passphrase-change-open');
+    type(f, 'passphrase-input', PHRASE);
+    type(f, 'passphrase-confirm', PHRASE);
+    click(f, 'passphrase-submit');
+    await settle(f);
+    expect(el(f, 'passphrase-done')).toBeNull();
+    expect(text(f, 'drive-status')).toBe(label);
+  });
+
+  it('keeps the form open when the change failed', async () => {
+    const sync = fakeSync(idle, 'Sincronizado');
+    sync.changePassphrase.mockResolvedValue('failed');
+    const f = mount(sync);
+    click(f, 'passphrase-change-open');
+    type(f, 'passphrase-input', PHRASE);
+    type(f, 'passphrase-confirm', PHRASE);
+    click(f, 'passphrase-submit');
+    await settle(f);
+    expect(el(f, 'passphrase-form')).not.toBeNull();
+    expect(el(f, 'passphrase-done')).toBeNull();
   });
 
   it('can be cancelled', () => {
