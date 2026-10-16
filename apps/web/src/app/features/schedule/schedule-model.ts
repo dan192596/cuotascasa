@@ -62,6 +62,8 @@ export interface LedgerInput {
   readonly components: readonly ComponentRealDelta[];
   /** State of the abono cell of installment k in the active scenario. */
   readonly slotAt: (k: number) => AbonoSlot;
+  /** The scenario view is showing the real rows because the scenario has no computed path. */
+  readonly fallback?: boolean;
 }
 
 export interface LedgerModel {
@@ -93,11 +95,19 @@ function dataRow(
   const paid = !original && (row.paid || input.paid.has(row.k));
   const editable = !original && row.k > cutoffK && slot.kind !== 'locked';
   const applied = nonZero(row.prepayment);
-  const prepayment = slot.kind === 'locked' ? `${applied} *`.trim() : applied;
+  // A scenario prepayment that the displayed rows do not include (real view, scenario fallback): show it, marked.
+  const pendingEsc = slot.kind === 'single' && !original && (view === 'real' || input.fallback === true);
+  const prepayment =
+    slot.kind === 'locked'
+      ? `${applied} *`.trim()
+      : pendingEsc && slot.kind === 'single'
+        ? `${money(slot.event.amount)} (esc.)`
+        : applied;
   const anchors = original ? undefined : byAnchor.get(row.k);
   const component = original ? undefined : byPayment.get(row.k);
   const spoken = [`Cuota ${row.k}`];
   if (paid) spoken.push('pagada');
+  if (pendingEsc) spoken.push('abono del escenario, aún no aplicado a esta vista');
   if (slot.kind === 'locked') spoken.push('abono con varios eventos hipotéticos: edítalo en Proyecciones');
   return {
     key: `k-${row.k}`,

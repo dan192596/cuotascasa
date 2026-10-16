@@ -12,6 +12,7 @@ import type {
   YearlySubtotal,
 } from '@cuotascasa/domain';
 import { describe, expect, it, vi } from 'vitest';
+import { DataError } from '../../data/api.ts';
 import type {
   AnchorDelta,
   LoanEventsStore,
@@ -257,11 +258,43 @@ describe('SchedulePageComponent: views', () => {
     expect(clean(cell(fixture, '1', COLUMN.prepayment))).toBe('50.00');
   });
 
-  it('without scenario events the scenario view shows the real rows and says so', async () => {
-    const { fixture } = mount({ scenarioPath: false });
-    await chooseView(fixture, 'scenario');
-    expect(clean(cell(fixture, '1', COLUMN.opening))).toBe('2,000.00');
-    expect(clean(byId(fixture, 'scenario-fallback'))).toContain('se muestra el camino real');
+  it('the scenario fallback explains its own cause', async () => {
+    const noActive = mount({ scenarioPath: false });
+    await chooseView(noActive.fixture, 'scenario');
+    expect(clean(byId(noActive.fixture, 'scenario-fallback'))).toContain('No hay un escenario activo');
+    TestBed.resetTestingModule();
+    const empty = mount({ scenarioPath: false, active: SCENARIO_ID, scenarios: [scenarioOf([])] });
+    await chooseView(empty.fixture, 'scenario');
+    expect(clean(byId(empty.fixture, 'scenario-fallback'))).toContain('no tiene abonos');
+    expect(clean(cell(empty.fixture, '1', COLUMN.opening))).toBe('2,000.00');
+    TestBed.resetTestingModule();
+    const failed = mount({
+      scenarioPath: false,
+      active: SCENARIO_ID,
+      scenarios: [scenarioOf([prepayment('x', '2026-03-31', '5.00')])],
+      error: new NegativeAmortizationError(NEGATIVE_AMORTIZATION_RULES[0], 3, m('1.00'), m('2.00')),
+    });
+    await chooseView(failed.fixture, 'scenario');
+    const text = clean(byId(failed.fixture, 'scenario-fallback')) ?? '';
+    expect(text).toContain('no se pudo calcular');
+    expect(text).toContain('se muestra el camino real');
+  });
+
+  it('the real view marks a row that has a scenario prepayment', () => {
+    const { fixture } = mount({
+      active: SCENARIO_ID,
+      scenarios: [scenarioOf([prepayment('x', '2026-03-31', '1500')])],
+    });
+    expect(clean(cell(fixture, '3', COLUMN.prepayment))).toBe('1,500.00 (esc.)');
+  });
+
+  it('a row that does not exist in the shown view gets its own message and writes nothing', async () => {
+    const { fixture, scenarioStore } = mount({ active: SCENARIO_ID, scenarios: [scenarioOf([])] });
+    const host = fixture.componentInstance as unknown as { onCellEdit(e: object): Promise<void> };
+    await host.onCellEdit({ rowKey: 'k-99', columnKey: 'prepayment', value: '5' });
+    fixture.detectChanges();
+    expect(clean(byId(fixture, 'schedule-status'))).toContain('Esa cuota ya no existe en esta vista');
+    expect(scenarioStore.update).not.toHaveBeenCalled();
   });
 
   it('yearly subtotal rows equal the facade subtotals of the displayed path', async () => {
@@ -395,22 +428,51 @@ describe('SchedulePageComponent: in-cell abono', () => {
     expect(sent?.events[0]).toEqual({ ...existing, amount: '250.50' });
   });
 
-  it('(c) emptying the cell tombstones that Prepayment', async () => {
+  it('(c) emptying the cell removes that Prepayment from the scenario', async () => {
     const existing = prepayment('e0000000-0000-4000-8000-0000000000aa', '2026-03-31', '100.00');
     const { fixture, scenarioStore } = mount({ active: SCENARIO_ID, scenarios: [scenarioOf([existing])] });
     await typeAbono(fixture, 3, '');
     await settle(fixture);
-    const sent = scenarioStore.update.mock.calls[0]?.[0];
-    expect(sent?.events).toHaveLength(1);
-    expect(sent?.events[0]).toMatchObject({ id: existing.id, deletedAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/) });
+    expect(scenarioStore.update.mock.calls[0]?.[0]?.events).toEqual([]);
   });
 
-  it('(c) typing 0 tombstones that Prepayment too', async () => {
+  it('(c) typing 0 removes that Prepayment too', async () => {
     const existing = prepayment('e0000000-0000-4000-8000-0000000000aa', '2026-03-31', '100.00');
     const { fixture, scenarioStore } = mount({ active: SCENARIO_ID, scenarios: [scenarioOf([existing])] });
     await typeAbono(fixture, 3, '0');
     await settle(fixture);
-    expect(scenarioStore.update.mock.calls[0]?.[0]?.events[0]?.deletedAt).not.toBeNull();
+    expect(scenarioStore.update.mock.calls[0]?.[0]?.events).toEqual([]);
+  });
+
+  it('an equal amount (100 vs 100.00) writes nothing', async () => {
+    const existing = prepayment('e0000000-0000-4000-8000-0000000000aa', '2026-03-31', '100.00');
+    const { fixture, scenarioStore } = mount({ active: SCENARIO_ID, scenarios: [scenarioOf([existing])] });
+    await typeAbono(fixture, 3, '100.00');
+    await settle(fixture);
+    expect(scenarioStore.update).not.toHaveBeenCalled();
+  });
+
+  it('two quick edits on different k both end up in the stored scenario', async () => {
+    const { fixture, scenarioStore, scenarios } = mount({ active: SCENARIO_ID, scenarios: [scenarioOf([])] });
+    await typeAbono(fixture, 3, '10');
+    await typeAbono(fixture, 4, '20');
+    await settle(fixture);
+    const stored = scenarios()[0]?.events ?? [];
+    expect(stored.map((e) => (e as { amount: string }).amount).sort()).toEqual(['10.00', '20.00']);
+    expect(scenarioStore.update).toHaveBeenCalledTimes(2);
+  });
+
+  it('shows a non-blaming message when the store rejects with VALIDATION', async () => {
+    const { fixture } = mount({
+      active: SCENARIO_ID,
+      scenarios: [scenarioOf([])],
+      updateRejects: new DataError('VALIDATION'),
+    });
+    await typeAbono(fixture, 3, '10');
+    await settle(fixture);
+    const text = clean(byId(fixture, 'schedule-status')) ?? '';
+    expect(text).toContain('No se pudo guardar el escenario');
+    expect(text).not.toContain('monto');
   });
 
   it('(d) with two prepayments at k the cell is read-only and points to Proyecciones', async () => {

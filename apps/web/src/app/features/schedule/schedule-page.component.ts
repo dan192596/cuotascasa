@@ -88,10 +88,7 @@ interface PendingAbono {
       }
 
       @if (view() === 'scenario' && fallback()) {
-        <p class="note" data-testid="scenario-fallback">
-          Todavía no hay un escenario con abonos; se muestra el camino real. Escribe un monto en la columna Abono para
-          probarlo.
-        </p>
+        <p class="note" data-testid="scenario-fallback">{{ fallbackText() }}</p>
       }
 
       @if (ledger(); as ledger) {
@@ -287,6 +284,17 @@ export class SchedulePageComponent {
 
   protected readonly fallback = computed(() => this.shown()?.fallback === true);
 
+  /** Why the scenario view shows the real rows; one text per cause. */
+  protected readonly fallbackText = computed(() => {
+    const scenario = this.active();
+    const hint = ' Escribe un monto en la columna Abono para probarlo.';
+    if (scenario === null) return `No hay un escenario activo; se muestra el camino real.${hint}`;
+    if (this.projection().error() !== null) {
+      return `El escenario «${scenario.name}» no se pudo calcular; se muestra el camino real. Revisa el aviso de arriba.`;
+    }
+    return `El escenario «${scenario.name}» no tiene abonos todavía; se muestra el camino real.${hint}`;
+  });
+
   /** Slot of every installment that has live hypothetical events in the active scenario. */
   private readonly slots = computed<ReadonlyMap<number, AbonoSlot>>(() => {
     const events = this.active()?.events ?? [];
@@ -315,6 +323,7 @@ export class SchedulePageComponent {
       anchors: projection.realDeltaPerAnchor(),
       components: projection.realDeltaPerComponent(),
       slotAt: (k) => slots.get(k) ?? { kind: 'none' },
+      fallback: shown.fallback,
     });
   });
 
@@ -379,33 +388,48 @@ export class SchedulePageComponent {
     }
   }
 
-  protected async onCellEdit(edit: LedgerCellEdit): Promise<void> {
+  /** Edits are applied one after another: each one re-reads the active scenario right before planning. */
+  private queue: Promise<void> = Promise.resolve();
+
+  private enqueue(task: () => Promise<void>): Promise<void> {
+    this.queue = this.queue.then(task, task);
+    return this.queue;
+  }
+
+  protected onCellEdit(edit: LedgerCellEdit): Promise<void> {
     const match = ROW_KEY.exec(edit.rowKey);
     const shown = this.shown();
-    if (edit.columnKey !== 'prepayment' || match === null || shown === null) return;
+    if (edit.columnKey !== 'prepayment' || match === null || shown === null) return Promise.resolve();
     const k = Number(match[1]);
     const row = shown.schedule.rows.find((candidate) => candidate.k === k);
-    if (row === undefined || k <= this.projection().cutoffK()) {
+    if (row === undefined) {
+      this.message.set('Esa cuota ya no existe en esta vista.');
+      return Promise.resolve();
+    }
+    if (k <= this.projection().cutoffK()) {
       this.message.set(`La cuota ${k} ya tiene datos reales y no admite abonos hipotéticos.`);
-      return;
+      return Promise.resolve();
     }
     let amount: Money;
     try {
       amount = parseMoney(edit.value);
     } catch {
       this.message.set('El monto del abono no es válido.');
-      return;
+      return Promise.resolve();
     }
-    const active = this.active();
-    if (active !== null) {
-      await this.save(active, { k, dueDate: row.dueDate, amount }, null);
-      return;
-    }
-    if (moneyIsZero(amount)) {
-      this.message.set(`No hay un abono en la cuota ${k} que quitar.`);
-      return;
-    }
-    this.pending.set({ k, dueDate: row.dueDate, amount });
+    const abono: PendingAbono = { k, dueDate: row.dueDate, amount };
+    return this.enqueue(async () => {
+      const active = this.active();
+      if (active !== null) {
+        await this.save(active, abono, null);
+        return;
+      }
+      if (moneyIsZero(amount)) {
+        this.message.set(`No hay un abono en la cuota ${k} que quitar.`);
+        return;
+      }
+      this.pending.set(abono);
+    });
   }
 
   protected declineDraft(): void {
@@ -413,38 +437,42 @@ export class SchedulePageComponent {
     this.message.set('No se guardó el abono: no hay un escenario activo.');
   }
 
-  protected async acceptDraft(): Promise<void> {
+  protected acceptDraft(): Promise<void> {
     const pending = this.pending();
     this.pending.set(null);
-    if (pending === null) return;
-    const existing = this.draft();
-    if (existing !== null) {
-      await this.save(existing, pending, 'activated');
-      return;
-    }
-    const event: ScenarioEvent = {
-      id: crypto.randomUUID(),
-      date: pending.dueDate,
-      type: 'Prepayment',
-      amount: pending.amount,
-      mode: 'REDUCE_TERM',
-      deletedAt: null,
-    };
-    try {
-      const created = await this.scenarioStore.create({ loanId: this.id(), name: DRAFT_NAME, events: [event] });
-      await this.scenarioStore.setActiveScenario(this.id(), created.id);
-      this.view.set('scenario');
-      this.message.set(`${this.savedText(pending, DRAFT_NAME)} Escenario «${DRAFT_NAME}» creado y activado.`);
-    } catch (error) {
-      this.message.set(writeErrorText(error));
-    }
+    if (pending === null) return Promise.resolve();
+    return this.enqueue(async () => {
+      const existing = this.draft();
+      if (existing !== null) {
+        await this.save(existing, pending, 'activated');
+        return;
+      }
+      const event: ScenarioEvent = {
+        id: crypto.randomUUID(),
+        date: pending.dueDate,
+        type: 'Prepayment',
+        amount: pending.amount,
+        mode: 'REDUCE_TERM',
+        deletedAt: null,
+      };
+      try {
+        const created = await this.scenarioStore.create({ loanId: this.id(), name: DRAFT_NAME, events: [event] });
+        await this.scenarioStore.setActiveScenario(this.id(), created.id);
+        this.view.set('scenario');
+        this.message.set(`${this.savedText(pending, DRAFT_NAME)} Escenario «${DRAFT_NAME}» creado y activado.`);
+      } catch (error) {
+        this.message.set(writeErrorText(error));
+      }
+    });
   }
 
   /**
    * Plans the edit on `scenario` and writes it. `activation`: the scenario was just offered to the user and still has to
    * be made active. Nothing is written when the cell is locked or there is nothing to change.
    */
-  private async save(scenario: Scenario, pending: PendingAbono, activation: 'activated' | null): Promise<void> {
+  private async save(offered: Scenario, pending: PendingAbono, activation: 'activated' | null): Promise<void> {
+    // Latest stored version of the scenario: a previous queued edit may have changed it.
+    const scenario = this.scenarios().find((candidate) => candidate.id === offered.id) ?? offered;
     const plan = planAbonoEdit({
       events: scenario.events,
       k: pending.k,
@@ -452,14 +480,17 @@ export class SchedulePageComponent {
       amount: pending.amount,
       installmentOf: this.installmentOf(),
       newId: () => crypto.randomUUID(),
-      now: new Date().toISOString(),
     });
     if (plan === null) {
       this.message.set(`La cuota ${pending.k} tiene varios eventos hipotéticos: edítalos en Proyecciones.`);
       return;
     }
     if (plan.outcome === 'unchanged') {
-      this.message.set(`No hay un abono en la cuota ${pending.k} que quitar.`);
+      this.message.set(
+        moneyIsZero(pending.amount)
+          ? `No hay un abono en la cuota ${pending.k} que quitar.`
+          : `El abono de la cuota ${pending.k} ya tenía ese monto.`,
+      );
       return;
     }
     try {

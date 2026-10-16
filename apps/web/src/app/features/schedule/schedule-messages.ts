@@ -21,7 +21,7 @@ export function writeErrorText(error: unknown): string {
   if (error instanceof DataError) {
     switch (error.code) {
       case 'VALIDATION':
-        return 'No se pudo guardar el abono: el monto no es válido para guardarlo.';
+        return 'No se pudo guardar el escenario. Revisa sus eventos en Proyecciones.';
       case 'NOT_FOUND':
         return 'No se pudo guardar el abono: el escenario ya no existe.';
       case 'STORAGE':

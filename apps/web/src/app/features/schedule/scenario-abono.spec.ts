@@ -65,7 +65,6 @@ describe('planAbonoEdit', () => {
       amount: '20000.00',
       installmentOf: kOf,
       newId,
-      now: STAMP,
     });
     expect(plan).toEqual({
       outcome: 'created',
@@ -96,7 +95,6 @@ describe('planAbonoEdit', () => {
       amount: '99.50',
       installmentOf: kOf,
       newId,
-      now: STAMP,
     });
     expect(plan?.outcome).toBe('updated');
     expect(plan?.events).toHaveLength(2);
@@ -104,18 +102,65 @@ describe('planAbonoEdit', () => {
     expect(plan?.events[1]).toEqual({ ...existing, amount: '99.50' });
   });
 
-  it('(c) a zero amount tombstones the single prepayment instead of dropping it', () => {
+  it('(c) a zero amount removes the single prepayment from the array and never writes deletedAt', () => {
     const existing = prepayment('gone', '2026-05-01', '10.00');
+    const other = prepayment('other', '2026-07-01', '7.00');
     const plan = planAbonoEdit({
-      events: [existing],
+      events: [other, existing],
       k: 5,
       dueDate: '2026-05-01',
       amount: '0.00',
       installmentOf: kOf,
       newId,
-      now: STAMP,
     });
-    expect(plan).toEqual({ outcome: 'removed', events: [{ ...existing, deletedAt: STAMP }] });
+    expect(plan).toEqual({ outcome: 'removed', events: [other] });
+  });
+
+  it('drops legacy embedded-deleted events instead of carrying them', () => {
+    const legacy = prepayment('old', '2026-05-01', '10.00', { deletedAt: STAMP });
+    const plan = planAbonoEdit({
+      events: [legacy],
+      k: 5,
+      dueDate: '2026-05-01',
+      amount: '5.00',
+      installmentOf: kOf,
+      newId,
+    });
+    expect(plan?.outcome).toBe('created');
+    expect(plan?.events.map((e) => e.id)).toEqual(['f0000000-0000-4000-8000-000000000001']);
+  });
+
+  it('an equal amount plans unchanged', () => {
+    const existing = prepayment('a', '2026-05-01', '100.00');
+    const plan = planAbonoEdit({
+      events: [existing],
+      k: 5,
+      dueDate: '2026-05-01',
+      amount: '100.00',
+      installmentOf: kOf,
+      newId,
+    });
+    expect(plan?.outcome).toBe('unchanged');
+  });
+
+  it('150 write/clear cycles on the same k keep the event list bounded', () => {
+    let events: ScenarioEvent[] = [];
+    let n = 0;
+    for (let i = 0; i < 150; i += 1) {
+      for (const amount of ['10.00', '0.00']) {
+        const plan = planAbonoEdit({
+          events,
+          k: 5,
+          dueDate: '2026-05-01',
+          amount,
+          installmentOf: kOf,
+          newId: () => `id-${n++}`,
+        });
+        events = plan?.events ?? events;
+      }
+      expect(events.filter((e) => kOf(e.date) === 5).length).toBeLessThanOrEqual(1);
+    }
+    expect(events).toHaveLength(0);
   });
 
   it('a zero amount with nothing at k changes nothing', () => {
@@ -126,7 +171,6 @@ describe('planAbonoEdit', () => {
       amount: '0.00',
       installmentOf: kOf,
       newId,
-      now: STAMP,
     });
     expect(plan).toEqual({ outcome: 'unchanged', events: [] });
   });
@@ -134,7 +178,7 @@ describe('planAbonoEdit', () => {
   it('(d) refuses a locked cell', () => {
     const events = [prepayment('a', '2026-05-01', '10.00'), prepayment('b', '2026-05-02', '10.00')];
     expect(
-      planAbonoEdit({ events, k: 5, dueDate: '2026-05-01', amount: '1.00', installmentOf: kOf, newId, now: STAMP }),
+      planAbonoEdit({ events, k: 5, dueDate: '2026-05-01', amount: '1.00', installmentOf: kOf, newId }),
     ).toBeNull();
   });
 
@@ -142,7 +186,7 @@ describe('planAbonoEdit', () => {
     const existing = Object.freeze(prepayment('a', '2026-05-01', '10.00'));
     const events = Object.freeze([existing]);
     expect(() =>
-      planAbonoEdit({ events, k: 5, dueDate: '2026-05-01', amount: '11.00', installmentOf: kOf, newId, now: STAMP }),
+      planAbonoEdit({ events, k: 5, dueDate: '2026-05-01', amount: '11.00', installmentOf: kOf, newId }),
     ).not.toThrow();
   });
 });

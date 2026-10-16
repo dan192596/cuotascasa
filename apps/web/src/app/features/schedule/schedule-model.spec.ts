@@ -246,6 +246,7 @@ describe('buildLedger: abono cell', () => {
   it('preloads the edit with the scenario event amount, not the capped amount shown in the cell', () => {
     const { rows } = buildLedger(
       input({
+        view: 'scenario',
         schedule: schedule([row(1, { prepayment: m('900.00') })]),
         subtotals: [],
         slotAt: () => ({
@@ -282,5 +283,38 @@ describe('buildLedger: abono cell', () => {
   it('a locked cell without an applied amount still carries the asterisk', () => {
     const { rows } = buildLedger(input({ slotAt: (k) => (k === 1 ? { kind: 'locked' } : { kind: 'none' }) }));
     expect(rows[0]?.cells['prepayment']).toBe('*');
+  });
+});
+
+describe('buildLedger: scenario prepayment marker', () => {
+  const single: AbonoSlot = {
+    kind: 'single',
+    event: { id: 'a', date: '2025-11-30', type: 'Prepayment', amount: '1500.00', mode: 'REDUCE_TERM', deletedAt: null },
+  };
+
+  it('in the real view a row with a scenario prepayment shows its amount with a visible marker and an accessible label', () => {
+    const { rows } = buildLedger(
+      input({ view: 'real', subtotals: [], slotAt: (k) => (k === 1 ? single : { kind: 'none' }) }),
+    );
+    expect(rows[0]?.cells['prepayment']).toBe('1,500.00 (esc.)');
+    expect(rows[0]?.label).toContain('abono del escenario');
+    expect(rows[1]?.cells['prepayment']).toBe('');
+  });
+
+  it('in the scenario fallback the marker also shows', () => {
+    const { rows } = buildLedger(input({ view: 'scenario', fallback: true, subtotals: [], slotAt: () => single }));
+    expect(rows[0]?.cells['prepayment']).toBe('1,500.00 (esc.)');
+  });
+
+  it('in the real scenario view the applied amount is shown without marker', () => {
+    const { rows } = buildLedger(
+      input({
+        view: 'scenario',
+        subtotals: [],
+        schedule: schedule([row(1, { prepayment: m('900.00') })]),
+        slotAt: () => single,
+      }),
+    );
+    expect(rows[0]?.cells['prepayment']).toBe('900.00');
   });
 });

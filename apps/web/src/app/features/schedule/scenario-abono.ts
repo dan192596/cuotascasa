@@ -49,23 +49,24 @@ export interface AbonoEditRequest {
   readonly amount: string;
   readonly installmentOf: InstallmentOf;
   readonly newId: () => string;
-  /** Instant of the tombstone. */
-  readonly now: string;
 }
 
 /**
  * Pure planning of an in-cell abono (HU-17). Returns null for a locked cell.
  * (a) a new amount creates a REDUCE_TERM Prepayment dated on the due date of k, without commission;
- * (b) a single existing Prepayment keeps its id, date, mode and commission and only changes its amount;
- * (c) zero tombstones that Prepayment (deletedAt) instead of dropping it, so the deletion can sync.
+ * (b) a single existing Prepayment keeps its id, date, mode and commission and only changes its amount; an equal amount
+ *     plans `unchanged`;
+ * (c) zero REMOVES that Prepayment from the array: a scenario syncs as one LWW record, so an embedded tombstone adds
+ *     nothing and would pile up against the 200-event limit. Legacy embedded-deleted events are ignored and dropped.
  */
 export function planAbonoEdit(request: AbonoEditRequest): AbonoPlan | null {
-  const { events, k, dueDate, amount, installmentOf, newId, now } = request;
+  const { dueDate, amount, installmentOf, newId, k } = request;
+  const events = request.events.filter((event) => event.deletedAt === null);
   const slot = abonoSlotAt(events, k, installmentOf);
   if (slot.kind === 'locked') return null;
   const zero = amount === '0.00';
   if (slot.kind === 'none') {
-    if (zero) return { outcome: 'unchanged', events: [...events] };
+    if (zero) return { outcome: 'unchanged', events: [...request.events] };
     const created: ScenarioEvent = {
       id: newId(),
       date: dueDate,
@@ -76,9 +77,10 @@ export function planAbonoEdit(request: AbonoEditRequest): AbonoPlan | null {
     };
     return { outcome: 'created', events: [...events, created] };
   }
-  const replacement: ScenarioEvent = zero ? { ...slot.event, deletedAt: now } : { ...slot.event, amount };
+  if (zero) return { outcome: 'removed', events: events.filter((event) => event !== slot.event) };
+  if (slot.event.amount === amount) return { outcome: 'unchanged', events: [...request.events] };
   return {
-    outcome: zero ? 'removed' : 'updated',
-    events: events.map((event) => (event === slot.event ? replacement : event)),
+    outcome: 'updated',
+    events: events.map((event) => (event === slot.event ? { ...slot.event, amount } : event)),
   };
 }

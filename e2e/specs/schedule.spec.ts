@@ -55,12 +55,15 @@ test('keyboard only: type an abono in the table, it lands in a new «Borrador» 
   await seedAndOpen(page);
   await expectNoA11yViolations(page);
 
-  const realBefore = {
-    events: (await readStore(page, 'events')).length,
-    reportedBalances: (await readStore(page, 'reportedBalances')).length,
-    payments: (await readStore(page, 'payments')).length,
-  };
-  expect(realBefore).toEqual({ events: 1, reportedBalances: 0, payments: 0 });
+  const readReal = async () => ({
+    events: await readStore(page, 'events'),
+    reportedBalances: await readStore(page, 'reportedBalances'),
+    payments: await readStore(page, 'payments'),
+  });
+  const realBefore = await readReal();
+  expect(realBefore.events).toHaveLength(1);
+  expect(realBefore.reportedBalances).toHaveLength(0);
+  expect(realBefore.payments).toHaveLength(0);
   expect(await readStore(page, 'scenarios')).toHaveLength(0);
   await expect(page.getByTestId('scenario-summary')).toHaveCount(0);
   const realEnd = await lastDueDate(page);
@@ -114,11 +117,8 @@ test('keyboard only: type an abono in the table, it lands in a new «Borrador» 
     deletedAt: null,
   });
   expect(scenarios[0]?.events[0]).not.toHaveProperty('commission');
-  expect({
-    events: (await readStore(page, 'events')).length,
-    reportedBalances: (await readStore(page, 'reportedBalances')).length,
-    payments: (await readStore(page, 'payments')).length,
-  }).toEqual(realBefore);
+  // The full real records, stamps included, are untouched.
+  expect(await readReal()).toEqual(realBefore);
 
   // The edited cell shows the applied abono, and the keyboard is back on the grid.
   const edited = page.locator('[role="row"]', { has: page.locator('[data-c="0"]', { hasText: /^\s*15\s*$/ }) });
