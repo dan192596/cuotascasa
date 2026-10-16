@@ -159,7 +159,9 @@ declare const performance: { now(): number };
 
 describe('bench', () => {
   const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
-  const factor = env?.['CI'] === undefined ? 1 : 5;
+  // These guard against algorithmic regressions (orders of magnitude), not machine speed: locally several worktrees
+  // often run suites in parallel, so the local factor is 3; GitHub runners get 5.
+  const factor = env?.['CI'] === undefined ? 3 : 5;
   const goals: Record<string, Goal> = {
     FINISH_BY: { kind: 'FINISH_BY', date: d('2045-12-31') },
     MAX_INSTALLMENT: { kind: 'MAX_INSTALLMENT', amount: m('4000.00') },
