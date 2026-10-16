@@ -14,15 +14,23 @@ const MONEY_FORMAT = '#,##0.00';
 const INTEGER_FORMAT = '0';
 const DATE_FORMAT = 'dd/mm/yyyy';
 
+/** Una celda numérica de Excel (doble IEEE) conserva con certeza hasta 15 dígitos significativos. */
+const MAX_SIGNIFICANT_DIGITS = 15;
+
 /**
  * Único punto del paquete donde un monto decimal pasa a `number` (ADR-0013). `Number('-12.34')` es el doble más
- * cercano al decimal escrito, sin aritmética: Excel lo muestra con 2 decimales y `toFixed(2)` devuelve el texto
- * original (lo verifica la prueba de ida y vuelta). Los montos nunca se suman ni se multiplican como `number`.
+ * cercano al decimal escrito, sin aritmética: Excel lo muestra con 2 decimales. Solo se convierte si el monto tiene
+ * a lo sumo 15 dígitos significativos Y `Number(valor).toFixed(2)` devuelve exactamente el texto original; si no,
+ * el llamador escribe una celda de texto, para no perder precisión en silencio. Los montos nunca se suman ni se
+ * multiplican como `number`.
  */
 function moneyToNumber(value: string): number | undefined {
   if (!NUMERIC.test(value)) return undefined;
+  const significant = value.replace(/[-.]/g, '').replace(/^0+/, '');
+  if (significant.length > MAX_SIGNIFICANT_DIGITS) return undefined;
   const converted = Number(value);
-  return Number.isSafeInteger(Math.trunc(converted)) ? converted : undefined;
+  const canonical = value.includes('.') ? value : `${value}.00`;
+  return converted.toFixed(2) === canonical ? converted : undefined;
 }
 
 /**
@@ -76,13 +84,21 @@ function toSheetData(table: ReportTable): SheetData {
 
 const DISPLAY_DATE = /^(\d{2})\/(\d{2})\/(\d{4})$/;
 
-/** Valor de «Datos»: una fecha `dd/mm/aaaa` válida es celda de fecha; todo lo demás, texto (nunca fórmula). */
+/**
+ * Valor de «Datos»: un texto con forma `dd/mm/aaaa` (año ≥ 1901) y calendario válido se escribe como celda de fecha,
+ * aunque el modelo lo traiga como texto; todo lo demás es texto (nunca fórmula).
+ */
 function metaValueCell(value: string): Cell {
   const match = DISPLAY_DATE.exec(value);
   if (match !== null) {
     const [day, month, year] = [Number(match[1]), Number(match[2]), Number(match[3])];
     const date = new Date(Date.UTC(year, month - 1, day));
-    if (date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day) {
+    if (
+      year >= 1901 &&
+      date.getUTCFullYear() === year &&
+      date.getUTCMonth() === month - 1 &&
+      date.getUTCDate() === day
+    ) {
       return { type: Date, value: date, format: DATE_FORMAT };
     }
   }
@@ -112,7 +128,11 @@ async function toXlsx(model: ReportModel): Promise<Uint8Array> {
   return new Uint8Array(await blob.arrayBuffer());
 }
 
-/** Excel de ADR-0013: hoja por tabla, encabezado fijo, anchos, celdas numéricas `#,##0.00` y fechas `dd/mm/yyyy`. */
+/**
+ * Excel de ADR-0013: hoja por tabla, encabezado fijo, anchos, celdas numéricas `#,##0.00` y fechas `dd/mm/yyyy`.
+ * El contenido es determinista, pero los bytes del `.xlsx` no: las marcas de hora de las entradas del zip las pone
+ * `write-excel-file` (no se posprocesa). Las pruebas comparan el contenido, no los bytes.
+ */
 export const excelWriter: ReportWriter = {
   format: 'excel',
   mimeType: EXPORT_FILE_TYPES.excel.mimeType,

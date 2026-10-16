@@ -211,6 +211,30 @@ describe('excelWriter', () => {
     expect(styles).toContain('#,##0.00');
   });
 
+  it('writes amounts beyond 15 significant digits as text, keeps 15 digits numeric', async () => {
+    const { rows } = await sheet1(
+      modelWith([
+        { kind: 'money', value: parseMoney('90071992547409.99') },
+        { kind: 'money', value: parseMoney('99999999999999.99') },
+        { kind: 'money', value: parseMoney('9999999999999.99') },
+      ]),
+    );
+    const [a, b, c] = ['A3', 'B3', 'C3'].map((ref) => byRef(rows, ref));
+    expect([a?.type, b?.type]).toEqual(['s', 's']);
+    expect(a?.value).toBe('90071992547409.99');
+    expect(b?.value).toBe('99999999999999.99');
+    expect(c?.type === undefined || c.type === 'n').toBe(true);
+    expect(Number(c?.value).toFixed(2)).toBe('9999999999999.99');
+  });
+
+  it('writes a Datos date-looking value before year 1901 as text', async () => {
+    const model = { ...modelWith([]), meta: [{ label: 'Generado', value: '01/01/1900' }] };
+    const files = unzip(await excelWriter.write(model));
+    const cell = byRef(readSheet(files, 'xl/worksheets/sheet1.xml'), 'B2');
+    expect(cell?.type === 's' || cell?.type === 'inlineStr').toBe(true);
+    expect(cell?.value).toBe('01/01/1900');
+  });
+
   it('round-trips every money cell of the synthetic reports', async () => {
     for (const schedule of [syntheticGtqSchedule(), syntheticUsdSchedule()]) {
       const model = buildScheduleReport({
