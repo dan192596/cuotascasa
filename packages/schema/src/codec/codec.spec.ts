@@ -1,5 +1,5 @@
 import fc from 'fast-check';
-import { z } from 'zod';
+import * as z from 'zod';
 import { describe, expect, it } from 'vitest';
 import { actualPaymentExample } from '../__examples__/actual-payment.example.ts';
 import { loanExample } from '../__examples__/loan.example.ts';
