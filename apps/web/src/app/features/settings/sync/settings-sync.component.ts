@@ -5,8 +5,10 @@ import {
   computed,
   ElementRef,
   inject,
+  effect,
   Injector,
   signal,
+  untracked,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { makeLocalDate } from '@cuotascasa/domain';
@@ -51,14 +53,17 @@ function errorText(error: unknown): string {
   imports: [RouterLink],
   template: `
     <section aria-labelledby="drive-title">
-      <h2 id="drive-title">Google Drive</h2>
+      <h2 id="drive-title" data-testid="drive-title" tabindex="-1">Google Drive</h2>
       <p class="status" role="status" data-testid="drive-status">{{ sync.statusText() }}</p>
 
       @if (lastSyncText(); as last) {
         <p class="muted" data-testid="drive-last-sync">{{ last }}</p>
       }
+      <p class="muted" role="status" data-testid="drive-progress">
+        {{ step() === 'preparing' ? 'Preparando la conexión con Google…' : '' }}
+      </p>
       @if (error(); as message) {
-        <p class="notice" role="alert" data-testid="drive-error">{{ message }}</p>
+        <p class="notice" role="status" data-testid="drive-error">{{ message }}</p>
       }
 
       @if (mode() === 'connect') {
@@ -91,9 +96,11 @@ function errorText(error: unknown): string {
             >
               Conectar Drive
             </button>
-            @if (step() === 'preparing') {
-              <span class="muted" role="status">Preparando la conexión con Google…</span>
-            }
+          }
+          @if (canLeave()) {
+            <button type="button" data-testid="drive-disconnect" [disabled]="busy()" (click)="onDisconnect()">
+              Desconectar Drive
+            </button>
           }
         </div>
       }
@@ -199,6 +206,10 @@ function errorText(error: unknown): string {
             </button>
             @if (changing()) {
               <button type="button" data-testid="passphrase-cancel" (click)="closeChange()">Cancelar</button>
+            } @else {
+              <button type="button" data-testid="drive-disconnect" [disabled]="busy()" (click)="onDisconnect()">
+                Desconectar Drive
+              </button>
             }
           </div>
         </form>
@@ -315,6 +326,8 @@ export class SettingsSyncComponent {
         return 'connected';
     }
   });
+  /** The token is gone after a reload: the owner can still leave Drive without connecting again. */
+  protected readonly canLeave = computed(() => this.sync.status().state === 'needs-auth');
   protected readonly busy = computed(() => this.working() || this.sync.status().state === 'syncing');
   protected readonly needsConfirm = computed(() => {
     const status = this.sync.status();
@@ -337,6 +350,27 @@ export class SettingsSyncComponent {
     const time = `${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}`;
     return `Última sincronización: ${day} ${time}`;
   });
+
+  private lastMode: string | null = null;
+  private pendingFocus: string | null = null;
+
+  constructor() {
+    // On every change of mode the focus goes to the main control of the new one (never on first render).
+    effect(() => {
+      const mode = this.mode();
+      const previous = this.lastMode;
+      this.lastMode = mode;
+      if (previous === null || previous === mode) {
+        return;
+      }
+      untracked(() => {
+        if (mode !== 'connected') {
+          this.doneText.set(null);
+        }
+        this.focusMain(mode);
+      });
+    });
+  }
 
   protected valueOf(event: Event): string {
     return (event.target as HTMLInputElement).value;
@@ -375,9 +409,6 @@ export class SettingsSyncComponent {
   private afterConnect(): void {
     this.connecting.set(false);
     this.step.set('idle');
-    if (this.mode() === 'passphrase') {
-      this.focusLater('passphrase-input');
-    }
   }
 
   /** `sync()` is called first thing in the click: a renewed token needs a popup inside the gesture. */
@@ -432,35 +463,49 @@ export class SettingsSyncComponent {
     this.working.set(true);
     this.error.set(null);
     try {
+      // The service already received the string: nothing of it stays in this component while it works.
+      const run = changing ? this.sync.changePassphrase(phrase) : this.sync.setPassphrase(phrase);
+      this.clearPhrase();
+      await run;
       if (changing) {
-        await this.sync.changePassphrase(phrase);
         if (this.sync.statusText().startsWith(BUSY_PREFIX)) {
           return;
         }
         this.changing.set(false);
         this.doneText.set('Frase cambiada. Los otros dispositivos te pedirán la frase nueva.');
         this.focusLater('passphrase-change-open');
-      } else {
-        await this.sync.setPassphrase(phrase);
-        if (this.sync.status().state === 'idle') {
-          await this.sync.sync(); // first sync: the token was just granted, so no popup is needed.
-        }
+      } else if (this.mode() === 'connected') {
+        // No automatic sync: a token renewal after an await would fall outside the owner's click.
+        this.doneText.set('Frase guardada. Ya puedes sincronizar ahora.');
       }
     } catch (error) {
       this.error.set(errorText(error));
     } finally {
       this.clearPhrase();
       this.working.set(false);
+      this.flushFocus();
+    }
+  }
+
+  private flushFocus(): void {
+    const pending = this.pendingFocus;
+    this.pendingFocus = null;
+    if (pending !== null) {
+      this.focusMain(pending);
     }
   }
 
   private track(run: Promise<void>): void {
     this.working.set(true);
     run.then(
-      () => this.working.set(false),
+      () => {
+        this.working.set(false);
+        this.flushFocus();
+      },
       (error: unknown) => {
         this.error.set(errorText(error));
         this.working.set(false);
+        this.flushFocus();
       },
     );
   }
@@ -469,6 +514,23 @@ export class SettingsSyncComponent {
     this.phrase.set('');
     this.confirm.set('');
     this.shown.set(false);
+  }
+
+  private focusMain(mode: string): void {
+    const testId = mode === 'connect' ? 'drive-connect' : mode === 'passphrase' ? 'passphrase-input' : 'drive-sync';
+    afterNextRender(
+      () => {
+        const root = this.host.nativeElement;
+        const main = root.querySelector<HTMLButtonElement>(`[data-testid="${testId}"]`);
+        if ((main === null || main.disabled) && this.working()) {
+          this.pendingFocus = mode; // the control is disabled while the call runs: focus it when it ends.
+          return;
+        }
+        const target = main !== null && !main.disabled ? main : root.querySelector<HTMLElement>('#drive-title');
+        target?.focus();
+      },
+      { injector: this.injector },
+    );
   }
 
   private focusLater(testId: string): void {

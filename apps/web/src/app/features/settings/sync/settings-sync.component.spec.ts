@@ -204,7 +204,7 @@ describe('cc-settings-sync: passphrase setup', () => {
     expect(sync.setPassphrase).not.toHaveBeenCalled();
   });
 
-  it('sets the phrase, runs the first sync, clears the fields and stores nothing', async () => {
+  it('sets the phrase without syncing, invites to sync now, focuses «Sincronizar» and stores nothing', async () => {
     const sync = fakeSync(noKey, 'Falta la frase de cifrado');
     sync.setPassphrase.mockImplementation(() => {
       sync.status.set({ state: 'idle', pendingChanges: 2, lastSyncAt: null });
@@ -217,11 +217,26 @@ describe('cc-settings-sync: passphrase setup', () => {
     click(f, 'passphrase-submit');
     await settle(f);
     expect(sync.setPassphrase).toHaveBeenCalledWith(PHRASE);
-    expect(sync.sync).toHaveBeenCalledTimes(1);
+    expect(sync.sync).not.toHaveBeenCalled();
+    expect(el(f, 'passphrase-input')).toBeNull();
     expect(el(f, 'passphrase-form')).toBeNull();
+    expect(text(f, 'passphrase-done')).toContain('sincronizar');
+    expect(document.activeElement).toBe(el(f, 'drive-sync'));
     expect(JSON.stringify({ ...localStorage })).not.toContain(PHRASE);
     expect(JSON.stringify({ ...sessionStorage })).not.toContain(PHRASE);
     expect((f.nativeElement as HTMLElement).innerHTML).not.toContain(PHRASE);
+  });
+
+  it('clears the fields as soon as the service was called, before it answers', () => {
+    const sync = fakeSync(noKey, 'Falta la frase de cifrado');
+    sync.setPassphrase.mockImplementation(() => new Promise<void>(() => undefined));
+    const f = mount(sync);
+    type(f, 'passphrase-input', PHRASE);
+    type(f, 'passphrase-confirm', PHRASE);
+    click(f, 'passphrase-submit');
+    expect(sync.setPassphrase).toHaveBeenCalledWith(PHRASE);
+    expect((el(f, 'passphrase-input') as HTMLInputElement).value).toBe('');
+    expect((el(f, 'passphrase-confirm') as HTMLInputElement).value).toBe('');
   });
 
   it('does not sync when the phrase was rejected, and keeps the form with the service text', async () => {
@@ -349,6 +364,7 @@ describe('cc-settings-sync: change passphrase', () => {
     await settle(f);
     expect(el(f, 'passphrase-form')).not.toBeNull();
     expect(el(f, 'passphrase-done')).toBeNull();
+    expect((el(f, 'passphrase-input') as HTMLInputElement).value).toBe('');
     expect(text(f, 'drive-status')).toContain('Otro dispositivo está sincronizando');
   });
 
@@ -357,5 +373,84 @@ describe('cc-settings-sync: change passphrase', () => {
     click(f, 'passphrase-change-open');
     click(f, 'passphrase-cancel');
     expect(el(f, 'passphrase-form')).toBeNull();
+  });
+});
+
+describe('cc-settings-sync: leaving Drive, focus and live regions', () => {
+  it('offers «Desconectar Drive» when the token is missing (needs-auth) and in the passphrase mode', async () => {
+    const auth = fakeSync({ state: 'needs-auth' }, 'Falta autorizar Drive');
+    const f = mount(auth);
+    expect(el(f, 'drive-disconnect')).not.toBeNull();
+    click(f, 'drive-disconnect');
+    expect(auth.disconnect).toHaveBeenCalledTimes(1);
+    await settle(f);
+    TestBed.resetTestingModule();
+    const pass = fakeSync({ state: 'needs-passphrase', reason: 'no-key' }, 'Falta la frase de cifrado');
+    const g = mount(pass);
+    click(g, 'drive-disconnect');
+    expect(pass.disconnect).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not offer «Desconectar Drive» when plainly disconnected', () => {
+    const f = mount(fakeSync({ state: 'disconnected' }, 'Drive desconectado'));
+    expect(el(f, 'drive-disconnect')).toBeNull();
+  });
+
+  it('does not steal the focus on load', () => {
+    mount(fakeSync({ state: 'disconnected' }, 'Drive desconectado'));
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  it('moves the focus to «Conectar Drive» after disconnecting', async () => {
+    const sync = fakeSync({ state: 'idle', pendingChanges: 0, lastSyncAt: null }, 'Listo para sincronizar');
+    sync.disconnect.mockImplementation(() => {
+      sync.status.set({ state: 'disconnected' });
+      sync.statusText.set('Drive desconectado');
+      return Promise.resolve();
+    });
+    const f = mount(sync);
+    click(f, 'drive-disconnect');
+    await settle(f);
+    await settle(f);
+    expect(document.activeElement).toBe(el(f, 'drive-connect'));
+  });
+
+  it('moves the focus to the passphrase input when a sync ends in needs-passphrase', async () => {
+    const sync = fakeSync({ state: 'idle', pendingChanges: 0, lastSyncAt: null }, 'Listo para sincronizar');
+    sync.sync.mockImplementation(() => {
+      sync.status.set({ state: 'needs-passphrase', reason: 'KeyMismatch' });
+      sync.statusText.set('La frase cambió en otro dispositivo: ingrésala de nuevo');
+      return Promise.resolve();
+    });
+    const f = mount(sync);
+    click(f, 'drive-sync');
+    await settle(f);
+    await settle(f);
+    expect(document.activeElement).toBe(el(f, 'passphrase-input'));
+  });
+
+  it('falls back to the section title when the new mode has no main control', async () => {
+    const sync = fakeSync({ state: 'idle', pendingChanges: 0, lastSyncAt: null }, 'Listo para sincronizar');
+    const f = mount(sync);
+    sync.status.set({ state: 'not-configured' });
+    f.detectChanges();
+    await settle(f);
+    await settle(f);
+    expect(document.activeElement).toBe(el(f, 'drive-title'));
+  });
+
+  it('shows general errors as a polite status, and keeps the progress text in an always-present live region', async () => {
+    const sync = fakeSync({ state: 'disconnected' }, 'Drive desconectado');
+    sync.connect.mockRejectedValueOnce(new DataError('STORAGE'));
+    const f = mount(sync);
+    const progress = el(f, 'drive-progress');
+    expect(progress?.getAttribute('role')).toBe('status');
+    click(f, 'drive-connect');
+    expect(el(f, 'drive-progress')).toBe(progress);
+    expect(progress?.textContent).toContain('Preparando');
+    await settle(f);
+    click(f, 'drive-continue');
+    await settle(f);
+    expect(el(f, 'drive-error')?.getAttribute('role')).toBe('status');
   });
 });
