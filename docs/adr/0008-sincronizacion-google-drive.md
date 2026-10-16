@@ -108,3 +108,12 @@ Con datos solo en el navegador (ADR-0001), un borrado o un cambio de equipo pier
 - `docs/specs/drive-api-subset.md`; tarjetas W1-06, W2-08, W2-09, W3-18, W4-09 y W5-08.
 - https://developers.google.com/workspace/drive/api/guides/appdata
 - https://developers.google.com/identity/oauth2/web/guides/use-token-model
+
+## Enmiendas
+
+**Enmienda (2026-10-16, W4).** Dictámenes de Opus sobre `SyncService` (PR #63 y W4-09, PR #71) que no cambian la decisión:
+
+- **Conexión en dos pasos.** `prepare()` carga GIS y se llama **solo** tras una intención explícita del usuario de conectar. La conexión tiene dos pasos: «Conectar Drive» llama a `prepare()` y luego un botón llama a `connect()`, que abre la ventana de Google dentro de un gesto. Así WebKit no bloquea la ventana emergente. La pantalla es de W5-08.
+- **Estado `connected` y guarda de generación.** El servicio lleva un indicador `connected` y un número de generación que sube al desconectar. Toda escritura de estado de una operación iniciada en una generación anterior se descarta, así que una sesión que termina tarde no pisa un «desconectado». `sync()` nunca reconecta de forma implícita: sin conexión, no abre la ventana de Google.
+- **Conexión fallida.** Si `connect()` falla cuando no había conexión, el estado anterior se conserva (no pasa a «sin conexión») y la UI muestra un aviso.
+- **Rotación de la frase con subida ambigua.** Si la subida con la clave nueva termina sin una respuesta clara, el servicio vuelve a leer la copia remota y adopta la clave nueva solo si esa copia se descifra con ella. Si no, conserva la clave anterior. La clave se guarda solo después de una subida exitosa (ADR-0009).
