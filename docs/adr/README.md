@@ -32,6 +32,7 @@ Cada ADR documenta una decisión importante: su contexto, la decisión, las alte
 | [0022](0022-cloudflare-static-routing.md) | Enrutamiento estático en Cloudflare | Aceptado, con enmiendas (W2-02) | 2026-10-09 |
 | [0023](0023-pwa-registration-scope.md) | Alcance y registro del service worker | Aceptado | 2026-10-09 |
 | [0024](0024-sync-merge-order.md) | Orden total de la combinación en la sincronización | Aceptado | 2026-10-05 |
+| [0025](0025-presupuestos-de-bundle.md) | Presupuestos de bundle de la landing y de /app | Aceptado | 2026-10-16 |
 
 El siguiente número libre es el **0025**.
 
