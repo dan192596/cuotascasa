@@ -34,6 +34,31 @@ Familias del lado del motor: 0 por discrepancias de fixtures y 1 por la ambigüe
 
 Los ejemplos de los dos dictámenes de W2 en [ALG.TERM] y [ALG.ADVANCE] (`RECALC_INSTALLMENT_KEEP_TERM` con plazo derivado y ancla al alza en la misma `k`; `AdvanceInstallments` con proyección negativa) los agrega una micro-tarjeta de Opus al cierre de W3, que posee `docs/specs/algorithm-examples/` y la prueba de conteo del oráculo.
 
+## W4-01 (2026-10-16)
+
+**Mantenimiento del oráculo.** W3-04 cerró sin cambios: el triage de W3-01 no tenía ítems del lado del oráculo. El oráculo sigue en el commit `a31fc33` y `GENERATOR_VERSION` sigue en 1, igual que el `generatorVersion` de `core` y `full` en el manifiesto (`tools/oracle/FORMAT.md` §7: solo se sube cuando un cambio del oráculo altera bytes comprometidos).
+
+**Regeneración.** Se regeneraron los dos perfiles del manifiesto con el oráculo actual: `core` (15, semilla 20261119) y `full` (40, semilla 20261027). Los 55 fixtures y el manifiesto salieron idénticos byte a byte; `oracle:diff` corre el diff completo y queda en verde.
+
+**Corrida.** El arnés corrió en local con **todas** las etiquetas de función habilitadas (`core` y las 12 de eventos, políticas, modos y comisiones) sobre los 55 fixtures: 55 coinciden al centavo en cada fila, campo, resumen, ancla y pago; 0 fixtures con diferencias, 0 pendientes y 0 rechazados por el esquema.
+
+### Ítems abiertos (todos del lado del motor, para W4-02)
+
+| # | Regla | Fixture / fila / campo | Qué dice la regla | Clasificación | Tarjeta |
+|---|---|---|---|---|---|
+| 1 | [ALG.VALIDATE] | Ningún fixture (la validación de plantilla está fuera del alcance del oráculo, `tools/oracle/FORMAT.md` §11) | Si el calendario modelado de un ancla no amortiza, ese saldo reportado queda `UNVALIDATED`, con causa nula, sin apertura modelada ni `realDelta` de validación; el error no se propaga y el préstamo se sigue calculando (dictamen ya escrito en `docs/algorithm.md`) | Ambigüedad de `algorithm.md` (corregida); la aplica el motor | W4-02 |
+
+**Sin ítems del lado del oráculo.** No queda ningún ítem abierto para el oráculo ni para W3-04.
+
+### Alcance de W4-02
+
+Sin discrepancias de fixtures, W4-02 consiste en:
+
+1. Exigir todo el perfil `full`: agregar a `enforced-features.json` las 12 etiquetas de eventos que hoy quedan pendientes, para que CI haga cumplir los 55 fixtures.
+2. Cubrir el dictamen de [ALG.VALIDATE] (ítem 1) en la validación de plantilla.
+
+Es una sola familia del lado del motor más la habilitación de etiquetas: **W4-02 no se divide**.
+
 ## Riesgo residual (validación privada no autorizada)
 
-El dueño no autorizó la validación privada (`docs/specs/oracle-validation-log.md`: `2026-10-09 · W3-01 · oráculo a31fc33 · validación privada: no autorizada`). Queda sin cubrir un error común al motor y al oráculo que los ejemplos sintéticos de `docs/algorithm.md` y `docs/specs/algorithm-examples/` no ejerciten: si ambos linajes leen igual de mal una regla `[ALG.*]`, los fixtures y el motor coinciden entre sí y el error pasa la compuerta. W4-01 repite esta anotación mientras no haya autorización, y W7-01 la lleva al checklist del release.
+El dueño no autorizó la validación privada (`docs/specs/oracle-validation-log.md`: `2026-10-09 · W3-01 · oráculo a31fc33 · validación privada: no autorizada` y `2026-10-16 · W4-01 · oráculo a31fc33 · validación privada: no autorizada`). Queda sin cubrir un error común al motor y al oráculo que los ejemplos sintéticos de `docs/algorithm.md` y `docs/specs/algorithm-examples/` no ejerciten: si ambos linajes leen igual de mal una regla `[ALG.*]`, los fixtures y el motor coinciden entre sí y el error pasa la compuerta. W4-01 la repitió con el mismo oráculo y los mismos fixtures, así que el riesgo no cambió. El dueño pidió no volver a consultarlo hasta W7: la corrida privada del motor previa al merge de W4-02 se registra como no autorizada, y W7-01 lleva el riesgo al checklist del release.
