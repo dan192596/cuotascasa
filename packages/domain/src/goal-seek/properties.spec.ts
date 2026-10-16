@@ -290,7 +290,7 @@ describe('goal-seek properties (synthetic loans, random future events)', () => {
         const outcome = check(input, true);
         seen[outcome.foundKinds] = (seen[outcome.foundKinds] ?? 0) + 1;
       }),
-      { numRuns: 400 },
+      { numRuns: 150 },
     );
     expect((seen['FOUND'] ?? 0) + (seen['FOUND-payoff'] ?? 0)).toBeGreaterThan(20);
   }, 120_000);

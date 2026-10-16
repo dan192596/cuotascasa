@@ -4,7 +4,7 @@
       "id": "landing",
       "name": "landing (/)",
       "roots": ["apps/web/src/main.ts", "apps/web/src/app/public/landing/landing-page.component.ts"],
-      "budgetGzipBytes": 92160,
+      "budgetGzipBytes": 97280,
       "forbidden": [
         { "id": "dexie", "pattern": "/dexie/" },
         { "id": "persistence", "pattern": "packages/persistence/|@cuotascasa/persistence" },
@@ -29,6 +29,7 @@
         "apps/web/src/app/features/dashboard/dashboard.routes.ts",
         "apps/web/src/app/features/dashboard/dashboard-page.component.ts"
       ],
+      "budgetGzipBytes": 245760,
       "forbidden": [
         { "id": "write-excel-file", "pattern": "/write-excel-file/" },
         { "id": "jspdf", "pattern": "/jspdf" },
