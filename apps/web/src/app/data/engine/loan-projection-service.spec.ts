@@ -829,8 +829,8 @@ describe('bench', () => {
       }),
     );
     console.info(`bench best of 5: ${best.toFixed(1)} ms`);
-    // 100 ms locally. GitHub runners are about 2x slower (CI measured 189.85 ms), so CI allows 300 ms.
-    const env = typeof process === 'undefined' ? undefined : process.env;
-    expect(best).toBeLessThan(env?.['CI'] ? 300 : 100);
+    // A regression guard, not a machine-speed test: about 50 ms idle locally, 189.85 ms measured on CI, and several
+    // times more when other suites run in parallel on the same machine. 300 ms everywhere.
+    expect(best).toBeLessThan(300);
   });
 });
