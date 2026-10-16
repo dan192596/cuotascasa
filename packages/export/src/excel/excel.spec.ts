@@ -95,7 +95,7 @@ function modelWith(cells: readonly ReportCell[], title = 'Tabla de amortización
 
 async function sheet1(model: ReportModel): Promise<{ files: Files; rows: ParsedCell[][] }> {
   const files = unzip(await excelWriter.write(model));
-  return { files, rows: readSheet(files, 'xl/worksheets/sheet1.xml') };
+  return { files, rows: readSheet(files, 'xl/worksheets/sheet2.xml') };
 }
 
 describe('excelWriter', () => {
@@ -120,6 +120,36 @@ describe('excelWriter', () => {
     expect(Object.keys(unzip(bytes))).toContain('[Content_Types].xml');
   });
 
+  it('writes the report meta as a first sheet «Datos» with Campo/Valor, in model order', async () => {
+    const model = buildScheduleReport({
+      schedule: syntheticGtqSchedule(),
+      pathKind: PathKind.ORIGINAL,
+      loanLabel: '=Préstamo de prueba',
+      generatedOn,
+    });
+    const files = unzip(await excelWriter.write(model));
+    const rows = readSheet(files, 'xl/worksheets/sheet1.xml');
+    expect(rows[0]?.map((c) => c.value)).toEqual(['Campo', 'Valor']);
+    expect(rows).toHaveLength(model.meta.length + 1);
+    model.meta.forEach((entry, i) => {
+      const [label, value] = rows[i + 1] ?? [];
+      expect(label?.value).toBe(entry.label);
+      expect(label?.formula).toBe(false);
+      expect(value?.formula).toBe(false);
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(entry.value)) {
+        // dates are real date cells (numeric serial with a date style)
+        expect(value?.type === undefined || value.type === 'n').toBe(true);
+        expect(value?.style).toBeDefined();
+      } else {
+        expect(value?.type === 's' || value?.type === 'inlineStr').toBe(true);
+        expect(value?.value).toBe(entry.value);
+      }
+    });
+    // 2026-10-09 serial
+    expect(Number(byRef(rows, `B${model.meta.length + 1}`)?.value)).toBe(46304);
+    expect(byRef(rows, 'B2')?.value).toBe('=Préstamo de prueba');
+  });
+
   it('names the sheets after the report tables', async () => {
     const schedule = buildScheduleReport({
       schedule: syntheticGtqSchedule(),
@@ -127,14 +157,14 @@ describe('excelWriter', () => {
       loanLabel: 'Préstamo de prueba',
       generatedOn,
     });
-    expect(sheetNames(unzip(await excelWriter.write(schedule)))).toEqual(['Tabla']);
+    expect(sheetNames(unzip(await excelWriter.write(schedule)))).toEqual(['Datos', 'Tabla']);
     const comparison = buildComparisonReport({
       base: { label: 'Base', schedule: syntheticGtqSchedule() },
       scenarios: [],
       loanLabel: 'Préstamo de prueba',
       generatedOn,
     });
-    expect(sheetNames(unzip(await excelWriter.write(comparison)))).toEqual(['Comparación']);
+    expect(sheetNames(unzip(await excelWriter.write(comparison)))).toEqual(['Datos', 'Comparación']);
   });
 
   it('freezes the title and header rows and sets column widths', async () => {
@@ -146,7 +176,7 @@ describe('excelWriter', () => {
         generatedOn,
       }),
     );
-    const sheet = xml(files, 'xl/worksheets/sheet1.xml');
+    const sheet = xml(files, 'xl/worksheets/sheet2.xml');
     expect(sheet).toMatch(/<pane\b[^>]*ySplit="2"/);
     expect(sheet).toMatch(/<pane\b[^>]*state="frozen"/);
     expect(sheet).toMatch(/<col\b[^>]*width="18"/);
@@ -247,7 +277,7 @@ describe('excelWriter', () => {
       expect(cell.type === 's' || cell.type === 'inlineStr').toBe(true);
       expect(cell.value).toBe(hostile[i]);
     });
-    expect(xml(files, 'xl/worksheets/sheet1.xml')).not.toContain('<f>');
+    expect(xml(files, 'xl/worksheets/sheet2.xml')).not.toContain('<f>');
   });
 
   it('writes a non-conforming money value as text, never as a number or formula', async () => {
@@ -289,7 +319,7 @@ describe('excelWriter', () => {
       const files = unzip(await excelWriter.write(report));
       out.push({
         sheets: sheetNames(files),
-        rows: readSheet(files, 'xl/worksheets/sheet1.xml').map((row) =>
+        rows: readSheet(files, 'xl/worksheets/sheet2.xml').map((row) =>
           row.map((c) => [c.ref, c.type ?? 'n', c.value]),
         ),
       });

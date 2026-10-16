@@ -424,6 +424,7 @@ exports[`excelWriter > matches the snapshot of the sheet data for two synthetic 
       ],
     ],
     "sheets": [
+      "Datos",
       "Tabla",
     ],
   },
@@ -497,6 +498,7 @@ exports[`excelWriter > matches the snapshot of the sheet data for two synthetic 
       ],
     ],
     "sheets": [
+      "Datos",
       "Comparación",
     ],
   },
