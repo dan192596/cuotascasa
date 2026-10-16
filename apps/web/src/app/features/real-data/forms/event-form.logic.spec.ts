@@ -247,6 +247,52 @@ describe('buildValue', () => {
     );
     expect(result).toEqual({ ok: false, field: 'amount' });
   });
+
+  it('maps schema issues of grouped fields to their control or fieldset', () => {
+    const breakdown = buildValue(
+      'ActualPayment',
+      model({
+        date: '2026-03-14',
+        installmentNumber: '2',
+        total: '4658.47',
+        breakdown: { capital: '800.00', interest: '', insurance: '', fixedCharges: '' },
+      }),
+      context,
+    );
+    expect(breakdown).toEqual({ ok: false, field: 'breakdown' });
+    const charges = buildValue(
+      'FixedChargeChange',
+      model({ date: '2026-06-15', fixedCharges: [{ label: '', amount: '350.00' }] }),
+      context,
+    );
+    expect(charges).toEqual({ ok: false, field: 'fixedCharges' });
+    const rate = buildValue(
+      'Prepayment',
+      model({
+        date: '2026-06-15',
+        amount: '100.00',
+        mode: 'REDUCE_TERM',
+        commissionKind: 'PERCENT',
+        commissionRate: '0',
+      }),
+      context,
+    );
+    expect(rate).toEqual({ ok: false, field: 'commissionRate' });
+    const installment = buildValue(
+      'ActualPayment',
+      model({ date: '2026-03-14', installmentNumber: '1201', total: '1.00' }),
+      context,
+    );
+    expect(installment).toEqual({ ok: false, field: 'installmentNumber' });
+  });
+
+  it('names no field when the schema rejects something the form has no control for', () => {
+    const result = buildValue('AdvanceInstallments', model({ date: '2026-06-15', count: '6' }), {
+      ...context,
+      loanId: 'not-a-uuid',
+    });
+    expect(result).toEqual({ ok: false, field: null });
+  });
 });
 
 describe('modelFromValue', () => {
@@ -272,6 +318,34 @@ describe('modelFromValue', () => {
     if (built.ok) {
       expect(modelFromValue('Prepayment', built.value)).toEqual(emptyModel());
     }
+  });
+
+  it('tells apart insuranceRates undefined (unchanged) from [] (no insurance from k)', () => {
+    const unchanged = buildValue(
+      'RateChange',
+      model({ date: '2026-06-15', policy: 'RECALC_INSTALLMENT_KEEP_TERM', interestRate: '0.07' }),
+      context,
+    );
+    expect(unchanged.ok && 'insuranceRates' in unchanged.value.draft).toBe(false);
+    const none = buildValue(
+      'RateChange',
+      model({ date: '2026-06-15', policy: 'RECALC_INSTALLMENT_KEEP_TERM', interestRate: '0.07', insuranceRates: [] }),
+      context,
+    );
+    expect(none.ok && none.value.draft).toMatchObject({ insuranceRates: [] });
+    if (none.ok) {
+      expect(modelFromValue('RateChange', none.value).insuranceRates).toEqual([]);
+    }
+    if (unchanged.ok) {
+      expect(modelFromValue('RateChange', unchanged.value).insuranceRates).toBeUndefined();
+    }
+    const onlyInsurance = buildValue(
+      'RateChange',
+      model({ date: '2026-06-15', policy: 'KEEP_INSTALLMENT_ADJUST_TERM', insuranceRates: [] }),
+      context,
+    );
+    expect(onlyInsurance.ok && 'interestRate' in onlyInsurance.value.draft).toBe(false);
+    expect(onlyInsurance.ok).toBe(true);
   });
 
   it('keeps insuranceRates of an existing RateChange', () => {

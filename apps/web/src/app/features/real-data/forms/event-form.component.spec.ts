@@ -289,11 +289,30 @@ describe('cc-event-form: invalid input', () => {
     await harness.type('breakdown-capital', '800');
     await harness.submit();
     expect(harness.emitted).toEqual([]);
-    expect(harness.describedText('breakdown-interest')).toBe(
-      'Si indicas el desglose, completa los cuatro componentes (puedes escribir 0.00).',
-    );
+    expect(document.activeElement).toBe(harness.input('breakdown-interest'));
+    const message = 'Si indicas el desglose, completa los cuatro componentes (puedes escribir 0.00).';
+    const fieldset = harness.element.querySelector('fieldset[aria-describedby]') as HTMLElement;
+    const described = harness.element.querySelector(`#${fieldset.getAttribute('aria-describedby')}`);
+    expect(described?.textContent?.trim()).toBe(message);
+    expect(harness.element.textContent?.split(message).length).toBe(2);
     await harness.type('total', '0');
     expect(harness.describedText('total')).toBe('El monto debe ser mayor que cero.');
+  });
+
+  it('emits a valid BANK_INSTALLMENT DTO from the form', async () => {
+    const harness = await setup('RateChange');
+    await fillRequired(harness, 'RateChange');
+    (harness.element.querySelector('input[type="radio"][value="BANK_INSTALLMENT"]') as HTMLInputElement).click();
+    await harness.fixture.whenStable();
+    await harness.type('bankInstallment', '4,300.00');
+    await harness.submit();
+    const value = harness.emitted[0] as EventFormValue;
+    expect(value.draft).toMatchObject({
+      policy: 'BANK_INSTALLMENT',
+      bankInstallment: '4300.00',
+      interestRate: '0.0725',
+    });
+    expect(parses(value)).toBe(true);
   });
 
   it('requires the bank installment only with the BANK_INSTALLMENT policy', async () => {
@@ -353,12 +372,22 @@ describe('cc-event-form: ReportedBalance and ActualPayment installments', () => 
 
   it('requires the ActualPayment installment', async () => {
     const harness = await setup('ActualPayment');
-    await harness.type('date', '14/03/2026');
     await harness.type('total', '4658.47');
-    await harness.type('installmentNumber', '');
     await harness.submit();
     expect(harness.emitted).toEqual([]);
     expect(harness.describedText('installmentNumber')).toBe('Indica a qué cuota corresponde el pago.');
+  });
+
+  it('resumes the suggestion when the user clears the installment', async () => {
+    const harness = await setup('ActualPayment');
+    await harness.type('date', '14/03/2026');
+    await harness.type('installmentNumber', '5');
+    await harness.type('date', '16/03/2026');
+    expect(harness.input('installmentNumber').value).toBe('5');
+    await harness.type('installmentNumber', '');
+    expect(harness.input('installmentNumber').value).toBe('3');
+    await harness.type('date', '16/04/2026');
+    expect(harness.input('installmentNumber').value).toBe('4');
   });
 });
 
@@ -478,6 +507,25 @@ describe('cc-event-form: editing an existing DTO', () => {
     expect(harness.input('installmentNumber').value).toBe('2');
     await harness.type('date', '17/05/2026');
     expect(harness.input('installmentNumber').value).toBe('2');
+  });
+
+  it('re-emits insuranceRates [] with the interest rate, and saves [] alone without a rate', async () => {
+    const draft = {
+      loanId: LOAN_ID,
+      date: '2026-06-15',
+      type: 'RateChange' as const,
+      policy: 'RECALC_INSTALLMENT_KEEP_TERM' as const,
+      insuranceRates: [],
+    };
+    const alone = await setup('RateChange', { value: { entity: 'LoanEvent', draft } });
+    await alone.submit();
+    expect(alone.emitted[0]?.draft).toEqual(draft);
+    expect(parses(alone.emitted[0] as EventFormValue)).toBe(true);
+    const withRate: EventFormValue = { entity: 'LoanEvent', draft: { ...draft, interestRate: '0.0725' } };
+    const both = await setup('RateChange', { value: withRate });
+    await both.submit();
+    expect(both.emitted[0]?.draft).toEqual(withRate.draft);
+    expect(parses(both.emitted[0] as EventFormValue)).toBe(true);
   });
 
   it('keeps the insurance rates of an existing RateChange', async () => {

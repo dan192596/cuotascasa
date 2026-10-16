@@ -4,6 +4,7 @@ import {
   Component,
   computed,
   effect,
+  ElementRef,
   inject,
   Injector,
   input,
@@ -26,6 +27,7 @@ import {
   fieldApplies,
   initialModel,
   integerError,
+  MAX_INSTALLMENTS,
   type ModelField,
   moneyError,
   suggestInstallment,
@@ -130,6 +132,30 @@ const MODE_OPTIONS: readonly { readonly value: PrepaymentMode; readonly label: s
   { value: 'REDUCE_INSTALLMENT', label: 'Reducir la cuota (el plazo sigue igual)' },
 ];
 
+/** Id suffix of the control to focus for each model field (fieldsets point at their first control). */
+const FOCUS_TARGETS: Readonly<Record<ModelField, string>> = {
+  date: 'date',
+  installmentNumber: 'installmentNumber',
+  balance: 'balance',
+  totalInstallment: 'totalInstallment',
+  reportedRate: 'reportedRate',
+  source: 'source',
+  total: 'total',
+  breakdown: 'breakdown-capital',
+  policy: 'policy-RECALC_INSTALLMENT_KEEP_TERM',
+  interestRate: 'interestRate',
+  insuranceRates: 'interestRate',
+  bankInstallment: 'bankInstallment',
+  fixedCharges: 'charge-label-0',
+  amount: 'amount',
+  mode: 'mode',
+  commissionKind: 'commissionKind',
+  commissionAmount: 'commissionAmount',
+  commissionRate: 'commissionRate',
+  count: 'count',
+  note: 'note',
+};
+
 const MAX_CHARGES = 20;
 const ZERO_RATE = /^0(\.0+)?$/;
 
@@ -223,6 +249,7 @@ export class EventFormComponent {
 
   private readonly bounds = computed(() => dateBounds(this.context()));
   private readonly injector = inject(Injector);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly uid = `ef${++nextInstance}`;
 
   protected readonly form = form(
@@ -238,7 +265,9 @@ export class EventFormComponent {
         when: () => this.kind() === 'ActualPayment',
       });
       validate(path.installmentNumber, ({ value }) =>
-        applies('installmentNumber') && value() !== '' ? problem(integerError(value(), 1, 1200)) : undefined,
+        applies('installmentNumber') && value() !== ''
+          ? problem(integerError(value(), 1, MAX_INSTALLMENTS))
+          : undefined,
       );
 
       required(path.balance, { message: 'Escribe un monto.', when: () => applies('balance') });
@@ -254,27 +283,19 @@ export class EventFormComponent {
       validate(path.total, ({ value }) =>
         applies('total') && value() !== '' ? problem(moneyError(value(), { positive: true })) : undefined,
       );
-      const breakdownPart = (part: 'capital' | 'interest' | 'insurance' | 'fixedCharges') => {
-        validate(path.breakdown[part], ({ value, valueOf }) => {
-          if (!applies('breakdown')) {
-            return undefined;
-          }
-          if (value() !== '') {
-            return problem(moneyError(value(), { positive: false }));
-          }
-          const breakdown = valueOf(path.breakdown);
-          const anyFilled = [breakdown.capital, breakdown.interest, breakdown.insurance, breakdown.fixedCharges].some(
-            (text) => text !== '',
-          );
-          return anyFilled
-            ? problem('Si indicas el desglose, completa los cuatro componentes (puedes escribir 0.00).')
-            : undefined;
-        });
-      };
-      breakdownPart('capital');
-      breakdownPart('interest');
-      breakdownPart('insurance');
-      breakdownPart('fixedCharges');
+      for (const part of ['capital', 'interest', 'insurance', 'fixedCharges'] as const) {
+        validate(path.breakdown[part], ({ value }) =>
+          applies('breakdown') && value() !== '' ? problem(moneyError(value(), { positive: false })) : undefined,
+        );
+      }
+      // One message on the fieldset, not one per empty component: the schema needs the four parts or none.
+      validate(path.breakdown, ({ value }) => {
+        const { capital, interest, insurance, fixedCharges } = value();
+        const parts = [capital, interest, insurance, fixedCharges];
+        return applies('breakdown') && parts.some((text) => text !== '') && parts.some((text) => text === '')
+          ? problem('Si indicas el desglose, completa los cuatro componentes (puedes escribir 0.00).')
+          : undefined;
+      });
 
       required(path.policy, {
         message: 'Elige qué debe hacer el cálculo con la cuota.',
@@ -282,7 +303,7 @@ export class EventFormComponent {
       });
       required(path.interestRate, {
         message: 'Escribe la nueva tasa.',
-        when: ({ valueOf }) => applies('interestRate') && valueOf(path.insuranceRates).length === 0,
+        when: () => applies('interestRate') && this.model().insuranceRates === undefined,
       });
       required(path.bankInstallment, {
         message: 'Escribe un monto.',
@@ -343,7 +364,7 @@ export class EventFormComponent {
 
       required(path.count, { message: 'Escribe un número entero.', when: () => applies('count') });
       validate(path.count, ({ value }) =>
-        applies('count') && value() !== '' ? problem(integerError(value(), 1, 1200)) : undefined,
+        applies('count') && value() !== '' ? problem(integerError(value(), 1, MAX_INSTALLMENTS)) : undefined,
       );
 
       validate(path.note, ({ value }) =>
@@ -358,15 +379,30 @@ export class EventFormComponent {
             this.failure.set(null);
             this.submitted.emit(result.value);
           } else {
-            this.failure.set(FIELD_LABELS[result.field] ?? 'Fecha');
+            this.failure.set(
+              result.field === null
+                ? 'No se pudo guardar. Revisa los datos del formulario.'
+                : `No se pudo guardar. Revisa el campo «${FIELD_LABELS[result.field] ?? 'Fecha'}».`,
+            );
+            if (result.field !== null) {
+              this.focusControl(FOCUS_TARGETS[result.field]);
+            }
           }
           return undefined;
         },
         onInvalid: (field) => {
           this.failure.set(null);
-          afterNextRender(() => field().errorSummary()[0]?.fieldTree().focusBoundControl(), {
-            injector: this.injector,
-          });
+          afterNextRender(
+            () => {
+              const first = field().errorSummary()[0]?.fieldTree;
+              if (first === this.form.breakdown) {
+                this.focusFirstEmptyBreakdown();
+              } else {
+                first?.().focusBoundControl();
+              }
+            },
+            { injector: this.injector },
+          );
         },
       },
     },
@@ -387,6 +423,39 @@ export class EventFormComponent {
         );
       });
     });
+  }
+
+  /** Installment typed by hand: the date stops suggesting. Clearing the field hands the suggestion back. */
+  protected onInstallmentInput(event: Event): void {
+    this.installmentEdited.set((event.target as HTMLInputElement).value.trim() !== '');
+  }
+
+  /** True when the group itself (not only its children) has errors to show. */
+  protected showsOwnErrors(field: FieldTree<unknown>): boolean {
+    const state = field();
+    return state.touched() && state.errors().length > 0;
+  }
+
+  private focusControl(name: string | undefined): void {
+    if (name === undefined) {
+      return;
+    }
+    afterNextRender(() => this.host.nativeElement.querySelector<HTMLElement>(`#${this.id(name)}`)?.focus(), {
+      injector: this.injector,
+    });
+  }
+
+  private focusFirstEmptyBreakdown(): void {
+    const { capital, interest, insurance, fixedCharges } = this.model().breakdown;
+    const empty = (
+      [
+        ['capital', capital],
+        ['interest', interest],
+        ['insurance', insurance],
+        ['fixedCharges', fixedCharges],
+      ] as const
+    ).find(([, text]) => text === '');
+    this.host.nativeElement.querySelector<HTMLElement>(`#${this.id(`breakdown-${empty?.[0] ?? 'capital'}`)}`)?.focus();
   }
 
   /** DOM id of a control of this instance. */

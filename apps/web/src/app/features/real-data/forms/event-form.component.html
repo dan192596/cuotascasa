@@ -73,7 +73,7 @@
           [formField]="form.installmentNumber"
           [attr.aria-invalid]="invalid(form.installmentNumber)"
           [attr.aria-describedby]="invalid(form.installmentNumber) ? id('installmentNumber') + '-errors' : null"
-          (input)="installmentEdited.set(true)"
+          (input)="onInstallmentInput($event)"
         />
         <p class="hint">
           Te sugerimos la primera cuota con vencimiento igual o posterior a la fecha de pago. Cámbiala si pagaste una
@@ -85,7 +85,10 @@
         <label [for]="id('total')">Monto pagado ({{ currencyName() }})</label>
         <cc-money-input [inputId]="id('total')" [currency]="context().currency" [formField]="form.total" />
       </div>
-      <fieldset class="group">
+      <fieldset
+        class="group"
+        [attr.aria-describedby]="showsOwnErrors(form.breakdown) ? id('breakdown') + '-errors' : null"
+      >
         <legend>Desglose del pago (opcional)</legend>
         <p class="hint">Si lo indicas, completa los cuatro componentes; puedes escribir 0.00.</p>
         <div class="field">
@@ -120,6 +123,7 @@
             [formField]="form.breakdown.fixedCharges"
           />
         </div>
+        <cc-field-errors [field]="form.breakdown" [controlId]="id('breakdown')" />
       </fieldset>
     }
     @case ('RateChange') {
@@ -272,7 +276,7 @@
 
   @if (failure() !== null) {
     <p class="failure" role="alert" data-testid="event-form-failure">
-      No se pudo guardar. Revisa el campo «{{ failure() }}».
+      {{ failure() }}
     </p>
   }
 

@@ -66,8 +66,8 @@ export interface EventFormModel {
   breakdown: BreakdownModel;
   policy: RateChangePolicy | '';
   interestRate: string;
-  /** Carried through from an existing RateChange: the form has no field for it, so editing must not drop it. */
-  insuranceRates: string[];
+  /**   /** undefined: the insurance is unchanged; []: no insurance from k ([ALG.RATE]). Not a form field: carried through. */
+  insuranceRates: string[] | undefined;
   bankInstallment: string;
   fixedCharges: ChargeRow[];
   amount: string;
@@ -78,6 +78,9 @@ export interface EventFormModel {
   count: string;
   note: string;
 }
+
+/** Largest installment number and installment count the schemas accept (`installmentNumberSchema`, `count`). */
+export const MAX_INSTALLMENTS = 1200;
 
 export type ModelField = keyof EventFormModel;
 
@@ -93,7 +96,7 @@ export function emptyModel(): EventFormModel {
     breakdown: { capital: '', interest: '', insurance: '', fixedCharges: '' },
     policy: '',
     interestRate: '',
-    insuranceRates: [],
+    insuranceRates: undefined,
     bankInstallment: '',
     fixedCharges: [],
     amount: '',
@@ -156,7 +159,7 @@ export function modelFromValue(kind: FormKind, value: FormValue | null): EventFo
         ...base,
         policy: draft.policy,
         interestRate: draft.interestRate ?? '',
-        insuranceRates: [...(draft.insuranceRates ?? [])],
+        insuranceRates: draft.insuranceRates === undefined ? undefined : [...draft.insuranceRates],
         bankInstallment: draft.bankInstallment ?? '',
       };
     case 'FixedChargeChange':
@@ -278,7 +281,7 @@ export function suggestInstallment(context: BuildContext, date: string): string 
 /* ---------- DTO building ---------- */
 
 export type BuildResult =
-  { readonly ok: true; readonly value: FormValue } | { readonly ok: false; readonly field: ModelField };
+  { readonly ok: true; readonly value: FormValue } | { readonly ok: false; readonly field: ModelField | null };
 
 const STAMP_ID = '00000000-0000-4000-8000-000000000000';
 /** Placeholder stamp so the entity schemas can judge a draft; never stored. */
@@ -336,7 +339,7 @@ function draftOf(kind: FormKind, model: EventFormModel, context: BuildContext): 
         type: 'RateChange',
         policy,
         ...(model.interestRate === '' ? {} : { interestRate: model.interestRate }),
-        ...(model.insuranceRates.length === 0 ? {} : { insuranceRates: [...model.insuranceRates] }),
+        ...(model.insuranceRates === undefined ? {} : { insuranceRates: [...model.insuranceRates] }),
         ...(policy === 'BANK_INSTALLMENT' ? { bankInstallment: model.bankInstallment } : {}),
         ...note(model),
       };
@@ -383,19 +386,17 @@ function draftOf(kind: FormKind, model: EventFormModel, context: BuildContext): 
   }
 }
 
-/** Schema issue path → the model field it belongs to. */
-function fieldOfIssue(kind: FormKind, path: readonly PropertyKey[]): ModelField {
-  const head = String(path[0] ?? 'date');
+/** Schema issue path → the model field (control or fieldset) it belongs to; null when the form has no such field. */
+function fieldOfIssue(kind: FormKind, path: readonly PropertyKey[]): ModelField | null {
+  const head = String(path[0] ?? '');
   if (kind === 'ActualPayment' && head === 'paidDate') {
     return 'date';
   }
   if (kind === 'Prepayment' && head === 'commission') {
     return path[1] === 'rate' ? 'commissionRate' : path[1] === 'amount' ? 'commissionAmount' : 'commissionKind';
   }
-  const known: readonly ModelField[] = Object.keys(emptyModel()) as ModelField[];
-  return (known as readonly string[]).includes(head) && fieldApplies(kind, head as ModelField)
-    ? (head as ModelField)
-    : 'date';
+  const known: readonly string[] = Object.keys(emptyModel());
+  return known.includes(head) && fieldApplies(kind, head as ModelField) ? (head as ModelField) : null;
 }
 
 /**
