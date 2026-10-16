@@ -11,6 +11,9 @@ class InertSyncService implements SyncService {
   readonly configured = signal(false).asReadonly();
   readonly status = signal<SyncStatus>({ state: 'not-configured' }).asReadonly();
   readonly statusText = signal('No configurado').asReadonly();
+  prepare(): Promise<void> {
+    return Promise.resolve();
+  }
   connect(): Promise<never> {
     return Promise.reject(new DataError('NOT_IMPLEMENTED', CC_STUB));
   }

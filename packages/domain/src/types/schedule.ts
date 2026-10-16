@@ -242,7 +242,18 @@ interface TemplateValidationBase {
   readonly realDelta: Money;
 }
 
-/** [ALG.VALIDATE] Resultado: sin causa en GREEN; con causa en AMBER y RED. */
+/**
+ * [ALG.VALIDATE] Resultado: sin causa en GREEN; con causa en AMBER y RED. UNVALIDATED cuando el calendario modelado no
+ * amortiza: no se compara, así que no hay apertura modelada, `realDelta` ni causa.
+ */
 export type TemplateValidationResult =
   | (TemplateValidationBase & { readonly status: 'GREEN'; readonly cause: null })
-  | (TemplateValidationBase & { readonly status: 'AMBER' | 'RED'; readonly cause: DeltaCause });
+  | (TemplateValidationBase & { readonly status: 'AMBER' | 'RED'; readonly cause: DeltaCause })
+  | {
+      readonly k: number;
+      readonly reported: Money;
+      readonly modeled: null;
+      readonly realDelta: null;
+      readonly status: 'UNVALIDATED';
+      readonly cause: null;
+    };
