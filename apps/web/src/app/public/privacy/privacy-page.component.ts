@@ -62,8 +62,11 @@ export const PRIVACY_LAST_UPDATED = '16/10/2026';
           Solo si tú conectas Google Drive. Se pide un único alcance, <code>drive.appdata</code>, que da acceso
           únicamente a la carpeta oculta de la aplicación (<code>appDataFolder</code>), donde viven
           <code>cuotascasa.json</code> y su copia <code>cuotascasa.prev.json</code>. CuotasCasa no lee ni ve ningún otro
-          archivo de tu Drive. El token de acceso vive solo en la memoria de la pestaña, unos 60 minutos, y no se guarda
-          en el navegador.
+          archivo de tu Drive. Google solo ve un archivo cifrado e ilegible, su nombre, su tamaño y su fecha de
+          modificación. El token de acceso vive solo en la memoria de la pestaña, unos 60 minutos, y no se guarda en el
+          navegador. Al conectar, tu navegador carga el script de inicio de sesión de Google
+          (<code>accounts.google.com</code>) y se comunica directamente con la API de Google Drive; si no conectas
+          Drive, la aplicación no contacta a Google.
         </p>
       </section>
 
@@ -71,8 +74,8 @@ export const PRIVACY_LAST_UPDATED = '16/10/2026';
         <h2 id="s-uso">Cómo usamos los datos de Google</h2>
         <p>
           Únicamente para guardar y leer la copia cifrada que sincroniza tus dispositivos. No se usan para publicidad,
-          no se venden y no se transfieren a terceros. Nadie más que tú los lee. El uso de la información recibida de
-          las APIs de Google se apega a la
+          no se venden y no se transfieren a terceros. CuotasCasa no los lee ni los comparte. El uso de la información
+          recibida de las APIs de Google se apega a la
           <a
             data-testid="privacy-google-policy-link"
             href="https://developers.google.com/terms/api-services-user-data-policy"
@@ -87,15 +90,19 @@ export const PRIVACY_LAST_UPDATED = '16/10/2026';
         <p>
           La copia se cifra en tu dispositivo con AES-256-GCM, con una clave derivada de una frase que solo tú conoces
           (PBKDF2-SHA256, 600,000 iteraciones). Sin la frase, la copia no se puede leer, ni siquiera por quien tenga
-          acceso a tu Drive; por eso no podemos recuperarla si la olvidas. La base local del navegador no se cifra.
+          acceso a tu Drive; por eso no podemos recuperarla si la olvidas. En cada dispositivo se guarda la clave
+          derivada, sin posibilidad de extraerla, para no pedirte la frase cada vez. La base local del navegador no se
+          cifra.
         </p>
       </section>
 
       <section aria-labelledby="s-analitica">
         <h2 id="s-analitica">Sin analítica, sin cookies de rastreo y sin servidores de terceros</h2>
         <p>
-          No hay analítica, telemetría, cookies de rastreo, CDN ni fuentes externas. El inicio y esta página no hacen
-          peticiones a otros orígenes. Esta página no carga ningún recurso de Google ni de otros sitios.
+          No hay analítica, telemetría, cookies ni fuentes externas. El inicio y esta página no hacen peticiones a otros
+          orígenes. El sitio se sirve como archivos estáticos desde Cloudflare, que puede registrar datos técnicos
+          habituales de cada conexión, como la dirección IP; CuotasCasa no activa su analítica ni usa esos registros.
+          Esta página no carga ningún recurso de Google ni de otros sitios.
         </p>
       </section>
 
