@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from 'zod';
 import type { BackupMigration } from '../backup/types.ts';
 import { backupDocumentV1Schema } from '../backup/v1.ts';
 import { actualPaymentSchema } from '../entities/actual-payment.ts';

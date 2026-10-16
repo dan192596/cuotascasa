@@ -9,7 +9,6 @@ import {
   type Result,
   serializeBackup,
 } from '@cuotascasa/schema';
-import { deriveStoredKey, decrypt, encrypt, parseEnvelope, serializeEnvelope } from '@cuotascasa/sync/crypto';
 import { PBKDF2_ITERATIONS, SyncError } from '@cuotascasa/sync';
 import {
   type BackupFile,
@@ -190,6 +189,8 @@ class BackupServiceImpl extends BackupState implements BackupService {
       const text = serializeBackup(document);
       let body = text;
       if (passphrase !== undefined) {
+        // Crypto loads on demand so it stays out of the /app initial chunks (ADR-0025).
+        const { deriveStoredKey, encrypt, serializeEnvelope } = await import('@cuotascasa/sync/crypto');
         const key = await deriveStoredKey(passphrase, { iterations: this.options.kdfIterations ?? PBKDF2_ITERATIONS });
         body = serializeEnvelope(await encrypt(key, text));
       }
@@ -251,6 +252,7 @@ class BackupServiceImpl extends BackupState implements BackupService {
     }
     const minIterations = this.options.minIterations ?? PBKDF2_ITERATIONS;
     try {
+      const { deriveStoredKey, decrypt, parseEnvelope } = await import('@cuotascasa/sync/crypto');
       // parseEnvelope already caps the iterations and the salt, so a hostile file cannot make the derivation hang.
       const envelope = parseEnvelope(text);
       if (envelope.kdf.iterations < minIterations) {

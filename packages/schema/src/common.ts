@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from 'zod';
 
 // Strict CSP with Trusted Types (ADR-0021): zod's JIT probes `new Function`, and even though zod catches the error the
 // browser reports a securitypolicyviolation. Every schema module imports this file, so the switch is set before any parse.
