@@ -324,6 +324,9 @@ export interface BackupService {
 
 /* ---------- Sync (W4-09, ADR-0008) ---------- */
 
+/** Result of `SyncService.changePassphrase`. */
+export type PassphraseChangeOutcome = 'changed' | 'busy' | 'failed';
+
 export interface SyncService {
   /** False when the build-time Google client ID is empty: status is then { state: 'not-configured' }. */
   readonly configured: Signal<boolean>;
@@ -335,13 +338,19 @@ export interface SyncService {
    * the click (WebKit blocks popups opened after an await). It contacts Google, so call it only after an explicit user
    * action that asks to connect (e.g. a «Conectar Drive» button), never on page or screen load (privacy policy:
    * without connecting, the app does not contact Google). No-op when not configured; idempotent.
+   * Resolves true when the module and the script are ready, false otherwise (not configured, or the load failed):
+   * the UI must not offer the consent step on false.
    */
-  prepare(): Promise<void>;
+  prepare(): Promise<boolean>;
   /** Consent popup; call only from a user gesture, ideally after `prepare()` resolved. Loads the Drive module on demand. */
   connect(): Promise<void>;
   /** First passphrase on this device (salt from the remote envelope when it exists). */
   setPassphrase(passphrase: string): Promise<void>;
-  changePassphrase(passphrase: string): Promise<void>;
+  /**
+   * D25 key rotation. Only 'changed' means the Drive copy and this device now use the new passphrase. 'busy': another
+   * device was syncing, nothing changed. 'failed': nothing confirmed; `status` says why (offline, needs-auth, …).
+   */
+  changePassphrase(passphrase: string): Promise<PassphraseChangeOutcome>;
   /** User-initiated sync session. */
   sync(): Promise<void>;
   /** Revokes the token and forgets it. */
