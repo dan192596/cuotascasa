@@ -330,7 +330,14 @@ export interface SyncService {
   readonly status: Signal<SyncStatus>;
   /** Spanish status text, e.g. 'No configurado' or 'Cambios sin sincronizar (3)'. */
   readonly statusText: Signal<string>;
-  /** Consent popup; call only from a user gesture. Loads the Drive module on demand. */
+  /**
+   * Loads the Drive module and Google's sign-in script ahead of the consent popup, so `connect()` can open it inside
+   * the click (WebKit blocks popups opened after an await). It contacts Google, so call it only after an explicit user
+   * action that asks to connect (e.g. a «Conectar Drive» button), never on page or screen load (privacy policy:
+   * without connecting, the app does not contact Google). No-op when not configured; idempotent.
+   */
+  prepare(): Promise<void>;
+  /** Consent popup; call only from a user gesture, ideally after `prepare()` resolved. Loads the Drive module on demand. */
   connect(): Promise<void>;
   /** First passphrase on this device (salt from the remote envelope when it exists). */
   setPassphrase(passphrase: string): Promise<void>;
