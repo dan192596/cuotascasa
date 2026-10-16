@@ -72,9 +72,13 @@ export const PRIVACY_LAST_UPDATED = '16/10/2026';
         <p>
           Únicamente para guardar y leer la copia cifrada que sincroniza tus dispositivos. No se usan para publicidad,
           no se venden y no se transfieren a terceros. Nadie más que tú los lee. El uso de la información recibida de
-          las APIs de Google se apega a la Política de Datos de Usuario de los Servicios de API de Google
-          (<code>developers.google.com/terms/api-services-user-data-policy</code>), incluidos los requisitos de uso
-          limitado.
+          las APIs de Google se apega a la
+          <a
+            data-testid="privacy-google-policy-link"
+            href="https://developers.google.com/terms/api-services-user-data-policy"
+            rel="noopener noreferrer"
+            >Política de Datos de Usuario de los Servicios de API de Google</a
+          >, incluidos los requisitos de uso limitado.
         </p>
       </section>
 

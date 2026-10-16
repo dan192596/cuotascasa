@@ -70,4 +70,23 @@ describe('cc-privacy-page', () => {
       expect(text, term).toContain(term);
     }
   });
+
+  it('links the Google API User Data Policy as a plain anchor and the injected Issues URL passes the allowlist', async () => {
+    // Same anchor allowlist as build-output.spec.ts (Opus, PR #53).
+    const allowed = [
+      /^https:\/\/developers\.google\.com\/terms\/api-services-user-data-policy$/,
+      /^https:\/\/policies\.google\.com\/privacy$/,
+      /^https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/issues$/,
+    ];
+    const root = await render('https://github.com/example-owner/example-repo/issues');
+    const policy = root.querySelector<HTMLAnchorElement>('[data-testid="privacy-google-policy-link"]');
+    expect(policy?.getAttribute('href')).toBe('https://developers.google.com/terms/api-services-user-data-policy');
+    expect(policy?.getAttribute('rel')).toBe('noopener noreferrer');
+    const hrefs = [...root.querySelectorAll('a')]
+      .map((a) => a.getAttribute('href') ?? '')
+      .filter((href) => /^https?:/.test(href));
+    expect(hrefs.length).toBe(2);
+    expect(hrefs.filter((href) => !allowed.some((re) => re.test(href)))).toEqual([]);
+    expect(root.querySelectorAll('script, img, iframe, link, [src]').length).toBe(0);
+  });
 });
