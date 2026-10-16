@@ -1,35 +1,54 @@
-import { type EnvironmentProviders, makeEnvironmentProviders, signal } from '@angular/core';
-import type { SyncStatus } from '@cuotascasa/sync';
-import { DataError, type SyncService } from '../api.ts';
+import { DestroyRef, type EnvironmentProviders, inject, makeEnvironmentProviders } from '@angular/core';
+import type { LockManagerLike } from '@cuotascasa/sync';
+import { GOOGLE_OAUTH_CLIENT_ID } from '../../../environments/build-constants.ts';
+import type { SyncService } from '../api.ts';
+import { CLOCK, DATA_STORE } from '../data-layer.tokens.ts';
 import { SYNC_SERVICE } from '../tokens.ts';
+import { DriveSyncService } from './drive-sync-service.ts';
+import { SYNC_OPTIONS, type SyncOptions } from './sync-options.ts';
 
-/** Inert W0-05 stub; W4-09 replaces this file (same export) and deletes stub.spec.ts. */
-export const CC_STUB = 'CC_STUB:W4-09';
-
-class InertSyncService implements SyncService {
-  readonly ccStub = CC_STUB;
-  readonly configured = signal(false).asReadonly();
-  readonly status = signal<SyncStatus>({ state: 'not-configured' }).asReadonly();
-  readonly statusText = signal('No configurado').asReadonly();
-  connect(): Promise<never> {
-    return Promise.reject(new DataError('NOT_IMPLEMENTED', CC_STUB));
-  }
-  setPassphrase(): Promise<never> {
-    return Promise.reject(new DataError('NOT_IMPLEMENTED', CC_STUB));
-  }
-  changePassphrase(): Promise<never> {
-    return Promise.reject(new DataError('NOT_IMPLEMENTED', CC_STUB));
-  }
-  sync(): Promise<never> {
-    return Promise.reject(new DataError('NOT_IMPLEMENTED', CC_STUB));
-  }
-  disconnect(): Promise<never> {
-    return Promise.reject(new DataError('NOT_IMPLEMENTED', CC_STUB));
-  }
+/** Same-tab fallback when Web Locks are missing: runs are queued, never overlapped. */
+function inProcessLocks(): LockManagerLike {
+  let tail: Promise<unknown> = Promise.resolve();
+  return {
+    request<T>(_name: string, callback: () => Promise<T>): Promise<T> {
+      const run = tail.then(callback, callback);
+      tail = run.catch(() => undefined);
+      return run;
+    },
+  };
 }
 
-/** W4-09: Drive sync service (lazy provider, passphrase, Spanish status). The stub stays 'no configurado'. */
-export function provideSync(): EnvironmentProviders {
-  const service: SyncService = new InertSyncService();
-  return makeEnvironmentProviders([{ provide: SYNC_SERVICE, useValue: service }]);
+function browserLocks(): LockManagerLike {
+  const manager = (globalThis.navigator as Navigator | undefined)?.locks;
+  return manager === undefined ? inProcessLocks() : { request: (name, callback) => manager.request(name, callback) };
+}
+
+/**
+ * W4-09: SYNC_SERVICE. Nothing here touches Google: the Drive module (the only importer of GIS and Drive code) is a
+ * dynamic import that runs on prepare() or connect(), so '/' and the first paint of '/app' carry no Google code.
+ * `options` are test seams; production calls provideSync() with none.
+ */
+export function provideSync(options: SyncOptions = {}): EnvironmentProviders {
+  return makeEnvironmentProviders([
+    { provide: SYNC_OPTIONS, useValue: options },
+    {
+      provide: SYNC_SERVICE,
+      useFactory: (): SyncService => {
+        const settings = inject(SYNC_OPTIONS);
+        const service = new DriveSyncService({
+          options: settings,
+          clientId: settings.clientId ?? GOOGLE_OAUTH_CLIENT_ID,
+          store: inject(DATA_STORE),
+          clock: inject(CLOCK),
+          locks: settings.locks ?? browserLocks(),
+          loadDriveModule: settings.loadDriveModule ?? (() => import('@cuotascasa/sync/google-drive')),
+        });
+        inject(DestroyRef).onDestroy(() => {
+          service.destroy();
+        });
+        return service;
+      },
+    },
+  ]);
 }
