@@ -37,9 +37,11 @@ import { FieldErrorsComponent, fieldInvalid } from './field-errors.component.ts'
       <cc-wizard-errors id="termMonths-errors" [field]="f.termMonths" />
     </div>
     <div class="cc-wiz-field">
-      <label for="interestRate">Tasa de interés original del contrato</label>
-      <cc-rate-input inputId="interestRate" [formField]="f.interestRate" />
-      <p class="cc-wiz-hint">
+      <label for="interestRate" id="interestRate-label">Tasa de interés original del contrato</label>
+      <div role="group" aria-labelledby="interestRate-label" aria-describedby="interestRate-hint">
+        <cc-rate-input inputId="interestRate" [formField]="f.interestRate" />
+      </div>
+      <p class="cc-wiz-hint" id="interestRate-hint">
         Es la tasa vigente al desembolso. Los cambios posteriores se registran después como cambios de tasa.
       </p>
     </div>
@@ -74,9 +76,13 @@ import { FieldErrorsComponent, fieldInvalid } from './field-errors.component.ts'
       <cc-wizard-errors id="paymentDay-errors" [field]="f.paymentDay" />
     </div>
     <div class="cc-wiz-field">
-      <label for="firstDueDate">Fecha de la primera cuota</label>
-      <cc-date-input inputId="firstDueDate" placeholder="dd/mm/aaaa" [formField]="f.firstDueDate" />
-      <p class="cc-wiz-hint">Su día debe coincidir con el día de pago; al cambiar el día de pago se ajusta sola.</p>
+      <label for="firstDueDate" id="firstDueDate-label">Fecha de la primera cuota</label>
+      <div role="group" aria-labelledby="firstDueDate-label" aria-describedby="firstDueDate-hint">
+        <cc-date-input inputId="firstDueDate" placeholder="dd/mm/aaaa" [formField]="f.firstDueDate" />
+      </div>
+      <p class="cc-wiz-hint" id="firstDueDate-hint">
+        Su día debe coincidir con el día de pago; al cambiar el día de pago se ajusta sola.
+      </p>
     </div>
     <div class="cc-wiz-field">
       <label for="disbursementDate">Fecha de desembolso (informativa)</label>

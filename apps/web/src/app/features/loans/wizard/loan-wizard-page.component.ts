@@ -90,7 +90,6 @@ const NO_BREAKDOWN: Breakdown = { state: 'none', total: '0.00' as Money, lines: 
       }
     </ol>
     <h2 #stepHeading id="wizard-step-title" tabindex="-1">Paso {{ step() }} de 4 · {{ titleOf(step()) }}</h2>
-    <p class="sr-only" aria-live="polite">{{ announcement() }}</p>
 
     @switch (step()) {
       @case (1) {
@@ -151,8 +150,6 @@ export class LoanWizardPageComponent {
 
   protected readonly steps = WIZARD_STEPS;
   protected readonly step = signal<WizardStep>(1);
-  /** Empty until the first step change: nothing is announced on load. */
-  protected readonly announcement = signal('');
   protected readonly saving = signal(false);
   protected readonly saveError = signal<string | null>(null);
   protected readonly model = signal<WizardModel>(initialModel());
@@ -340,7 +337,6 @@ export class LoanWizardPageComponent {
 
   private goTo(step: WizardStep): void {
     this.step.set(step);
-    this.announcement.set(`Paso ${String(step)} de 4`);
     this.afterRender(() => this.stepHeading().nativeElement.focus());
   }
 

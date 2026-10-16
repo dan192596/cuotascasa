@@ -36,25 +36,40 @@ const STAMPS = {
   deletedAt: null,
 } as const;
 
-/** In-memory LoansStore double: records what would be written; a failure writes nothing (ADR-0005). */
+/**
+ * LoansStore double with a real two-phase `createWithAnchor`: the loan is written, then the anchor write may fail,
+ * and the whole transaction rolls back (ADR-0005). `loans()` is what a reader of the store would see. (The real
+ * store cannot be mounted from a feature spec: the lint matrix forbids data/ implementations there.)
+ */
 class FakeLoansStore implements Partial<LoansStore> {
   readonly ready = signal(true).asReadonly();
+  private readonly stored = signal<readonly Loan[]>([]);
+  readonly loans = this.stored.asReadonly();
   readonly written: { readonly loan: LoanDraft; readonly anchor: AnchorDraft | null }[] = [];
+  /** Fails the first write phase (the loan). */
   failWith: Error | null = null;
+  /** Fails the second phase (the anchor) after the loan was written. */
+  failAnchorWith: Error | null = null;
 
   create(draft: LoanDraft): Promise<Loan> {
     if (this.failWith) return Promise.reject(this.failWith);
+    const loan = { ...draft, ...STAMPS } as Loan;
+    this.stored.update((current) => [...current, loan]);
     this.written.push({ loan: draft, anchor: null });
-    return Promise.resolve({ ...draft, ...STAMPS } as Loan);
+    return Promise.resolve(loan);
   }
 
   createWithAnchor(draft: LoanDraft, anchor: AnchorDraft) {
     if (this.failWith) return Promise.reject(this.failWith);
+    const loan = { ...draft, ...STAMPS } as Loan;
+    this.stored.update((current) => [...current, loan]);
+    if (this.failAnchorWith) {
+      const failure = this.failAnchorWith;
+      this.stored.update((current) => current.filter((candidate) => candidate !== loan));
+      return Promise.reject(failure);
+    }
     this.written.push({ loan: draft, anchor });
-    return Promise.resolve({
-      loan: { ...draft, ...STAMPS } as Loan,
-      anchor: { ...anchor, ...STAMPS, loanId: LOAN_ID } as ReportedBalance,
-    });
+    return Promise.resolve({ loan, anchor: { ...anchor, ...STAMPS, loanId: LOAN_ID } as ReportedBalance });
   }
 }
 
@@ -185,15 +200,15 @@ describe('LoanWizardPageComponent · shell', () => {
     expect(root.hasAttribute('data-cc-stub')).toBe(false);
   });
 
-  it('starts on step 1 without announcing or moving focus, then announces and focuses on every step change', async () => {
+  it('starts on step 1 without moving focus, then focuses the heading on every step change', async () => {
     const { heading, root, type, click } = await setup();
     expect(heading()).toContain('Paso 1 de 4');
-    expect(root.querySelector('[aria-live="polite"]')?.textContent?.trim()).toBe('');
     expect(document.activeElement).not.toBe(root.querySelector('h2'));
     await type('name', 'Casa de prueba');
     await click('Siguiente');
     expect(heading()).toContain('Paso 2 de 4');
-    expect(root.querySelector('[aria-live="polite"]')?.textContent?.trim()).toBe('Paso 2 de 4');
+    // The focused heading is the announcement: no live region repeats «Paso N de 4».
+    expect([...root.querySelectorAll('[aria-live]')].some((node) => node.textContent?.includes('Paso'))).toBe(false);
     expect(document.activeElement).toBe(root.querySelector('h2'));
   });
 
@@ -426,6 +441,17 @@ describe('step 2 · original conditions', () => {
     expect(heading()).toContain('Paso 2 de 4');
     expect(errors('insurance-2-rate')).toEqual(['Escribe la tasa del seguro. Escribe 0 si no aplica.']);
     expect(document.activeElement).toBe(field('insurance-2-rate'));
+  });
+
+  it('hints are linked to their controls with aria-describedby', async () => {
+    const { root } = await atStep2Page();
+    for (const id of ['interestRate', 'firstDueDate']) {
+      const hint = root.querySelector(`#${id}-hint`);
+      expect(hint?.textContent?.trim().length).toBeGreaterThan(0);
+      const group = root.querySelector(`[aria-describedby~="${id}-hint"]`);
+      expect(group, id).not.toBeNull();
+      expect(group?.querySelector(`#${id}`)).not.toBeNull();
+    }
   });
 
   it('roundingProfile offers exactly FHA_GT_V1 and SIMPLE, preloaded from the template, and is required', async () => {
@@ -680,15 +706,17 @@ describe('saving', () => {
     await toStep4();
     await type('anchorBalance', '500000');
     await type('anchorK', '1');
-    store.failWith = new DataError('STORAGE', 'quota Q 1,234.56');
+    store.failAnchorWith = new DataError('STORAGE', 'quota Q 1,234.56');
     await click('Guardar préstamo');
+    expect(store.loans()).toEqual([]);
     expect(store.written).toHaveLength(0);
     expect(navigate).not.toHaveBeenCalled();
     expect(heading()).toContain('Paso 4 de 4');
     expect(text('save-error')).toContain('No se escribió nada');
     expect(text('save-error')).not.toContain('1,234');
-    store.failWith = null;
+    store.failAnchorWith = null;
     await click('Guardar préstamo');
+    expect(store.loans()).toHaveLength(1);
     expect(store.written).toHaveLength(1);
     expect(navigate).toHaveBeenCalledOnce();
   });

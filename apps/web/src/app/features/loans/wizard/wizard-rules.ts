@@ -71,7 +71,7 @@ export const wizardSchema: SchemaFn<WizardModel> = (path) => {
   });
   required(path.interestRate, { message: MESSAGES.interestRequired });
   validate(path.interestRate, ({ value }) =>
-    value() === '' || isRate(value()) ? undefined : error('rate', MESSAGES.insuranceRateInvalid),
+    value() === '' || isRate(value()) ? undefined : error('rate', MESSAGES.interestRateInvalid),
   );
   validate(path.rateType, ({ value }) =>
     (RATE_TYPES as readonly string[]).includes(value()) ? undefined : error('required', MESSAGES.rateTypeRequired),

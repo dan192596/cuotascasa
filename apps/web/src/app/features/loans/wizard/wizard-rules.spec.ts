@@ -78,6 +78,12 @@ describe('wizard rules', () => {
     ).toBe(true);
   });
 
+  it('a malformed interest rate gets its own message, not the insurance one', () => {
+    const { tree } = build(validModel({ interestRate: '-0.01' }));
+    expect(messagesOf(tree.interestRate())).toEqual([MESSAGES.interestRateInvalid]);
+    expect(MESSAGES.interestRateInvalid).not.toBe(MESSAGES.insuranceRateInvalid);
+  });
+
   it('requires rateType', () => {
     expect(messagesOf(build(validModel({ rateType: '' })).tree.rateType())).toEqual([MESSAGES.rateTypeRequired]);
     expect(

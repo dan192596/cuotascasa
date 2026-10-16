@@ -21,6 +21,7 @@ export const MESSAGES = {
     'La fecha de la primera cuota no coincide con el día de pago elegido. Corrige la fecha o el día de pago.',
   disbursementRequired: 'La fecha de desembolso es obligatoria.',
   disbursementAfterFirstDue: 'La fecha de desembolso no puede ser posterior a la primera cuota.',
+  interestRateInvalid: 'La tasa de interés debe ser un número mayor o igual que cero.',
   insuranceRateRequired: 'Escribe la tasa del seguro. Escribe 0 si no aplica.',
   insuranceRateInvalid: 'La tasa del seguro debe ser un número mayor o igual que cero.',
   roundingRequired: 'Elige el perfil de redondeo.',
