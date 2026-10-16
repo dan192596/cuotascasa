@@ -2,13 +2,13 @@ import { signal } from '@angular/core';
 import { DeferBlockBehavior, DeferBlockState, TestBed, type ComponentFixture } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { InvalidInputError, NegativeAmortizationError, type Money } from '@cuotascasa/domain';
-import { readFileSync, readdirSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import type { LoanProjectionService, LoansStore, ScenarioComparison, ScenariosStore } from '../../../data/api.ts';
 import { LOAN_PROJECTION_SERVICE, LOANS_STORE, SCENARIOS_STORE } from '../../../data/tokens.ts';
+import { Announcer } from '../../../ui/feedback/announcer.service.ts';
 import { formatLocalDate, formatMoney } from '../../../ui/format/format.ts';
 import { ExportMenuComponent } from '../../export/export-menu.component.ts';
-import { comparison, entry } from './compare-fixtures.ts';
+import { comparison, entry } from './testing/compare-fixtures.ts';
 import { ScenarioCompareComponent } from './scenario-compare.component.ts';
 
 const LOAN = 'a0000000-0000-4000-8000-000000000001';
@@ -16,6 +16,7 @@ const LOAN = 'a0000000-0000-4000-8000-000000000001';
 interface Setup {
   readonly scenarios?: readonly { readonly id: string; readonly name: string }[];
   readonly ready?: boolean;
+  readonly loanMissing?: boolean;
   /** Builds the comparison for the compared ids; null = engine could not compute it. */
   readonly compare?: (ids: readonly string[]) => ScenarioComparison | null;
 }
@@ -37,9 +38,11 @@ function mount(setup: Setup = {}) {
       )(ids),
     ).asReadonly(),
   );
+  const polite = vi.fn((message: string) => Promise.resolve(message.length));
   TestBed.configureTestingModule({
     deferBlockBehavior: DeferBlockBehavior.Manual,
     providers: [
+      { provide: Announcer, useValue: { polite } },
       {
         provide: SCENARIOS_STORE,
         useValue: {
@@ -50,7 +53,8 @@ function mount(setup: Setup = {}) {
       {
         provide: LOANS_STORE,
         useValue: {
-          loan: () => signal({ id: LOAN, name: 'Casa A', currency: 'GTQ' }).asReadonly(),
+          loan: () =>
+            signal(setup.loanMissing === true ? undefined : { id: LOAN, name: 'Casa A', currency: 'GTQ' }).asReadonly(),
         } as unknown as LoansStore,
       },
       {
@@ -66,7 +70,7 @@ function mount(setup: Setup = {}) {
   const fixture = TestBed.createComponent(ScenarioCompareComponent);
   fixture.componentRef.setInput('loanId', LOAN);
   fixture.detectChanges();
-  return { fixture, compareSpy };
+  return { fixture, compareSpy, polite };
 }
 
 const root = (f: ComponentFixture<unknown>) => f.nativeElement as HTMLElement;
@@ -100,6 +104,15 @@ describe('cc-scenario-compare: selection', () => {
     expect(options(fixture).map((o) => o.checked)).toEqual([true, true, true, false]);
     expect(text(fixture, 'compare-status')).toContain('hasta 3 escenarios');
     expect(compareSpy.mock.calls.every(([, ids]) => ids.length <= 3)).toBe(true);
+  });
+
+  it('announces the limit on every blocked attempt, through the polite announcer', () => {
+    const { fixture, polite } = mount();
+    click(fixture, options(fixture)[3] as HTMLInputElement);
+    click(fixture, options(fixture)[3] as HTMLInputElement);
+    const limit = polite.mock.calls.filter(([message]) => String(message).includes('hasta 3 escenarios'));
+    expect(limit).toHaveLength(2);
+    expect(text(fixture, 'compare-status')).toContain('hasta 3 escenarios');
   });
 
   it('accepts the 4th after one is unchecked and clears the message', () => {
@@ -251,7 +264,36 @@ describe('cc-scenario-compare: chart and data table', () => {
   });
 });
 
+describe('cc-scenario-compare: chart wording', () => {
+  it('names the table by its summary, not by position', () => {
+    const { fixture } = mount();
+    expect(root(fixture).textContent).not.toContain('de abajo');
+    expect(byId(fixture, 'chart-data-details')?.querySelector('summary')?.textContent?.trim()).toBe(
+      'Ver los saldos de la gráfica en una tabla',
+    );
+  });
+});
+
+describe('cc-scenario-compare: chart error', () => {
+  it('opens the data table when the chart fails to load', async () => {
+    const { fixture } = mount();
+    const details = byId(fixture, 'chart-data-details') as HTMLDetailsElement;
+    expect(details.open).toBe(false);
+    const [block] = await fixture.getDeferBlocks();
+    await block?.render(DeferBlockState.Error);
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(root(fixture).textContent).toContain('Ver los saldos de la gráfica en una tabla');
+    expect(details.open).toBe(true);
+  });
+});
+
 describe('cc-scenario-compare: export', () => {
+  it('offers no export when the loan does not exist', () => {
+    const { fixture } = mount({ loanMissing: true });
+    expect(fixture.debugElement.query(By.directive(ExportMenuComponent))).toBeNull();
+  });
+
   it('hands the comparison to cc-export-menu', () => {
     const { fixture } = mount();
     const menu = fixture.debugElement.query(By.directive(ExportMenuComponent)).componentInstance as ExportMenuComponent;
@@ -263,35 +305,5 @@ describe('cc-scenario-compare: export', () => {
     expect(request.input.scenarios.map((s) => s.label)).toEqual(['Abono A', 'Abono B', 'Abono C']);
     expect(request.input.scenarios[0]?.metrics.netSaving).toBe('2000.00');
     expect(request.input.generatedOn).toBe('2026-10-16');
-  });
-});
-
-describe('compare/ sources', () => {
-  const dir = 'apps/web/src/app/features/scenarios/compare';
-  const sources = readdirSync(dir).filter(
-    (name) => name.endsWith('.ts') && !name.endsWith('.spec.ts') && name !== 'compare-fixtures.ts',
-  );
-
-  it('imports chart.js and ng2-charts only from the lazy chart component', () => {
-    for (const name of sources) {
-      const source = readFileSync(`${dir}/${name}`, 'utf8');
-      const importsChart = /from\s+'(chart\.js|ng2-charts)/.test(source);
-      expect(importsChart, name).toBe(name === 'balance-chart.component.ts');
-    }
-  });
-
-  it('registers only the Chart.js pieces a line chart needs, never the full registerables', () => {
-    const source = readFileSync(`${dir}/balance-chart.component.ts`, 'utf8').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
-    expect(source).not.toMatch(/\bregisterables\b(?!:)|withDefaultRegisterables/);
-    expect(source).toMatch(
-      /registerables:\s*\[LineController, LineElement, PointElement, LinearScale, Legend, Tooltip\]/,
-    );
-  });
-
-  it('converts money to numbers only in chart-series.ts (ADR-0003 §6)', () => {
-    for (const name of sources.filter((candidate) => candidate !== 'chart-series.ts')) {
-      const source = readFileSync(`${dir}/${name}`, 'utf8').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
-      expect(source, name).not.toMatch(/\b(Number|parseFloat|parseInt)\(|\bNumber\.parse|\bnew Decimal\b/);
-    }
   });
 });

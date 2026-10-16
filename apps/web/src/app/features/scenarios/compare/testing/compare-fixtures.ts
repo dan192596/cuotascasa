@@ -1,5 +1,5 @@
 import type { ComparisonMetrics, Money, Schedule, ScheduleRow } from '@cuotascasa/domain';
-import type { ScenarioComparison, ScenarioComparisonEntry } from '../../../data/api.ts';
+import type { ScenarioComparison, ScenarioComparisonEntry } from '../../../../data/api.ts';
 
 /** Synthetic comparison data for the specs of this folder (no real loan: invented round numbers). */
 

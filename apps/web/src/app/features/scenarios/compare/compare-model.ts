@@ -30,7 +30,7 @@ export function toggleScenario(selected: readonly Uuid[], id: Uuid, checked: boo
 }
 
 export function monthsText(months: number): string {
-  return `${String(months)} ${Math.abs(months) === 1 ? 'mes' : 'meses'}`;
+  return `${String(months)} ${months === 1 || months === -1 ? 'mes' : 'meses'}`;
 }
 
 /* ---------- Metrics table ([ALG.METRICS]) ---------- */
@@ -144,9 +144,10 @@ export function yearlyBalanceTable(comparison: ScenarioComparison): YearlyBalanc
     { heading: 'Real', schedule: comparison.real },
     ...comparison.scenarios.map((entry) => ({ heading: entry.name, schedule: entry.schedule })),
   ];
+  // A path without installments has no years: it is left out of the rows, never read as «ended at year -1».
   const perPath = paths.map((path) => balancesByYear(path.schedule));
   const years = [...new Set(perPath.flatMap((byYear) => [...byYear.keys()]))].sort((a, b) => a - b);
-  const lastYears = perPath.map((byYear) => Math.max(...byYear.keys()));
+  const lastYears = perPath.map((byYear) => [...byYear.keys()].reduce((last, year) => (year > last ? year : last), -1));
   return {
     headings: paths.map((path) => path.heading),
     rows: years.map((year) => ({
@@ -154,7 +155,7 @@ export function yearlyBalanceTable(comparison: ScenarioComparison): YearlyBalanc
       balances: perPath.map((byYear, index) => {
         const known = byYear.get(year);
         if (known !== undefined) return known;
-        return year > (lastYears[index] ?? year) ? '0.00' : null;
+        return lastYears[index] !== -1 && year > (lastYears[index] ?? year) ? '0.00' : null;
       }),
     })),
   };

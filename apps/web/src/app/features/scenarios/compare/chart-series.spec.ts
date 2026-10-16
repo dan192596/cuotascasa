@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { comparison, entry, ORIGINAL, REAL } from './compare-fixtures.ts';
+import { comparison, entry, ORIGINAL, REAL } from './testing/compare-fixtures.ts';
 import { buildChartSeries, formatAxisValue } from './chart-series.ts';
 
 describe('buildChartSeries', () => {

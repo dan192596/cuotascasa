@@ -1,6 +1,6 @@
 import { CurrencyMismatchError, InvalidInputError, NegativeAmortizationError, type Money } from '@cuotascasa/domain';
 import { describe, expect, it } from 'vitest';
-import { comparison, entry } from './compare-fixtures.ts';
+import { comparison, entry } from './testing/compare-fixtures.ts';
 import {
   describeFailure,
   MAX_COMPARED,
@@ -96,6 +96,16 @@ describe('yearlyBalanceTable', () => {
   it('shows 0.00 for a path that already ended', () => {
     expect(table.rows[2]?.balances[1]).toBe('0.00');
     expect(table.rows[2]?.balances[2]).toBe('0.00');
+  });
+});
+
+describe('yearlyBalanceTable with an empty schedule', () => {
+  it('shows a dash for a path without installments instead of zeros', () => {
+    const base = comparison([entry('s1', 'A')]);
+    const empty = { ...base, original: { ...base.original, rows: [] } };
+    const table = yearlyBalanceTable(empty);
+    expect(table.rows.every((r) => r.balances[0] === null)).toBe(true);
+    expect(table.rows[0]?.balances[1]).not.toBeNull();
   });
 });
 

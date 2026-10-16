@@ -22,6 +22,7 @@ import {
 import { BaseChartDirective, provideCharts } from 'ng2-charts';
 import type { ScenarioComparison } from '../../../data/api.ts';
 import { formatMoney } from '../../../ui/format/format.ts';
+import { isCompletePalette, type Palette, samePalette } from './chart-palette.ts';
 import {
   buildChartSeries,
   type ChartPoint,
@@ -32,13 +33,6 @@ import {
 
 /** One marker per year of installments: enough to tell series apart without drawing 240 dots. */
 const MARKER_EVERY = 12;
-
-interface Palette {
-  readonly ink: string;
-  readonly 'ink-muted': string;
-  readonly accent: string;
-  readonly rule: string;
-}
 
 type LineChartConfig = ChartConfiguration<'line', ChartPoint[]>;
 
@@ -113,7 +107,7 @@ export class BalanceChartComponent {
     () =>
       `Gráfica del saldo por número de cuota de ${this.series()
         .map((series) => series.label)
-        .join(', ')}. Los mismos datos están en la tabla de abajo.`,
+        .join(', ')}. Los mismos datos están en la tabla «Ver los saldos de la gráfica en una tabla».`,
   );
 
   protected readonly config = computed<LineChartConfig | null>(() => {
@@ -129,12 +123,15 @@ export class BalanceChartComponent {
           const swatch = this.host.nativeElement.querySelector(`.swatch.${role}`);
           return swatch === null ? '' : getComputedStyle(swatch).color;
         };
-        this.palette.set({
+        const next: Palette = {
           ink: colorOf('ink'),
           'ink-muted': colorOf('ink-muted'),
           accent: colorOf('accent'),
           rule: colorOf('rule'),
-        });
+        };
+        const current = this.palette();
+        // A theme observer fires for any <html> attribute change: redraw only when a colour really changed.
+        if (isCompletePalette(next) && (current === null || !samePalette(current, next))) this.palette.set(next);
       };
       read();
       // The tokens follow the explicit theme (data-theme on <html>) or the system one: read them again when it changes.

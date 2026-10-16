@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, Directive, inject, input, output, signal } from '@angular/core';
 import type { Uuid } from '@cuotascasa/schema';
 import { LOAN_PROJECTION_SERVICE, LOANS_STORE, SCENARIOS_STORE } from '../../../data/tokens.ts';
+import { Announcer } from '../../../ui/feedback/announcer.service.ts';
 import { LocalDatePipe } from '../../../ui/format/local-date.pipe.ts';
 import { MoneyPipe } from '../../../ui/format/money.pipe.ts';
 import { type ExportRequest, ExportMenuComponent } from '../../export/export-menu.component.ts';
@@ -16,6 +17,16 @@ import {
 
 const LIMIT_MESSAGE = `Puedes comparar hasta ${String(MAX_COMPARED)} escenarios a la vez. Quita uno para elegir otro.`;
 
+/** Tells the host that the block it sits in was rendered (here: the @error block of the deferred chart). */
+@Directive({ selector: '[ccRendered]' })
+export class RenderedDirective {
+  readonly ccRendered = output<void>();
+
+  constructor() {
+    queueMicrotask(() => this.ccRendered.emit());
+  }
+}
+
 /**
  * Comparison of up to 3 scenarios against the original and real paths of one loan (HU-16, R5, R17). Metrics are the
  * engine's `compareSchedules` outputs through the facade; nothing is computed here. The balance chart loads when it
@@ -23,7 +34,7 @@ const LIMIT_MESSAGE = `Puedes comparar hasta ${String(MAX_COMPARED)} escenarios 
  */
 @Component({
   selector: 'cc-scenario-compare',
-  imports: [BalanceChartComponent, ExportMenuComponent, LocalDatePipe, MoneyPipe],
+  imports: [BalanceChartComponent, ExportMenuComponent, LocalDatePipe, MoneyPipe, RenderedDirective],
   template: `
     <section class="compare" aria-labelledby="cc-compare-title">
       <h2 id="cc-compare-title">Comparar escenarios</h2>
@@ -51,7 +62,7 @@ const LIMIT_MESSAGE = `Puedes comparar hasta ${String(MAX_COMPARED)} escenarios 
               </label>
             }
           </fieldset>
-          <p class="status" role="status" data-testid="compare-status">{{ statusText() }}</p>
+          <p class="status" data-testid="compare-status">{{ statusText() }}</p>
         }
 
         @if (comparison(); as result) {
@@ -130,10 +141,13 @@ const LIMIT_MESSAGE = `Puedes comparar hasta ${String(MAX_COMPARED)} escenarios 
           } @loading {
             <p class="chart-placeholder" role="status">Cargando la gráfica…</p>
           } @error {
-            <p class="chart-placeholder">No se pudo cargar la gráfica. La tabla de abajo trae los mismos datos.</p>
+            <p class="chart-placeholder" (ccRendered)="chartFailed.set(true)">
+              No se pudo cargar la gráfica. Usa la tabla «Ver los saldos de la gráfica en una tabla», que trae los
+              mismos datos.
+            </p>
           }
 
-          <details class="data" data-testid="chart-data-details">
+          <details class="data" data-testid="chart-data-details" [open]="chartFailed()">
             <summary>Ver los saldos de la gráfica en una tabla</summary>
             <div
               class="scroll"
@@ -274,6 +288,8 @@ export class ScenarioCompareComponent {
   /** What the user picked; null until the first click, so new scenarios show up on their own. */
   private readonly chosen = signal<readonly Uuid[] | null>(null);
   private readonly limitReached = signal(false);
+  private readonly announcer = inject(Announcer);
+  protected readonly chartFailed = signal(false);
 
   protected readonly scenarios = computed(() => this.scenariosStore.listByLoan(this.loanId())());
   protected readonly selectedIds = computed<readonly Uuid[]>(() => {
@@ -311,7 +327,8 @@ export class ScenarioCompareComponent {
   );
   protected readonly exportRequest = computed<ExportRequest | null>(() => {
     const result = this.comparison();
-    if (result === null) return null;
+    const loan = this.loans.loan(this.loanId())();
+    if (result === null || loan === undefined) return null;
     return {
       kind: 'comparison',
       input: {
@@ -321,7 +338,7 @@ export class ScenarioCompareComponent {
           schedule: entry.schedule,
           metrics: entry.metrics,
         })),
-        loanLabel: this.loans.loan(this.loanId())()?.name ?? '',
+        loanLabel: loan.name,
         generatedOn: this.projections.asOf(),
       },
     };
@@ -334,6 +351,8 @@ export class ScenarioCompareComponent {
     const result = toggleScenario(this.selectedIds(), id, input.checked);
     this.chosen.set(result.ids);
     this.limitReached.set(result.blocked);
+    // Same text on a second refusal changes nothing in the DOM, so the announcer says it again on every attempt.
+    void this.announcer.polite(result.blocked ? LIMIT_MESSAGE : this.statusText());
     // A refused check must not stay ticked: the checkbox flipped on its own before this handler ran.
     input.checked = result.ids.includes(id);
   }
