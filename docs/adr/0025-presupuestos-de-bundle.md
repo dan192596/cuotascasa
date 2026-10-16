@@ -29,3 +29,11 @@ La investigación con el metafile de esbuild mostró la causa. esbuild separa lo
 
 - La landing pesa unos 6 kB más que antes de W4-03. Es un costo único que comparten todas las features que usan formularios.
 - Los presupuestos se revisan en W7-01 junto con el release.
+
+## Enmienda (2026-10-16): techo de 104 kB y vetos por paquete
+
+Al medir juntas las tres tarjetas de W4 que usan formularios y plantillas nuevas (simulador W4-03, dashboard W4-06 y asistente W4-07), la landing llega a 96.92 kB. Cada una por separado cabe en 95 kB. El metafile muestra que el grafo inicial de la landing no contiene ningún byte de dominio, `ui/`, `@angular/forms`, zod ni schema. Todo el crecimiento es Angular core izado (+22.7 kB raw), más el host estático del simulador (3.7 kB gzip) y una costura más de chunk que comprime algo peor. Un solo `@defer` en cualquier página de `/app` añade además ~1.1 kB.
+
+1. El presupuesto de la landing pasa a **104 kB gzip** (106 496 B). Deja unos 7 kB para las APIs de core que usen W5 y W6 (`@defer`, gráficas y exportación siguen siendo diferidas de verdad).
+2. Para que el techo más alto no oculte regresiones reales, el grafo inicial de la landing **prohíbe** dominio, `decimal.js`, `@angular/forms`, zod, schema y `ui/` (además de lo que ya prohibía). Si alguno entra, `bundle:check` falla aunque el tamaño quepa. El crecimiento de core queda como el único aceptado.
+
