@@ -15,7 +15,7 @@ import {
   type SyncSession,
   type SyncStatus,
 } from '@cuotascasa/sync';
-import { DataError, type SyncService } from '../api.ts';
+import { DataError, type PassphraseChangeOutcome, type SyncService } from '../api.ts';
 import { createLocalDataset } from './local-dataset.ts';
 import type { CryptoModuleShape, DriveModuleShape, SyncOptions } from './sync-options.ts';
 import { syncStatusText } from './sync-status-text.ts';
@@ -113,15 +113,17 @@ export class DriveSyncService implements SyncService {
    * inside the gesture. Contacts Google: call it only after the user explicitly chose to connect. Does nothing when
    * sync is not configured. Never rejects: a failed preload is retried by connect().
    */
-  async prepare(): Promise<void> {
+  async prepare(): Promise<boolean> {
     if (!this.configured()) {
-      return;
+      return false;
     }
     try {
       const runtime = await this.ensureRuntime();
       await runtime.loadGis();
+      return true;
     } catch {
-      // connect() retries and reports the failure.
+      // The UI keeps the first step; connect() would also retry and report the failure.
+      return false;
     }
   }
 
@@ -183,7 +185,7 @@ export class DriveSyncService implements SyncService {
     await this.refreshIdle(gen);
   }
 
-  async changePassphrase(passphrase: string): Promise<void> {
+  async changePassphrase(passphrase: string): Promise<PassphraseChangeOutcome> {
     const runtime = this.requireConnected();
     this.requirePassphrase(passphrase);
     const gen = this.generation;
@@ -196,12 +198,13 @@ export class DriveSyncService implements SyncService {
       if (error instanceof RemoteBusyError) {
         // Nothing changed locally or remotely: keep what the user was seeing and explain.
         this.setStatusIf(gen, previous, BUSY_TEXT);
-        return;
+        return 'busy';
       }
       await this.applyFailure(error, gen);
-      return;
+      return 'failed';
     }
     await this.refreshIdle(gen);
+    return 'changed';
   }
 
   async sync(): Promise<void> {
