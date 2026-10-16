@@ -22,7 +22,11 @@ El valor central de CuotasCasa es reproducir la tabla del banco **al centavo** y
 3. **Dinero y tasas como strings decimales** en todas las fronteras (JSON, almacenamiento, UI), con tipos marcados (*branded*) `Money` y `Rate`. Nunca `number`.
 4. **Fechas como `LocalDate` `AAAA-MM-DD`.** Prohibido usar `Date` dentro del dominio. La aritmética de meses y el último día del mes viven en `dates/`.
 5. **Implementado por Opus en W0-03.** `money/` (incluye `decimal-config.ts`) y `dates/` son contratos congelados.
-6. **Única conversión a `number`:** el escritor de Excel, con una prueba de ida y vuelta (ADR-0013). El formato de pantalla trabaja sobre strings en los pipes de `ui/`.
+6. **Conversiones a `number`:** solo dos.
+   - El escritor de Excel, con una prueba de ida y vuelta (ADR-0013).
+   - Los valores del eje Y de la gráfica de comparación (W5-05). Viven en un único helper, `features/scenarios/compare/chart-series.ts`. Son solo de visualización: nunca vuelven al dominio ni a la persistencia, y la tabla alternativa accesible muestra los strings originales.
+
+   El formato de pantalla trabaja sobre strings en los pipes de `ui/`. La excepción de lint cubre solo esos archivos.
 7. **Errores de dominio tipados**, con la jerarquía `DomainError`: `CurrencyMismatchError`, `NegativeAmortizationError`, errores de validación tipados, etc. Una meta inviable no es un error: `[ALG.GOAL]` devuelve `INFEASIBLE`.
 
 ## Alternativas consideradas
