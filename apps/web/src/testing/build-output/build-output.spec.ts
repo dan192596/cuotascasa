@@ -16,6 +16,16 @@ function browserFiles(dir: string = BROWSER): string[] {
   );
 }
 
+/**
+ * External destinations a public page may link to with a plain <a> (privacy page, ADR-0016): Google's API user-data
+ * policy, Google's privacy policy, and the repository issues page injected at build time (W3-17; never hardcoded).
+ */
+const ALLOWED_EXTERNAL_ANCHORS: readonly RegExp[] = [
+  /^https:\/\/developers\.google\.com\/terms\/api-services-user-data-policy$/,
+  /^https:\/\/policies\.google\.com\/privacy$/,
+  /^https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/issues$/,
+];
+
 describe('pnpm build output (ADR-0011 decision 3)', () => {
   it('prerenders / with the landing page and the manifest link', () => {
     const html = read(join(BROWSER, 'index.html'));
@@ -121,7 +131,12 @@ describe('pnpm build output (ADR-0011 decision 3)', () => {
 
     it.each(DOCUMENTS)('%s loads no external origin', (document) => {
       const html = read(join(BROWSER, document));
-      expect(html.match(/\b(?:src|href)="(?:https?:)?\/\/[^"]*"/g) ?? []).toEqual([]);
+      // Nothing is fetched from another origin: no external src= and no external <link href>.
+      expect(html.match(/\bsrc="(?:https?:)?\/\/[^"]*"/g) ?? []).toEqual([]);
+      expect(html.match(/<link\b[^>]*\bhref="(?:https?:)?\/\/[^"]*"/g) ?? []).toEqual([]);
+      // Plain <a> navigation links fetch nothing on load; only allowlisted destinations may appear.
+      const anchors = [...html.matchAll(/<a\b[^>]*\bhref="((?:https?:)?\/\/[^"]*)"/g)].map((m) => m[1] ?? '');
+      expect(anchors.filter((url) => !ALLOWED_EXTERNAL_ANCHORS.some((allowed) => allowed.test(url)))).toEqual([]);
     });
   });
 });
