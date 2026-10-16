@@ -81,7 +81,9 @@ export function validateAnchor(
   reported: ReportedBalanceEvent,
 ): TemplateValidationResult | null {
   try {
-    return validateAgainstReportedBalance({ terms, realEvents, reported });
+    const result = validateAgainstReportedBalance({ terms, realEvents, reported });
+    // [ALG.VALIDATE]: a modeled schedule that cannot amortize is UNVALIDATED, same as a validation-only error.
+    return result.status === 'UNVALIDATED' ? null : result;
   } catch (error) {
     if (error instanceof DomainError) {
       return null;

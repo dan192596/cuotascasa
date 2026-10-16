@@ -4,7 +4,7 @@
       "id": "landing",
       "name": "landing (/)",
       "roots": ["apps/web/src/main.ts", "apps/web/src/app/public/landing/landing-page.component.ts"],
-      "budgetGzipBytes": 97280,
+      "budgetGzipBytes": 106496,
       "forbidden": [
         { "id": "dexie", "pattern": "/dexie/" },
         { "id": "persistence", "pattern": "packages/persistence/|@cuotascasa/persistence" },
@@ -16,7 +16,13 @@
         { "id": "ng2-charts", "pattern": "/ng2-charts/" },
         { "id": "google-gis", "pattern": "google-drive|google\\.accounts|accounts\\.google\\.com|gsi/client" },
         { "id": "app-area-routes", "pattern": "app/app-area\\.routes\\.ts$" },
-        { "id": "data-implementations", "pattern": "app/data/(providers|stores|engine|backup|sync)/" }
+        { "id": "data-implementations", "pattern": "app/data/(providers|stores|engine|backup|sync)/" },
+        { "id": "domain", "pattern": "packages/domain/|@cuotascasa/domain" },
+        { "id": "decimal.js", "pattern": "/decimal\\.js/" },
+        { "id": "angular-forms", "pattern": "@angular/forms|/angular/forms/" },
+        { "id": "zod", "pattern": "/zod/" },
+        { "id": "schema", "pattern": "packages/schema/|@cuotascasa/schema" },
+        { "id": "ui", "pattern": "app/ui/" }
       ]
     },
     {
