@@ -34,7 +34,7 @@ Cada ADR documenta una decisión importante: su contexto, la decisión, las alte
 | [0024](0024-sync-merge-order.md) | Orden total de la combinación en la sincronización | Aceptado | 2026-10-05 |
 | [0025](0025-presupuestos-de-bundle.md) | Presupuestos de bundle de la landing y de /app | Aceptado | 2026-10-16 |
 
-El siguiente número libre es el **0025**.
+El siguiente número libre es el **0026**.
 
 ## Estados
 

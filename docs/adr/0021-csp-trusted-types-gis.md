@@ -95,3 +95,13 @@ Fuera de este ADR: HSTS, `Referrer-Policy` y `Permissions-Policy` siguen como lo
 - `docs/specs/spikes/csp-gis-evidence.md` y `tools/spikes/csp-gis/results.json` (W1-08).
 - Tarjetas W2-02, W2-09, W2-10, W2-11, W3-14, W5-05 y W5-06.
 - CSP Level 3 y Trusted Types (W3C): https://www.w3.org/TR/CSP3/ y https://www.w3.org/TR/trusted-types/
+
+## Enmiendas
+
+**Enmienda (2026-10-16, W4, PR #53).** Las páginas públicas siguen sin cargar nada externo: ningún script, estilo, fuente, imagen ni `fetch` sale del origen. Los enlaces `<a>` sí pueden apuntar fuera, pero solo a una lista permitida:
+
+- la política de datos de usuario de las API de Google;
+- `policies.google.com`;
+- la URL de issues de GitHub que se inyecta al compilar, reconocida por patrón (nunca un usuario de GitHub escrito en el código).
+
+La prueba del build rechaza cualquier otro `href` externo.

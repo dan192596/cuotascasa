@@ -109,3 +109,15 @@ El formato debe sobrevivir a la evolución del modelo (ADR-0005). Un respaldo de
 
 - ADR-0005, ADR-0006, ADR-0008, ADR-0009, ADR-0013, ADR-0015, ADR-0017.
 - Tarjetas W0-04, W1-03, W4-08 y W5-07.
+
+## Enmiendas
+
+**Enmienda (2026-10-16, W4).** Dictámenes de Opus en la revisión de W4-08 (PR #60) que precisan el punto 5 sin cambiar la decisión:
+
+- **Una sola vista previa pendiente** a la vez, que vence a los 10 minutos.
+- **Confirmaciones en cola.** Las confirmaciones se ejecutan una tras otra, nunca en paralelo, y cada token es independiente. Así dos importaciones no se cruzan ni dejan instantáneas sueltas.
+- **Escritura durante la importación.** Si llega una escritura entre la instantánea y `replaceAll`, la instantánea se descarta y no se ofrece deshacer, para no perder esa escritura.
+- **Deshacer se descarta ante cualquier escritura ajena**, por ejemplo un `replaceAll` de la sincronización o una escritura de otra pestaña, además de los 10 minutos del punto 5.
+- **Huella antes de restaurar.** Al importar se guarda una huella del estado: `meta`, los contadores y un SHA-256 de `exportAll`. Deshacer solo restaura si la huella actual coincide. Queda un TOCTOU residual entre esa comprobación y la restauración; lo cierra un `restoreSnapshot(id, {expect})` atómico en el puerto de persistencia, pendiente como micro-tarjeta, junto con `listSnapshots` para limpiar al arrancar las instantáneas huérfanas.
+- **Iteraciones del sobre.** Nunca se deriva con las iteraciones de un sobre fuera de los topes de ADR-0009. Un valor entero fuera de rango (por ejemplo `−5`, `0` o uno sobre el techo) da `VALIDATION`; un valor no entero como `1.5` es un sobre mal formado y da `WRONG_PASSPHRASE`.
+- **Respaldo cifrado desde Ajustes.** La política de privacidad promete que el respaldo JSON cifrado usa la misma frase de Drive; la tarjeta de Ajustes lo cumple.

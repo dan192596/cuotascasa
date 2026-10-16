@@ -76,3 +76,13 @@ Sin cookies, analítica, rastreo ni telemetría. `/privacidad` lo declara.
 
 - ADR-0001, ADR-0002, ADR-0007, ADR-0008, ADR-0009, ADR-0013, ADR-0015, ADR-0021, ADR-0022.
 - `docs/security/threat-model.md` (W6-03), `docs/specs/spikes/csp-gis-evidence.md` (W1-08).
+
+## Enmiendas
+
+**Enmienda (2026-10-16, W4).** Tras la revisión de exactitud de `/privacidad` (W4-05, PR #59), la página también declara:
+
+- que el hosting de Cloudflare guarda registros técnicos de acceso, como cualquier servidor web, y que CuotasCasa no los lee ni los comparte;
+- que el script de Google y la API de Drive se contactan **solo** después de conectar Drive, y que Google ve solo el archivo cifrado con su nombre, tamaño y fecha;
+- que la clave derivada de la frase se guarda en el dispositivo como clave no extraíble (ADR-0009).
+
+Las promesas de la política que dependen de la UI («Desconectar Drive» revoca, aviso antes de la primera exportación sin cifrar y respaldo cifrado) son criterios de aceptación de W4-08, W4-09 y las tarjetas de exportación de W5, y el despliegue no se activa antes (`docs/guides/despliegue-cloudflare.md`).

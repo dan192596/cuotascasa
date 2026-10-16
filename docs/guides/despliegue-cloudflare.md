@@ -59,7 +59,7 @@ En **Environments** → `production`:
 | Variable | `SITE_HOST` | `<subdominio>.<tu-dominio>`: solo el host, en minúsculas, sin `https://`, ruta ni puerto |
 | Variable | `GOOGLE_CLIENT_ID` | Puede quedar **vacía** en el primer despliegue: la app muestra Drive como «no configurado» (ADR-0008, decisión 6) |
 
-Después, en **Settings** → **Secrets and variables** → **Actions** → pestaña **Variables**, crea la **variable del repositorio** `DEPLOY_ENABLED` con valor `true`. Tiene que ser del repositorio, no del entorno: el `if` del trabajo no ve las variables del entorno.
+Después, en **Settings** → **Secrets and variables** → **Actions** → pestaña **Variables**, crea la **variable del repositorio** `DEPLOY_ENABLED` con valor `true`. Tiene que ser del repositorio, no del entorno: el `if` del trabajo no ve las variables del entorno. Hazlo solo cuando se cumpla la lista [«Antes de activar el despliegue»](#antes-de-activar-el-despliegue).
 
 ### 7. Aprobar el primer despliegue
 
@@ -71,6 +71,14 @@ Después, en **Settings** → **Secrets and variables** → **Actions** → pest
 ### 8. Configurar Google Cloud
 
 Con `/` y `/privacidad` ya en línea, sigue [la guía de Google Cloud](google-cloud-setup.md). Al terminar, pon el ID de cliente en la variable `GOOGLE_CLIENT_ID` del entorno `production` y aprueba un nuevo despliegue.
+
+## Antes de activar el despliegue
+
+- [ ] **Cloudflare Web Analytics queda apagado.** La política de privacidad dice que CuotasCasa no activa analítica. Revisa en la zona y en el Worker que Web Analytics (y su inyección automática del script) siga desactivado.
+- [ ] **No pongas `DEPLOY_ENABLED` en `true` hasta que la UI cumpla lo que promete `/privacidad`:**
+  - «Desconectar Drive» en Ajustes, que revoca el acceso;
+  - el aviso antes de la primera descarga de una exportación sin cifrar;
+  - la opción de respaldo cifrado.
 
 ## Verificación
 

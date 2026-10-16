@@ -74,3 +74,9 @@ Restricciones: el dinero viaja como string decimal (ADR-0003), Excel guarda núm
 
 - **Despacho por celda.** Los escritores (CSV, Excel y PDF) formatean cada celda según `cell.kind`, nunca según `column.kind`. En las filas de subtotal y de total, una celda de una columna de fecha puede llevar texto (por ejemplo, el año o «Total»), y despachar por columna la formatearía mal.
 - **Neutralización de fórmulas en CSV.** Un campo se neutraliza si empieza por `=`, `+`, `-`, `@`, tabulador, retorno de carro o salto de línea (LF), también cuando esos caracteres van detrás de espacios iniciales, incluidos el espacio duro (NBSP) y el espacio ideográfico (U+3000).
+
+**Enmienda (2026-10-16, W4).** Dictámenes de W4-10 (PR #55) y W4-11 (PR #54):
+
+- **Metadatos en Excel.** El libro empieza con una hoja «Datos» de dos columnas (Campo y Valor) con los metadatos del reporte. Las hojas de datos van después.
+- **Dinero como número en Excel.** Un monto se escribe como número solo si tiene a lo sumo 15 dígitos significativos y vuelve exacto al string decimal de origen. Si no, se escribe como texto, para no perder precisión (ADR-0003).
+- **Fecha de creación del PDF.** `CreationDate` sale del reloj inyectado, no del reloj del sistema, para que el mismo reporte produzca el mismo PDF.
