@@ -83,6 +83,7 @@ class FakeScenarios implements ScenariosStore {
   readonly created: ScenarioDraft[] = [];
   readonly updated: ScenarioUpdate[] = [];
   failNext: DataError | null = null;
+  failActivate = false;
   private counter = 100;
 
   listByLoan(): Signal<readonly Scenario[]> {
@@ -92,6 +93,9 @@ class FakeScenarios implements ScenariosStore {
     return this.active.asReadonly();
   }
   setActiveScenario(_loanId: Uuid, scenarioId: Uuid | null): Promise<void> {
+    if (this.failActivate) {
+      return Promise.reject(new DataError('STORAGE'));
+    }
     this.active.set(scenarioId);
     return Promise.resolve();
   }
@@ -106,16 +110,18 @@ class FakeScenarios implements ScenariosStore {
     this.list.update((current) => [...current, scenario]);
     return Promise.resolve(scenario);
   }
-  update(update: ScenarioUpdate): Promise<Scenario> {
+  async update(update: ScenarioUpdate): Promise<Scenario> {
+    // A real write takes a turn: concurrent callers must not read the scenario before the previous write landed.
+    for (let hop = 0; hop < 5; hop++) await Promise.resolve();
     if (this.failNext) {
       const error = this.failNext;
       this.failNext = null;
-      return Promise.reject(error);
+      throw error;
     }
     this.updated.push(update);
     const scenario: Scenario = { ...STAMP, ...update };
     this.list.update((current) => current.map((item) => (item.id === update.id ? scenario : item)));
-    return Promise.resolve(scenario);
+    return scenario;
   }
   delete(id: Uuid): Promise<void> {
     this.list.update((current) => current.filter((item) => item.id !== id));
@@ -555,5 +561,233 @@ describe('goal-seek', () => {
     (rows[1]?.querySelector('[data-testid="activate"]') as HTMLElement).click();
     await h.settle();
     expect(h.byTestId('goal-result')).toBeNull();
+  });
+});
+
+const REAL_PREPAYMENT: DomainEvent = {
+  type: 'Prepayment',
+  id: 'r1',
+  date: parseLocalDate('2025-06-30'),
+  amount: parseMoney('10000.00'),
+  mode: 'REDUCE_TERM',
+};
+
+async function runGoal(h: Harness, date: string, targetDate: string): Promise<void> {
+  await h.choose('goal-kind', 'FINISH_BY');
+  await h.type('goal-date', date);
+  await h.type('goal-target-date', targetDate);
+  await h.submit('goal-form');
+  await vi.waitFor(() => expect(h.byTestId('goal-result')).not.toBeNull());
+}
+
+describe('C1: own events that would fall after the new end', () => {
+  const late = prepayment(10, '2042-03-31', '1000.00');
+
+  it('asks before applying, listing the events by cuota and date, and saves nothing yet', async () => {
+    const h = await setup([scenario(1, 'Plan A', [late])], ID(1));
+    await runGoal(h, '31/03/2026', '31/12/2035');
+    const before = h.store.updated.length;
+    await h.click('goal-apply');
+    expect(h.store.updated).toHaveLength(before);
+    const confirmation = h.byTestId('apply-confirmation')!;
+    expect(confirmation.textContent).toContain('el préstamo termina antes');
+    expect(confirmation.textContent).toContain('Cuota 206');
+    expect(confirmation.textContent).toContain('31/03/2042');
+    expect(confirmation.textContent).toContain('Aplicar y quitarlos');
+  });
+
+  it('«Aplicar y quitarlos» saves the goal abono without the late events; «Cancelar» leaves everything', async () => {
+    const h = await setup([scenario(1, 'Plan A', [late])], ID(1));
+    await runGoal(h, '31/03/2026', '31/12/2035');
+    await h.click('goal-apply');
+    await h.click('apply-cancel');
+    expect(h.byTestId('apply-confirmation')).toBeNull();
+    expect(h.store.updated).toHaveLength(0);
+    await h.click('goal-apply');
+    await h.click('apply-confirm');
+    const saved = h.store.updated.at(-1)!;
+    expect(saved.events).toHaveLength(1);
+    expect(saved.events[0]).toMatchObject({ type: 'Prepayment', date: '2026-03-31', mode: 'REDUCE_TERM' });
+    expect(compareLocalDate(h.paths().scenario!.endDate, parseLocalDate('2035-12-31'))).toBeLessThanOrEqual(0);
+  });
+});
+
+describe('C2: tie order', () => {
+  it('does not offer the search on a date where the scenario already has an abono or advance', async () => {
+    const h = await setup([scenario(1, 'Plan A', [prepayment(10, '2026-03-31', '1000.00')])], ID(1));
+    await h.choose('goal-kind', 'FINISH_BY');
+    await h.type('goal-date', '31/03/2026');
+    await h.type('goal-target-date', '31/12/2038');
+    await h.submit('goal-form');
+    expect(h.byTestId('goal-failure')?.textContent).toContain(
+      'Ya hay un abono o adelanto en esa fecha en el escenario. Elige otra fecha o quítalo primero.',
+    );
+    expect(h.byTestId('goal-result')).toBeNull();
+  });
+});
+
+describe('I1: stale results', () => {
+  it('drops the result when the data changes while the engine was about to run', async () => {
+    const h = await setup([scenario(1, 'Plan A')], ID(1));
+    await h.choose('goal-kind', 'FINISH_BY');
+    await h.type('goal-date', '31/03/2026');
+    await h.type('goal-target-date', '31/12/2038');
+    vi.useFakeTimers({ toFake: ['setTimeout'] });
+    try {
+      h.element.querySelector<HTMLFormElement>('[data-testid="goal-form"]')?.requestSubmit();
+      for (let turn = 0; turn < 20; turn++) await Promise.resolve();
+      h.store.list.update((current) => [{ ...current[0]!, events: [prepayment(10, '2025-09-30', '5000.00')] }]);
+      vi.advanceTimersByTime(1);
+    } finally {
+      vi.useRealTimers();
+    }
+    await vi.waitFor(() => expect(h.byTestId('goal-busy')).toBeNull());
+    expect(h.byTestId('goal-result')).toBeNull();
+  });
+
+  it('clears the result when an event of the scenario changes', async () => {
+    const h = await setup([scenario(1, 'Plan A', [prepayment(10, '2025-09-30', '5000.00')])], ID(1));
+    await runGoal(h, '31/03/2026', '31/12/2038');
+    await h.click('remove-event');
+    expect(h.byTestId('goal-result')).toBeNull();
+  });
+});
+
+describe('I2: no lost writes', () => {
+  it('two quick removes both land', async () => {
+    const events = [prepayment(10, '2025-09-30', '5000.00'), prepayment(11, '2025-11-30', '6000.00')];
+    const h = await setup([scenario(1, 'Plan A', events)], ID(1));
+    const buttons = h.element.querySelectorAll<HTMLElement>('[data-testid="remove-event"]');
+    buttons[0]!.click();
+    buttons[1]!.click();
+    await vi.waitFor(() => expect(h.store.list()[0]!.events).toHaveLength(0));
+  });
+
+  it('a remove followed at once by an apply never resurrects the removed event nor saves a stale goal', async () => {
+    const h = await setup([scenario(1, 'Plan A', [prepayment(10, '2025-09-30', '5000.00')])], ID(1));
+    await runGoal(h, '31/03/2026', '31/12/2038');
+    h.element.querySelector<HTMLElement>('[data-testid="remove-event"]')!.click();
+    h.element.querySelector<HTMLElement>('[data-testid="goal-apply"]')?.click();
+    await h.settle();
+    await vi.waitFor(() => expect(h.store.list()[0]!.events).toHaveLength(0));
+  });
+});
+
+describe('I3, M1, M2: a scenario the engine cannot compute', () => {
+  const broken = [prepayment(10, '2025-04-30', '5000.00')];
+
+  it('keeps the abono form and «Editar» available, hides the goal search and the empty-metrics text', async () => {
+    const h = await setup([scenario(1, 'Plan A', broken)], ID(1), { real: [REAL_PREPAYMENT] });
+    expect(h.byTestId('scenario-error')?.textContent).toContain('datos reales');
+    expect(h.byTestId('scenario-error')?.textContent).toContain('Quita o edita el evento');
+    expect(h.byTestId('abono-form')).not.toBeNull();
+    expect(h.byTestId('goal-form')).toBeNull();
+    expect(h.byTestId('goal-unavailable')).not.toBeNull();
+    expect(h.byTestId('no-metrics')).toBeNull();
+    await h.click('edit-event');
+    await h.type('abono-date', '31/12/2025');
+    await h.submit('abono-form');
+    expect(h.store.updated.at(-1)!.events[0]).toMatchObject({ id: ID(10), date: '2025-12-31' });
+    expect(h.byTestId('scenario-error')).toBeNull();
+  });
+});
+
+describe('I4, I5: focus', () => {
+  it('moves focus to the active scenario title after activating', async () => {
+    const h = await setup([scenario(1, 'Plan A'), scenario(2, 'Plan B')], ID(1));
+    const rows = h.element.querySelectorAll('[data-testid="scenario-row"]');
+    (rows[1]?.querySelector('[data-testid="activate"]') as HTMLElement).click();
+    await vi.waitFor(() => expect(document.activeElement?.id.endsWith('-active-title')).toBe(true));
+  });
+
+  it('moves focus to the events title after removing an event', async () => {
+    const h = await setup([scenario(1, 'Plan A', [prepayment(10, '2025-09-30', '5000.00')])], ID(1));
+    await h.click('remove-event');
+    await vi.waitFor(() => expect(document.activeElement?.id.endsWith('-events-title')).toBe(true));
+  });
+
+  it('moves focus to the first invalid control on a failed submit, and the error list is not an alert', async () => {
+    const h = await setup();
+    await h.submit('name-form');
+    await vi.waitFor(() => expect(document.activeElement?.id.endsWith('-name')).toBe(true));
+    expect(h.element.querySelector('[role="alert"]')).toBeNull();
+    expect(h.text()).toContain('Escribe un nombre para el escenario.');
+  });
+});
+
+describe('I7, I8, M6: goal result details', () => {
+  it('says what the metrics are against, by base', async () => {
+    const real = await setup([scenario(1, 'Plan A')], ID(1));
+    await runGoal(real, '31/03/2026', '31/12/2038');
+    expect(real.byTestId('goal-base')?.textContent).toContain('Frente al camino real');
+    TestBed.resetTestingModule();
+    const scenarioBase = await setup([scenario(1, 'Plan A', [prepayment(10, '2025-09-30', '5000.00')])], ID(1));
+    await runGoal(scenarioBase, '31/03/2026', '31/12/2038');
+    expect(scenarioBase.byTestId('goal-base')?.textContent).toContain('Frente al escenario actual sin este abono');
+  });
+
+  it('shows the new level installment for a max-installment goal', async () => {
+    const h = await setup([scenario(1, 'Plan A')], ID(1));
+    await h.choose('goal-kind', 'MAX_INSTALLMENT');
+    await h.type('goal-date', '31/03/2026');
+    await h.type('goal-target-amount', '4200');
+    await h.submit('goal-form');
+    await vi.waitFor(() => expect(h.byTestId('goal-result')).not.toBeNull());
+    expect(h.byTestId('goal-level')?.textContent).toMatch(/Q [\d,]+\.\d{2}/);
+  });
+
+  it('shows the amount to pay of an advance in the event list', async () => {
+    const advance: ScenarioEvent = {
+      id: ID(10),
+      type: 'AdvanceInstallments',
+      date: '2026-03-31',
+      count: 6,
+      deletedAt: null,
+    };
+    const h = await setup([scenario(1, 'Plan A', [advance])], ID(1));
+    expect(h.byTestId('event-extra')?.textContent).toMatch(/Monto a pagar: Q [\d,]+\.\d{2}/);
+  });
+
+  it('applies a payoff result when the minimum trial throws', async () => {
+    const rateChange: DomainEvent = {
+      type: 'RateChange',
+      id: 'rc-future',
+      date: parseLocalDate('2027-01-31'),
+      interestRate: parseRate('0.0701'),
+      policy: 'KEEP_INSTALLMENT_ADJUST_TERM',
+    };
+    const h = await setup([scenario(1, 'Plan A')], ID(1), { real: [rateChange] });
+    await h.choose('goal-kind', 'MAX_INSTALLMENT');
+    await h.type('goal-date', '15/01/2026');
+    await h.type('goal-target-amount', '0');
+    await h.submit('goal-form');
+    await vi.waitFor(() => expect(h.byTestId('goal-result')).not.toBeNull());
+    expect(h.byTestId('goal-result')?.textContent).toContain('liquida el préstamo');
+    await h.click('goal-apply');
+    expect(h.store.updated.at(-1)!.events[0]).toMatchObject({ type: 'Prepayment', mode: 'REDUCE_INSTALLMENT' });
+  });
+});
+
+describe('M7', () => {
+  it('Escape cancels the inline delete confirmation', async () => {
+    const h = await setup([scenario(1, 'Plan A')], ID(1));
+    await h.click('delete');
+    h.element
+      .querySelector('[data-testid="confirm-ok"]')!
+      .dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await h.settle();
+    expect(h.byTestId('confirm-ok')).toBeNull();
+    expect(h.store.list()).toHaveLength(1);
+  });
+
+  it('says exactly that the scenario was created but could not be activated', async () => {
+    const h = await setup();
+    h.store.failActivate = true;
+    await h.type('name', 'Plan A');
+    await h.submit('name-form');
+    expect(h.store.created).toHaveLength(1);
+    expect(h.byTestId('scenarios-failure')?.textContent).toContain(
+      'Se creó el escenario «Plan A», pero no se pudo activar',
+    );
   });
 });

@@ -10,7 +10,7 @@ import {
   signal,
 } from '@angular/core';
 import { type FieldTree, form, FormField, FormRoot, required, validate } from '@angular/forms/signals';
-import type { PrepaymentMode } from '@cuotascasa/domain';
+import type { Money, Paths, PrepaymentMode } from '@cuotascasa/domain';
 import { type Scenario, type ScenarioEvent, scenarioEventSchema, type Uuid } from '@cuotascasa/schema';
 import { DataError } from '../../../data/api.ts';
 import { LOAN_PROJECTION_SERVICE, LOANS_STORE, SCENARIOS_STORE } from '../../../data/tokens.ts';
@@ -25,12 +25,19 @@ import {
   type AdvanceModel,
   advanceEvent,
   amountError,
+  appliedMeetsGoal,
   countError,
   dateError,
   describeEvent,
   domainErrorText,
   dryRun,
   duplicateName,
+  type ApplyPlan,
+  eventExtra,
+  type EventExtra,
+  hasSamePhase3Event,
+  planApply,
+  type RemovedEvent,
   type GoalInput,
   type GoalOutcome,
   goalPrepayment,
@@ -55,6 +62,15 @@ interface GoalModel {
 interface GoalState {
   readonly outcome: GoalOutcome;
   readonly input: GoalInput;
+  /** The paths the result was computed on: it is only valid while they are still the current ones. */
+  readonly paths: Paths;
+  /** New level installment of a REDUCE_INSTALLMENT result (the `level` of the next row once applied), or null. */
+  readonly level: Money | null;
+}
+
+/** An apply that waits for the user to accept removing own events that would fall after the new end. */
+interface PendingApply {
+  readonly plan: Extract<ApplyPlan, { kind: 'ok' }>;
 }
 
 interface EventRow {
@@ -63,12 +79,16 @@ interface EventRow {
   readonly k: number;
   /** True when the event falls on an installment that already has real data: the engine cannot apply it. */
   readonly blocked: boolean;
+  readonly extra: EventExtra | null;
 }
 
 const MODE_OPTIONS: readonly { readonly value: PrepaymentMode; readonly label: string }[] = [
   { value: 'REDUCE_TERM', label: 'Reducir el plazo (la cuota sigue igual)' },
   { value: 'REDUCE_INSTALLMENT', label: 'Reducir la cuota (el plazo sigue igual)' },
 ];
+
+const STALE_GOAL = 'El abono calculado ya no cumple la meta con los datos actuales; vuelve a calcular.';
+const SAME_DAY = 'Ya hay un abono o adelanto en esa fecha en el escenario. Elige otra fecha o quítalo primero.';
 
 const ZERO_RATE = /^0(\.0+)?$/;
 
@@ -172,14 +192,18 @@ export class ScenarioEditorComponent {
   protected readonly currency = computed(() => this.facts()?.currency ?? 'GTQ');
   private readonly paths = computed(() => this.projection().paths());
   protected readonly metrics = computed(() => this.projection().metrics()?.activeScenarioVsReal ?? null);
-  protected readonly engineError = computed(() => {
+  /** The engine could not compute the active scenario (events) or the loan itself (no paths). */
+  protected readonly engineNotice = computed(() => {
     const error = this.projection().error();
-    return this.active() === null || error === null ? null : domainErrorText(error);
+    if (this.active() === null || error === null) {
+      return null;
+    }
+    return { text: domainErrorText(error), scenarioCause: this.paths() !== null };
   });
-  /** The tools need an active scenario and a loan the engine can compute. */
-  protected readonly toolsReady = computed(
-    () => this.active() !== null && this.paths() !== null && this.facts() !== null && this.engineError() === null,
-  );
+  /** The event forms need an active scenario and paths: they stay available when only the scenario errored. */
+  protected readonly canEdit = computed(() => this.active() !== null && this.paths() !== null && this.facts() !== null);
+  /** The goal-seek also needs a scenario the engine can compute. */
+  protected readonly goalReady = computed(() => this.canEdit() && this.engineNotice() === null);
   protected readonly eventRows = computed<readonly EventRow[]>(() => {
     const active = this.active();
     const facts = this.facts();
@@ -187,12 +211,18 @@ export class ScenarioEditorComponent {
       return [];
     }
     const cutoff = this.projection().cutoffK();
-    return active.events
-      .filter((event) => event.deletedAt === null)
-      .map((event) => {
-        const k = installmentFor(facts, event.date);
-        return { event, text: describeEvent(event, facts), k, blocked: k <= cutoff };
-      });
+    const paths = this.paths();
+    const live = active.events.filter((event) => event.deletedAt === null);
+    return live.map((event) => {
+      const k = installmentFor(facts, event.date);
+      return {
+        event,
+        text: describeEvent(event, facts),
+        k,
+        blocked: k <= cutoff,
+        extra: paths === null ? null : eventExtra(paths, facts, event, live),
+      };
+    });
   });
 
   /** Operation failure shown next to the section that raised it. */
@@ -206,22 +236,33 @@ export class ScenarioEditorComponent {
   private announcements = 0;
   protected readonly goalBusy = signal(false);
   /** The last goal-seek result; it is dropped as soon as the active scenario changes. */
-  protected readonly goalState = linkedSignal<Scenario | null, GoalState | null>({
-    source: this.active,
+  protected readonly goalState = linkedSignal<Paths | null, GoalState | null>({
+    source: this.paths,
     computation: () => null,
   });
+  /** Own events that would be removed by an apply, waiting for the user's decision. */
+  protected readonly pendingApply = linkedSignal<GoalState | null, PendingApply | null>({
+    source: this.goalState,
+    computation: () => null,
+  });
+  /** Serializes the writes to the active scenario: each one re-reads it, so none overwrites another (I2). */
+  private chain: Promise<unknown> = Promise.resolve();
 
   protected readonly nameModel = signal({ name: '' });
   protected readonly abonoModel = signal<PrepaymentModel>(emptyAbono());
   protected readonly advanceModel = signal<AdvanceModel>(emptyAdvance());
   protected readonly goalModel = signal<GoalModel>(emptyGoal());
 
+  private readonly focusFirstInvalid = (field: FieldTree<unknown>): void => {
+    afterNextRender(() => field().errorSummary()[0]?.fieldTree().focusBoundControl(), { injector: this.injector });
+  };
+
   protected readonly nameForm = form(
     this.nameModel,
     (path) => {
       validate(path.name, ({ value }) => problem(nameError(value())));
     },
-    { submission: { action: async () => this.saveName() } },
+    { submission: { action: async () => this.saveName(), onInvalid: this.focusFirstInvalid } },
   );
 
   protected readonly abonoForm = form(
@@ -248,7 +289,7 @@ export class ScenarioEditorComponent {
           : undefined,
       );
     },
-    { submission: { action: async () => this.saveAbono() } },
+    { submission: { action: async () => this.saveAbono(), onInvalid: this.focusFirstInvalid } },
   );
 
   protected readonly advanceForm = form(
@@ -257,7 +298,7 @@ export class ScenarioEditorComponent {
       validate(path.date, ({ value }) => problem(this.dateRule(value())));
       validate(path.count, ({ value }) => problem(countError(value())));
     },
-    { submission: { action: async () => this.saveAdvance() } },
+    { submission: { action: async () => this.saveAdvance(), onInvalid: this.focusFirstInvalid } },
   );
 
   protected readonly goalForm = form(
@@ -271,8 +312,14 @@ export class ScenarioEditorComponent {
         valueOf(path.kind) === 'MAX_INSTALLMENT' ? problem(amountError(value(), { allowZero: true })) : undefined,
       );
     },
-    { submission: { action: async () => this.seek() } },
+    { submission: { action: async () => this.seek(), onInvalid: this.focusFirstInvalid } },
   );
+
+  private enqueue<T>(job: () => Promise<T>): Promise<T> {
+    const run = this.chain.then(job, job);
+    this.chain = run.catch(() => undefined);
+    return run;
+  }
 
   /** DOM id of a control of this instance. */
   protected id(name: string): string {
@@ -340,10 +387,20 @@ export class ScenarioEditorComponent {
     const ok = await this.guard('scenarios', async () => {
       if (renaming === null) {
         const created = await this.scenariosStore.create({ loanId: this.loanId(), name, events: [] });
-        if (this.activeId() === null) {
-          await this.scenariosStore.setActiveScenario(this.loanId(), created.id);
-        }
         this.say(`Escenario «${name}» creado.`);
+        if (this.activeId() === null) {
+          try {
+            await this.scenariosStore.setActiveScenario(this.loanId(), created.id);
+          } catch (error) {
+            if (!(error instanceof DataError)) {
+              throw error;
+            }
+            this.failure.set({
+              scope: 'scenarios',
+              text: `Se creó el escenario «${name}», pero no se pudo activar. Actívalo con su botón «Activar».`,
+            });
+          }
+        }
       } else {
         const current = this.scenarios().find((scenario) => scenario.id === renaming);
         if (current === undefined) {
@@ -377,10 +434,13 @@ export class ScenarioEditorComponent {
   }
 
   protected async activate(scenario: Scenario): Promise<void> {
-    await this.guard('scenarios', async () => {
+    const ok = await this.guard('scenarios', async () => {
       await this.scenariosStore.setActiveScenario(this.loanId(), scenario.id);
       this.say(`Escenario «${scenario.name}» activo.`);
     });
+    if (ok) {
+      this.focusControl('active-title');
+    }
   }
 
   protected async duplicate(scenario: Scenario): Promise<void> {
@@ -439,33 +499,32 @@ export class ScenarioEditorComponent {
 
   /**
    * Saves `candidate` into the active scenario after the domain judged the result. `replacing` is the id of the event
-   * it edits. The domain's typed error, in Spanish, is the rejection.
+   * it edits. The domain's typed error, in Spanish, is the rejection. Runs in the write queue: it reads the active
+   * scenario and the paths when its turn comes.
    */
-  private async addEvent(
-    scope: 'abono' | 'advance',
-    candidate: ScenarioEvent,
-    replacing: string | null,
-  ): Promise<boolean> {
-    const active = this.active();
-    const paths = this.paths();
-    if (active === null || paths === null) {
-      return false;
-    }
-    if (!scenarioEventSchema.safeParse(candidate).success) {
-      this.failure.set({ scope, text: 'No se pudo guardar. Revisa los datos del formulario.' });
-      return false;
-    }
-    const live = active.events.filter((event) => event.deletedAt === null);
-    const events =
-      replacing === null ? [...live, candidate] : live.map((event) => (event.id === replacing ? candidate : event));
-    const error = dryRun(paths, events);
-    if (error !== null) {
-      this.failure.set({ scope, text: domainErrorText(error) });
-      this.focusControl(`${scope}-date`);
-      return false;
-    }
-    return this.guard(scope, async () => {
-      await this.saveEvents(active, events);
+  private addEvent(scope: 'abono' | 'advance', candidate: ScenarioEvent, replacing: string | null): Promise<boolean> {
+    return this.enqueue(async () => {
+      const active = this.active();
+      const paths = this.paths();
+      if (active === null || paths === null) {
+        return false;
+      }
+      if (!scenarioEventSchema.safeParse(candidate).success) {
+        this.failure.set({ scope, text: 'No se pudo guardar. Revisa los datos del formulario.' });
+        return false;
+      }
+      const live = active.events.filter((event) => event.deletedAt === null);
+      const events =
+        replacing === null ? [...live, candidate] : live.map((event) => (event.id === replacing ? candidate : event));
+      const error = dryRun(paths, events);
+      if (error !== null) {
+        this.failure.set({ scope, text: domainErrorText(error) });
+        this.focusControl(`${scope}-date`);
+        return false;
+      }
+      return this.guard(scope, async () => {
+        await this.saveEvents(active, events);
+      });
     });
   }
 
@@ -515,19 +574,24 @@ export class ScenarioEditorComponent {
   }
 
   protected async removeEvent(row: EventRow): Promise<void> {
-    const active = this.active();
-    if (active === null) {
-      return;
-    }
-    const ok = await this.guard('scenarios', async () => {
-      await this.saveEvents(
-        active,
-        active.events.filter((event) => event.deletedAt === null && event.id !== row.event.id),
-      );
-      this.say('Evento quitado del escenario.');
+    const ok = await this.enqueue(async () => {
+      const active = this.active();
+      if (active === null) {
+        return false;
+      }
+      return this.guard('scenarios', async () => {
+        await this.saveEvents(
+          active,
+          active.events.filter((event) => event.deletedAt === null && event.id !== row.event.id),
+        );
+        this.say('Evento quitado del escenario.');
+      });
     });
-    if (ok && this.editingEventId() === row.event.id) {
-      this.cancelEditEvent();
+    if (ok) {
+      if (this.editingEventId() === row.event.id) {
+        this.cancelEditEvent();
+      }
+      this.focusControl('events-title');
     }
   }
 
@@ -535,10 +599,19 @@ export class ScenarioEditorComponent {
 
   protected async seek(): Promise<undefined> {
     const paths = this.paths();
-    if (paths === null || this.goalBusy()) {
+    const active = this.active();
+    const facts = this.facts();
+    if (paths === null || active === null || facts === null || this.goalBusy()) {
       return undefined;
     }
     const model = this.goalModel();
+    this.failure.set(null);
+    this.goalState.set(null);
+    // Opus C2: a same-date prepayment or advance of the scenario would sort after the applied abono.
+    if (hasSamePhase3Event(active.events, model.date)) {
+      this.failure.set({ scope: 'goal', text: SAME_DAY });
+      return undefined;
+    }
     const input: GoalInput = {
       prepaymentDate: model.date,
       goal:
@@ -546,37 +619,54 @@ export class ScenarioEditorComponent {
           ? { kind: 'FINISH_BY', date: model.targetDate }
           : { kind: 'MAX_INSTALLMENT', amount: model.targetAmount },
     };
-    this.failure.set(null);
-    this.goalState.set(null);
     this.goalBusy.set(true);
     try {
       await nextTurn();
+      // I1: the data changed while the engine was about to run: the result would describe an older scenario.
+      if (this.paths() !== paths) {
+        return undefined;
+      }
       const outcome = seekGoal(paths, input);
-      this.report(outcome, input);
+      this.report(outcome, input, paths, facts, active);
     } finally {
       this.goalBusy.set(false);
     }
     return undefined;
   }
 
-  private report(outcome: GoalOutcome, input: GoalInput): void {
+  private report(outcome: GoalOutcome, input: GoalInput, paths: Paths, facts: LoanFacts, active: Scenario): void {
     const currency = this.currency();
     switch (outcome.kind) {
       case 'ERROR':
         this.failure.set({ scope: 'goal', text: domainErrorText(outcome.error) });
         return;
       case 'ALREADY_MET':
-        this.goalState.set({ outcome, input });
+        this.goalState.set({ outcome, input, paths, level: null });
         this.say('La meta ya se cumple con el escenario actual; no hace falta abonar.');
         return;
-      case 'FOUND':
-        this.goalState.set({ outcome, input });
+      case 'FOUND': {
+        let level: Money | null = null;
+        if (outcome.mode === 'REDUCE_INSTALLMENT') {
+          const plan = planApply(
+            paths,
+            active.events,
+            goalPrepayment(this.newId(), input.prepaymentDate, outcome),
+            facts,
+          );
+          const next =
+            plan.kind === 'ok'
+              ? plan.candidate.scenario?.rows.find((row) => row.k === installmentFor(facts, input.prepaymentDate) + 1)
+              : undefined;
+          level = next?.level ?? null;
+        }
+        this.goalState.set({ outcome, input, paths, level });
         this.say(
           `Abono mínimo para la meta: ${formatMoney(outcome.amount, currency)}.${outcome.isPayoff ? ' Liquida el préstamo.' : ''}`,
         );
         return;
+      }
       case 'INFEASIBLE':
-        this.goalState.set({ outcome, input });
+        this.goalState.set({ outcome, input, paths, level: null });
         this.say(
           `La meta no se puede cumplir con esa fecha. Liquidar el préstamo costaría ${formatMoney(outcome.payoffAmount, currency)}.`,
         );
@@ -584,18 +674,62 @@ export class ScenarioEditorComponent {
     }
   }
 
-  protected async applyGoal(): Promise<void> {
-    const state = this.goalState();
-    if (state === null || state.outcome.kind !== 'FOUND') {
-      return;
-    }
-    const candidate = goalPrepayment(this.newId(), state.input.prepaymentDate, state.outcome);
-    if (await this.addEvent('abono', candidate, null)) {
-      this.say('Abono de la meta aplicado al escenario.');
-    } else if (this.failureOf('abono') !== null) {
-      // The apply button lives in the goal section: show the rejection there.
-      this.failure.set({ scope: 'goal', text: this.failureOf('abono') ?? '' });
-    }
+  /**
+   * «Aplicar al escenario». With own events that would fall after the new end it first asks (Opus C1); `confirmed`
+   * is the user's «Aplicar y quitarlos».
+   */
+  protected applyGoal(confirmed = false): Promise<void> {
+    return this.enqueue(async () => {
+      const state = this.goalState();
+      const active = this.active();
+      const paths = this.paths();
+      const facts = this.facts();
+      if (state === null || state.outcome.kind !== 'FOUND' || active === null || paths === null || facts === null) {
+        return;
+      }
+      if (state.paths !== paths) {
+        this.failure.set({ scope: 'goal', text: STALE_GOAL });
+        return;
+      }
+      const goalEvent = goalPrepayment(this.newId(), state.input.prepaymentDate, state.outcome);
+      if (!scenarioEventSchema.safeParse(goalEvent).success) {
+        this.failure.set({ scope: 'goal', text: 'No se pudo guardar. Revisa los datos del formulario.' });
+        return;
+      }
+      const plan = planApply(paths, active.events, goalEvent, facts);
+      if (plan.kind === 'error') {
+        this.failure.set({ scope: 'goal', text: domainErrorText(plan.error) });
+        return;
+      }
+      if (plan.removed.length > 0 && !confirmed) {
+        this.pendingApply.set({ plan });
+        this.focusControl('apply-confirm');
+        return;
+      }
+      // Opus C2 rule 2: whatever the order of events, the saved result must meet the goal it was computed for.
+      if (!appliedMeetsGoal(plan.candidate, state.input)) {
+        this.failure.set({ scope: 'goal', text: STALE_GOAL });
+        return;
+      }
+      this.failure.set(null);
+      const ok = await this.guard('goal', async () => {
+        await this.saveEvents(active, plan.events);
+      });
+      if (ok) {
+        this.say('Abono de la meta aplicado al escenario.');
+        this.focusControl('events-title');
+      }
+    });
+  }
+
+  protected cancelApply(): void {
+    this.pendingApply.set(null);
+    this.focusControl('goal-apply');
+  }
+
+  protected removedText(item: RemovedEvent): string {
+    const facts = this.facts();
+    return facts === null ? '' : describeEvent(item.event, facts);
   }
 
   protected found(state: GoalState): Extract<GoalOutcome, { kind: 'FOUND' }> | null {

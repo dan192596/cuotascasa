@@ -19,6 +19,7 @@ import { type ScenarioEvent, scenarioEventSchema } from '@cuotascasa/schema';
 import { describe, expect, it } from 'vitest';
 import {
   advanceEvent,
+  appliedMeetsGoal,
   amountError,
   countError,
   dateError,
@@ -27,8 +28,11 @@ import {
   dryRun,
   duplicateName,
   type GoalInput,
+  eventExtra,
   goalPrepayment,
+  hasSamePhase3Event,
   installmentFor,
+  planApply,
   type LoanFacts,
   prepaymentEvent,
   seekGoal,
@@ -352,5 +356,159 @@ describe('describeEvent and duplicateName', () => {
     const long = 'x'.repeat(60);
     expect(duplicateName(long).length).toBeLessThanOrEqual(60);
     expect(duplicateName(long).startsWith('Copia de ')).toBe(true);
+  });
+});
+
+describe('OUT_OF_RANGE names the installment of the event that falls outside', () => {
+  it('says the cuota k of the event, not the abono date', () => {
+    const error = dryRun(paths(null), [prepayment(1, '2046-03-31', '1000.00')])!;
+    expect(error.k).not.toBeNull();
+    expect(domainErrorText(error)).toContain(`cuota ${error.k}`);
+  });
+});
+
+describe('planApply: own events that would fall after the new end (Opus C1)', () => {
+  const finish: GoalInput = { prepaymentDate: '2026-03-31', goal: { kind: 'FINISH_BY', date: '2035-12-31' } };
+
+  it('lists a 2042 own abono as removed, and the plan meets the goal', () => {
+    const own = [prepayment(1, '2042-03-31', '1000.00')];
+    const base = paths(own);
+    const outcome = seekGoal(base, finish);
+    if (outcome.kind !== 'FOUND') throw new Error('expected FOUND');
+    const goal = goalPrepayment(ID(2), finish.prepaymentDate, outcome);
+    const plan = planApply(base, own, goal, FACTS);
+    expect(plan.kind).toBe('ok');
+    if (plan.kind !== 'ok') return;
+    expect(plan.removed.map((item) => item.event.id)).toEqual([ID(1)]);
+    expect(plan.removed[0]!.k).toBe(installmentFor(FACTS, '2042-03-31'));
+    expect(plan.events.map((event) => event.id)).toEqual([ID(2)]);
+    expect(compareLocalDate(plan.candidate.scenario!.endDate, parseLocalDate('2035-12-31'))).toBeLessThanOrEqual(0);
+    expect(appliedMeetsGoal(plan.candidate, finish)).toBe(true);
+  });
+
+  it('removes nothing when every own event stays inside the new schedule', () => {
+    const own = [prepayment(1, '2025-09-30', '20000.00')];
+    const base = paths(own);
+    const outcome = seekGoal(base, finish);
+    if (outcome.kind !== 'FOUND') throw new Error('expected FOUND');
+    const plan = planApply(base, own, goalPrepayment(ID(2), finish.prepaymentDate, outcome), FACTS);
+    expect(plan).toMatchObject({ kind: 'ok', removed: [] });
+  });
+});
+
+describe('same-date ties (Opus C2)', () => {
+  it('detects a prepayment or advance of the scenario on the goal date, and only those', () => {
+    const events = [prepayment(1, '2026-03-31', '1000.00'), advanceEvent(ID(2), { date: '2026-04-30', count: '2' })];
+    expect(hasSamePhase3Event(events, '2026-03-31')).toBe(true);
+    expect(hasSamePhase3Event(events, '2026-04-30')).toBe(true);
+    expect(hasSamePhase3Event(events, '2026-05-31')).toBe(false);
+    expect(hasSamePhase3Event([{ ...events[0]!, deletedAt: '2026-01-01T00:00:00.000Z' }], '2026-03-31')).toBe(false);
+  });
+
+  it('safety net: a same-day REDUCE_INSTALLMENT base with FINISH_BY, applied before the base event, misses the goal', () => {
+    const base = paths([
+      {
+        ...prepaymentEvent(ID(999), {
+          date: '2026-03-31',
+          amount: '30000.00',
+          mode: 'REDUCE_INSTALLMENT',
+          commissionKind: 'NONE',
+          commissionAmount: '',
+          commissionRate: '',
+        }),
+      },
+    ]);
+    const input: GoalInput = { prepaymentDate: '2026-03-31', goal: { kind: 'FINISH_BY', date: '2036-12-31' } };
+    const outcome = seekGoal(base, input);
+    if (outcome.kind !== 'FOUND') throw new Error('expected FOUND');
+    const scenario = [
+      prepaymentEvent(ID(999), {
+        date: '2026-03-31',
+        amount: '30000.00',
+        mode: 'REDUCE_INSTALLMENT',
+        commissionKind: 'NONE',
+        commissionAmount: '',
+        commissionRate: '',
+      }),
+    ];
+    const plan = planApply(base, scenario, goalPrepayment(ID(1), input.prepaymentDate, outcome), FACTS);
+    if (plan.kind !== 'ok') throw new Error('expected a plan');
+    expect(appliedMeetsGoal(plan.candidate, input)).toBe(false);
+  });
+
+  it('safety net: a same-day advance base with MAX_INSTALLMENT misses the goal when applied first', () => {
+    const scenario = [advanceEvent(ID(999), { date: '2026-03-31', count: '6' })];
+    const base = paths(scenario);
+    const input: GoalInput = { prepaymentDate: '2026-03-31', goal: { kind: 'MAX_INSTALLMENT', amount: '3500.00' } };
+    const outcome = seekGoal(base, input);
+    if (outcome.kind !== 'FOUND') throw new Error('expected FOUND');
+    const plan = planApply(base, scenario, goalPrepayment(ID(1), input.prepaymentDate, outcome), FACTS);
+    if (plan.kind !== 'ok') throw new Error('expected a plan');
+    expect(appliedMeetsGoal(plan.candidate, input)).toBe(false);
+  });
+
+  it('a normal result passes the safety net', () => {
+    const base = paths(null);
+    const input: GoalInput = { prepaymentDate: '2026-03-31', goal: { kind: 'FINISH_BY', date: '2038-12-31' } };
+    const outcome = seekGoal(base, input);
+    if (outcome.kind !== 'FOUND') throw new Error('expected FOUND');
+    const plan = planApply(base, [], goalPrepayment(ID(1), input.prepaymentDate, outcome), FACTS);
+    if (plan.kind !== 'ok') throw new Error('expected a plan');
+    expect(appliedMeetsGoal(plan.candidate, input)).toBe(true);
+  });
+});
+
+describe('goal base and extra figures (I7, I8)', () => {
+  it('FOUND carries the base path it was computed on', () => {
+    const input: GoalInput = { prepaymentDate: '2026-03-31', goal: { kind: 'FINISH_BY', date: '2038-12-31' } };
+    expect(seekGoal(paths(null), input)).toMatchObject({ kind: 'FOUND', basePath: 'REAL' });
+    expect(seekGoal(paths([prepayment(1, '2025-09-30', '1000.00')]), input)).toMatchObject({
+      kind: 'FOUND',
+      basePath: 'SCENARIO',
+    });
+  });
+
+  it('an advance event shows the amount to pay when it is the only phase-3 event of its installment', () => {
+    const advance = advanceEvent(ID(2), { date: '2026-03-31', count: '6' });
+    const base = paths([advance]);
+    const extra = eventExtra(base, FACTS, advance, [advance]);
+    const row = base.scenario!.rows.find((item) => item.k === installmentFor(FACTS, '2026-03-31'))!;
+    expect(extra).toEqual({ label: 'Monto a pagar', amount: row.prepayment });
+    const other = prepayment(3, '2026-03-31', '1000.00');
+    expect(eventExtra(paths([advance, other]), FACTS, advance, [advance, other])).toBeNull();
+  });
+
+  it('a REDUCE_INSTALLMENT abono shows the new level installment of the next row', () => {
+    const event = prepaymentEvent(ID(2), {
+      date: '2026-03-31',
+      amount: '30000.00',
+      mode: 'REDUCE_INSTALLMENT',
+      commissionKind: 'NONE',
+      commissionAmount: '',
+      commissionRate: '',
+    });
+    const base = paths([event]);
+    const next = base.scenario!.rows.find((item) => item.k === installmentFor(FACTS, '2026-03-31') + 1)!;
+    expect(eventExtra(base, FACTS, event, [event])).toEqual({ label: 'Nueva cuota nivelada', amount: next.level });
+    expect(
+      eventExtra(paths([prepayment(3, '2026-03-31', '1000.00')]), FACTS, prepayment(3, '2026-03-31', '1000.00'), []),
+    ).toBeNull();
+  });
+});
+
+describe('M6: the minimum trial throws', () => {
+  it('FOUND with isPayoff when a MAX_INSTALLMENT of zero meets a future KEEP_INSTALLMENT_ADJUST_TERM change', () => {
+    const rateChange: DomainEvent = {
+      type: 'RateChange',
+      id: 'rc-future',
+      date: parseLocalDate('2027-01-31'),
+      interestRate: parseRate('0.0701'),
+      policy: 'KEEP_INSTALLMENT_ADJUST_TERM',
+    };
+    const outcome = seekGoal(paths(null, [rateChange]), {
+      prepaymentDate: '2026-01-15',
+      goal: { kind: 'MAX_INSTALLMENT', amount: '0.00' },
+    });
+    expect(outcome).toMatchObject({ kind: 'FOUND', isPayoff: true, mode: 'REDUCE_INSTALLMENT' });
   });
 });

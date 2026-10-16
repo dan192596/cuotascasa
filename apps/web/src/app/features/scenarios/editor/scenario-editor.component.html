@@ -62,7 +62,12 @@
             </button>
           </div>
           @if (pendingDelete()?.id === scenario.id) {
-            <div class="confirm" role="group" [attr.aria-label]="'Confirmar la eliminación de ' + scenario.name">
+            <div
+              class="confirm"
+              role="group"
+              (keydown.escape)="cancelDelete()"
+              [attr.aria-label]="'Confirmar la eliminación de ' + scenario.name"
+            >
               <p>Se eliminará «{{ scenario.name }}» con sus eventos hipotéticos. Los datos reales no cambian.</p>
               <div class="actions">
                 <button type="button" [id]="id('delete-cancel')" data-testid="confirm-cancel" (click)="cancelDelete()">
@@ -93,7 +98,7 @@
         [attr.aria-describedby]="showsErrors(nameForm.name) ? id('name') + '-errors' : null"
       />
       @if (showsErrors(nameForm.name)) {
-        <div class="errors" role="alert" [id]="id('name') + '-errors'">
+        <div class="errors" [id]="id('name') + '-errors'">
           @for (error of nameForm.name().errors(); track $index) {
             <p>{{ error.message }}</p>
           }
@@ -115,9 +120,14 @@
   <section class="block" [attr.aria-labelledby]="id('active-title')" data-testid="active-scenario">
     <h2 [id]="id('active-title')" tabindex="-1">Escenario activo: {{ scenario.name }}</h2>
 
-    @if (engineError(); as text) {
+    @if (engineNotice(); as notice) {
       <cc-banner tone="warning" [dismissible]="false" data-testid="scenario-error">
-        {{ text }} Quita el evento que causa el problema para ver las cifras otra vez.
+        {{ notice.text }}
+        {{
+          notice.scenarioCause
+            ? 'Quita o edita el evento que causa el problema para ver las cifras otra vez.'
+            : 'Revisa los datos del préstamo en su detalle.'
+        }}
       </cc-banner>
     }
 
@@ -140,7 +150,7 @@
           Son las cifras que calcula el motor, con su signo: un abono no siempre reduce el interés total.
         </p>
       </div>
-    } @else {
+    } @else if (engineNotice() === null) {
       <p class="hint" data-testid="no-metrics">Sin eventos: el escenario aún no cambia nada frente al camino real.</p>
     }
 
@@ -153,6 +163,11 @@
           <li class="row" data-testid="event-row">
             <div class="row-main">
               <span>{{ row.text }}</span>
+              @if (row.extra; as extra) {
+                <span class="muted" data-testid="event-extra">
+                  {{ extra.label }}: <span class="num">{{ extra.amount | money: currency() }}</span>
+                </span>
+              }
               @if (row.blocked) {
                 <span class="badge warn">No se aplica: la cuota {{ row.k }} ya tiene datos reales</span>
               }
@@ -169,7 +184,7 @@
     }
   </section>
 
-  @if (toolsReady()) {
+  @if (canEdit()) {
     <section class="block" [attr.aria-labelledby]="id('tools-title')" data-testid="tools">
       <h2 [id]="id('tools-title')">Herramientas</h2>
 
@@ -262,7 +277,7 @@
             [attr.aria-describedby]="showsErrors(advanceForm.count) ? id('advance-count') + '-errors' : null"
           />
           @if (showsErrors(advanceForm.count)) {
-            <div class="errors" role="alert" [id]="id('advance-count') + '-errors'">
+            <div class="errors" [id]="id('advance-count') + '-errors'">
               @for (error of advanceForm.count().errors(); track $index) {
                 <p>{{ error.message }}</p>
               }
@@ -274,111 +289,172 @@
         </div>
       </form>
 
-      <form
-        [formRoot]="goalForm"
-        class="form tool"
-        data-testid="goal-form"
-        [attr.aria-labelledby]="id('goal-title')"
-        [attr.aria-busy]="goalBusy()"
-      >
-        <h3 [id]="id('goal-title')">Calcular el abono para una meta</h3>
-        <p class="hint">
-          Encuentra el monto mínimo, al centavo, que cumple tu meta si abonas en la fecha que elijas. Después puedes
-          aplicarlo al escenario.
-        </p>
-        @if (failureOf('goal'); as text) {
-          <cc-banner tone="danger" [dismissible]="false" data-testid="goal-failure">{{ text }}</cc-banner>
-        }
-        <div class="field">
-          <label [for]="id('goal-kind')">Meta</label>
-          <select [id]="id('goal-kind')" [formField]="goalForm.kind">
-            <option value="FINISH_BY">Terminar de pagar a más tardar en una fecha</option>
-            <option value="MAX_INSTALLMENT">Que la cuota total no pase de un monto</option>
-          </select>
-        </div>
-        <div class="field">
-          <label [for]="id('goal-date')">Fecha del abono</label>
-          <cc-date-input [inputId]="id('goal-date')" [formField]="goalForm.date" />
-        </div>
-        @if (goalForm.kind().value() === 'FINISH_BY') {
-          <div class="field">
-            <label [for]="id('goal-target-date')">Terminar a más tardar el</label>
-            <cc-date-input [inputId]="id('goal-target-date')" [formField]="goalForm.targetDate" />
-          </div>
-        } @else {
-          <div class="field">
-            <label [for]="id('goal-target-amount')">Cuota total máxima</label>
-            <cc-money-input
-              [inputId]="id('goal-target-amount')"
-              [currency]="currency()"
-              [formField]="goalForm.targetAmount"
-            />
-          </div>
-        }
-        <div class="actions">
-          <button type="submit" class="primary" data-testid="goal-submit" [disabled]="goalBusy()">
-            Calcular abono
-          </button>
-          @if (goalBusy()) {
-            <span class="busy" data-testid="goal-busy">Calculando… puede tardar unos segundos.</span>
+      @if (goalReady()) {
+        <form
+          [formRoot]="goalForm"
+          class="form tool"
+          data-testid="goal-form"
+          [attr.aria-labelledby]="id('goal-title')"
+          [attr.aria-busy]="goalBusy()"
+        >
+          <h3 [id]="id('goal-title')">Calcular el abono para una meta</h3>
+          <p class="hint">
+            Encuentra el monto mínimo, al centavo, que cumple tu meta si abonas en la fecha que elijas. Después puedes
+            aplicarlo al escenario.
+          </p>
+          @if (failureOf('goal'); as text) {
+            <cc-banner tone="danger" [dismissible]="false" data-testid="goal-failure">{{ text }}</cc-banner>
           }
-        </div>
-
-        @if (goalState(); as state) {
-          <div class="result" data-testid="goal-result">
-            @switch (state.outcome.kind) {
-              @case ('ALREADY_MET') {
-                <p>La meta ya se cumple con el escenario actual: no hace falta abonar.</p>
-              }
-              @case ('FOUND') {
-                @if (found(state); as result) {
-                  <p>
-                    Abono mínimo el {{ state.input.prepaymentDate | localDate }}:
-                    <strong class="num" data-testid="goal-amount">{{ result.amount | money: currency() }}</strong>
-                  </p>
-                  @if (result.isPayoff) {
-                    <p>Este monto liquida el préstamo en esa cuota.</p>
-                  }
-                  <dl class="metrics">
-                    <dt>Interés y seguros ahorrados</dt>
-                    <dd class="num" data-testid="goal-metric-interest">
-                      {{ result.metrics.interestSaved | money: currency() }}
-                    </dd>
-                    <dt>Meses ahorrados</dt>
-                    <dd class="num" data-testid="goal-metric-months">{{ result.metrics.monthsSaved }}</dd>
-                    <dt>Fecha de fin</dt>
-                    <dd class="num">{{ result.metrics.endDate | localDate }}</dd>
-                    <dt>Total pagado</dt>
-                    <dd class="num">{{ result.metrics.totalPaid | money: currency() }}</dd>
-                    <dt>Ahorro neto</dt>
-                    <dd class="num" data-testid="goal-metric-net">
-                      {{ result.metrics.netSaving | money: currency() }}
-                    </dd>
-                  </dl>
-                  <p class="hint">
-                    Cifras del motor, con su signo, sin comisión: un abono no siempre reduce el interés total.
-                  </p>
-                  <div class="actions">
-                    <button type="button" class="primary" data-testid="goal-apply" (click)="applyGoal()">
-                      Aplicar al escenario
-                    </button>
-                  </div>
-                }
-              }
-              @case ('INFEASIBLE') {
-                @if (infeasible(state); as result) {
-                  <p>
-                    Con esa fecha no se puede cumplir la meta, ni siquiera liquidando el préstamo en esa cuota, que
-                    costaría
-                    <strong class="num" data-testid="goal-amount">{{ result.payoffAmount | money: currency() }}</strong
-                    >. Prueba una fecha de meta posterior o abona antes.
-                  </p>
-                }
-              }
+          <div class="field">
+            <label [for]="id('goal-kind')">Meta</label>
+            <select [id]="id('goal-kind')" [formField]="goalForm.kind">
+              <option value="FINISH_BY">Terminar de pagar a más tardar en una fecha</option>
+              <option value="MAX_INSTALLMENT">Que la cuota total no pase de un monto</option>
+            </select>
+          </div>
+          <div class="field">
+            <label [for]="id('goal-date')">Fecha del abono</label>
+            <cc-date-input [inputId]="id('goal-date')" [formField]="goalForm.date" />
+          </div>
+          @if (goalForm.kind().value() === 'FINISH_BY') {
+            <div class="field">
+              <label [for]="id('goal-target-date')">Terminar a más tardar el</label>
+              <cc-date-input [inputId]="id('goal-target-date')" [formField]="goalForm.targetDate" />
+            </div>
+          } @else {
+            <div class="field">
+              <label [for]="id('goal-target-amount')">Cuota total máxima</label>
+              <cc-money-input
+                [inputId]="id('goal-target-amount')"
+                [currency]="currency()"
+                [formField]="goalForm.targetAmount"
+              />
+            </div>
+          }
+          <div class="actions">
+            <button type="submit" class="primary" data-testid="goal-submit" [disabled]="goalBusy()">
+              Calcular abono
+            </button>
+            @if (goalBusy()) {
+              <span class="busy" data-testid="goal-busy">Calculando… puede tardar unos segundos.</span>
             }
           </div>
-        }
-      </form>
+
+          @if (goalState(); as state) {
+            <div class="result" data-testid="goal-result">
+              @switch (state.outcome.kind) {
+                @case ('ALREADY_MET') {
+                  <p>La meta ya se cumple con el escenario actual: no hace falta abonar.</p>
+                }
+                @case ('FOUND') {
+                  @if (found(state); as result) {
+                    <p>
+                      Abono mínimo el {{ state.input.prepaymentDate | localDate }}:
+                      <strong class="num" data-testid="goal-amount">{{ result.amount | money: currency() }}</strong>
+                    </p>
+                    @if (result.isPayoff) {
+                      <p>Este monto liquida el préstamo en esa cuota.</p>
+                    }
+                    <p class="hint" data-testid="goal-base">
+                      {{
+                        result.basePath === 'SCENARIO'
+                          ? 'Frente al escenario actual sin este abono'
+                          : 'Frente al camino real'
+                      }}
+                    </p>
+                    @if (state.level; as level) {
+                      <p>
+                        Nueva cuota nivelada (sin cargos fijos):
+                        <strong class="num" data-testid="goal-level">{{ level | money: currency() }}</strong>
+                      </p>
+                    }
+                    <dl class="metrics">
+                      <dt>Interés y seguros ahorrados</dt>
+                      <dd class="num" data-testid="goal-metric-interest">
+                        {{ result.metrics.interestSaved | money: currency() }}
+                      </dd>
+                      <dt>Meses ahorrados</dt>
+                      <dd class="num" data-testid="goal-metric-months">{{ result.metrics.monthsSaved }}</dd>
+                      <dt>Fecha de fin</dt>
+                      <dd class="num">{{ result.metrics.endDate | localDate }}</dd>
+                      <dt>Total pagado</dt>
+                      <dd class="num">{{ result.metrics.totalPaid | money: currency() }}</dd>
+                      <dt>Ahorro neto</dt>
+                      <dd class="num" data-testid="goal-metric-net">
+                        {{ result.metrics.netSaving | money: currency() }}
+                      </dd>
+                    </dl>
+                    <p class="hint">
+                      Cifras del motor, con su signo, sin comisión: un abono no siempre reduce el interés total.
+                    </p>
+                    @if (pendingApply(); as pending) {
+                      <div
+                        class="confirm"
+                        role="group"
+                        data-testid="apply-confirmation"
+                        aria-labelledby="{{ id('apply-title') }}"
+                      >
+                        <p [id]="id('apply-title')">
+                          Al aplicar este abono el préstamo termina antes; estos eventos del escenario quedarían después
+                          del fin y se quitarán:
+                        </p>
+                        <ul>
+                          @for (item of pending.plan.removed; track item.event.id) {
+                            <li data-testid="removed-event">
+                              Cuota {{ item.k }}, {{ item.event.date | localDate }}: {{ removedText(item) }}
+                            </li>
+                          }
+                        </ul>
+                        <div class="actions">
+                          <button type="button" (click)="cancelApply()" data-testid="apply-cancel">Cancelar</button>
+                          <button
+                            type="button"
+                            class="primary"
+                            [id]="id('apply-confirm')"
+                            data-testid="apply-confirm"
+                            (click)="applyGoal(true)"
+                          >
+                            Aplicar y quitarlos
+                          </button>
+                        </div>
+                      </div>
+                    } @else {
+                      <div class="actions">
+                        <button
+                          type="button"
+                          class="primary"
+                          [id]="id('goal-apply')"
+                          data-testid="goal-apply"
+                          (click)="applyGoal()"
+                        >
+                          Aplicar al escenario
+                        </button>
+                      </div>
+                    }
+                  }
+                }
+                @case ('INFEASIBLE') {
+                  @if (infeasible(state); as result) {
+                    <p>
+                      Con esa fecha no se puede cumplir la meta, ni siquiera liquidando el préstamo en esa cuota, que
+                      costaría
+                      <strong class="num" data-testid="goal-amount">{{
+                        result.payoffAmount | money: currency()
+                      }}</strong
+                      >. Prueba una fecha de meta posterior o abona antes.
+                    </p>
+                  }
+                }
+              }
+            </div>
+          }
+        </form>
+      } @else {
+        <p class="hint" data-testid="goal-unavailable">
+          La búsqueda por meta espera a que el escenario se pueda calcular. Corrige o quita el evento que causa el
+          problema.
+        </p>
+      }
     </section>
   } @else {
     <section class="block" data-testid="tools-unavailable">

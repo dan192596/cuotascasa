@@ -67,7 +67,9 @@ export function domainErrorText(error: DomainError): string {
         return `El evento cae en ${installmentText(error.k)}. Elige una fecha de una cuota posterior.`;
       }
       if (code === 'INSTALLMENT_OUT_OF_RANGE') {
-        return 'La fecha cae después de la última cuota del préstamo. Elige una fecha anterior.';
+        return error.k === null
+          ? 'Un evento cae después de la última cuota del préstamo. Elige una fecha anterior o quítalo.'
+          : `El evento de la cuota ${error.k} cae después de la última cuota del préstamo. Elige una fecha anterior o quítalo.`;
       }
       return 'Algún dato del escenario no es válido. Revísalo o quita el evento.';
     }
@@ -152,25 +154,149 @@ export function toDomainScenarioEvents(events: readonly ScenarioEvent[]): Hypoth
   return events.filter((event) => event.deletedAt === null).map(toHypothetical);
 }
 
+export type CandidateResult =
+  { readonly ok: true; readonly paths: Paths } | { readonly ok: false; readonly error: DomainError };
+
+/** The paths the loan would have with `events` as its scenario ([ALG.PATHS]); the domain's typed error otherwise. */
+export function tryCandidate(paths: Paths, events: readonly ScenarioEvent[]): CandidateResult {
+  try {
+    const scenarioEvents = toDomainScenarioEvents(events);
+    return {
+      ok: true,
+      paths: buildPaths({
+        terms: paths.input.terms,
+        realEvents: paths.input.realEvents,
+        scenarioEvents: scenarioEvents.length === 0 ? null : scenarioEvents,
+      }),
+    };
+  } catch (error) {
+    if (error instanceof DomainError) {
+      return { ok: false, error };
+    }
+    throw error;
+  }
+}
+
 /**
  * Dry run before saving: the typed error the domain raises when `events` are the scenario of the loan behind `paths`
  * ([ALG.PATHS.CUTOFF], [ALG.EVENTS.ANCHOR]), or null. It never writes anything.
  */
 export function dryRun(paths: Paths, events: readonly ScenarioEvent[]): DomainError | null {
-  try {
-    const scenarioEvents = toDomainScenarioEvents(events);
-    buildPaths({
-      terms: paths.input.terms,
-      realEvents: paths.input.realEvents,
-      scenarioEvents: scenarioEvents.length === 0 ? null : scenarioEvents,
-    });
-    return null;
-  } catch (error) {
-    if (error instanceof DomainError) {
-      return error;
+  const result = tryCandidate(paths, events);
+  return result.ok ? null : result.error;
+}
+
+/**
+ * [ALG.EVENTS.ORDER] A trial of the goal-seek runs after every same-date phase-3 event of its base, but a saved event
+ * sorts by a random id: with a Prepayment or AdvanceInstallments on the goal date the applied abono could land before
+ * it and miss the goal. The editor does not offer the search for such a date (Opus C2).
+ */
+export function hasSamePhase3Event(events: readonly ScenarioEvent[], date: string): boolean {
+  return events.some(
+    (event) =>
+      event.deletedAt === null &&
+      event.date === date &&
+      (event.type === 'Prepayment' || event.type === 'AdvanceInstallments'),
+  );
+}
+
+export interface RemovedEvent {
+  readonly event: ScenarioEvent;
+  /** The installment the event lands on. */
+  readonly k: number;
+}
+
+export type ApplyPlan =
+  | {
+      readonly kind: 'ok';
+      /** The scenario events to save: the kept own events plus the goal prepayment. */
+      readonly events: readonly ScenarioEvent[];
+      /** Own events that would fall after the new final installment: they must be removed to apply (Opus C1). */
+      readonly removed: readonly RemovedEvent[];
+      readonly candidate: Paths;
     }
-    throw error;
+  | { readonly kind: 'error'; readonly error: DomainError };
+
+/**
+ * Applying a goal ends the loan earlier. Each trial inherits the base's events without revalidating them, but once the
+ * result is the scenario's own event any own event after the new last installment raises INSTALLMENT_OUT_OF_RANGE.
+ * Finds those events (never saves anything) and the candidate paths without them.
+ */
+export function planApply(
+  paths: Paths,
+  own: readonly ScenarioEvent[],
+  goalEvent: ScenarioEvent,
+  facts: LoanFacts,
+): ApplyPlan {
+  let kept = own.filter((event) => event.deletedAt === null);
+  const removed: RemovedEvent[] = [];
+  for (let round = 0; round <= own.length; round += 1) {
+    const events = [...kept, goalEvent];
+    const result = tryCandidate(paths, events);
+    if (result.ok) {
+      return { kind: 'ok', events, removed, candidate: result.paths };
+    }
+    const { error } = result;
+    const firstOutside =
+      error instanceof InvalidInputError && error.code === 'INSTALLMENT_OUT_OF_RANGE' ? error.k : null;
+    if (firstOutside === null) {
+      return { kind: 'error', error };
+    }
+    const outside = kept
+      .map((event) => ({ event, k: installmentFor(facts, event.date) }))
+      .filter((item) => item.k >= firstOutside);
+    if (outside.length === 0) {
+      return { kind: 'error', error };
+    }
+    removed.push(...outside);
+    kept = kept.filter((event) => !outside.some((item) => item.event.id === event.id));
   }
+  return { kind: 'error', error: new InvalidInputError('INSTALLMENT_OUT_OF_RANGE', 'events outside the schedule') };
+}
+
+/** Safety net (Opus C2 rule 2): the candidate paths must already meet the goal the result was computed for. */
+export function appliedMeetsGoal(candidate: Paths, input: GoalInput): boolean {
+  return seekGoal(candidate, input).kind === 'ALREADY_MET';
+}
+
+export interface EventExtra {
+  readonly label: string;
+  readonly amount: Money;
+}
+
+/**
+ * Figures that complete an event of the active scenario (I8): the amount to pay of an AdvanceInstallments (its row's
+ * prepayment, when it is the only phase-3 event of that installment), and the new level installment after a
+ * REDUCE_INSTALLMENT abono (the `level` of the next row).
+ */
+export function eventExtra(
+  paths: Paths,
+  facts: LoanFacts,
+  event: ScenarioEvent,
+  events: readonly ScenarioEvent[],
+): EventExtra | null {
+  const scenario = paths.scenario;
+  if (scenario === null) {
+    return null;
+  }
+  const k = installmentFor(facts, event.date);
+  if (event.type === 'AdvanceInstallments') {
+    const sameInstallment = events.filter(
+      (other) =>
+        other.deletedAt === null &&
+        (other.type === 'Prepayment' || other.type === 'AdvanceInstallments') &&
+        installmentFor(facts, other.date) === k,
+    );
+    const row = scenario.rows.find((item) => item.k === k);
+    return sameInstallment.length === 1 && row !== undefined
+      ? { label: 'Monto a pagar', amount: row.prepayment }
+      : null;
+  }
+  if (event.type === 'Prepayment' && event.mode === 'REDUCE_INSTALLMENT') {
+    const next = scenario.rows.find((item) => item.k === k + 1);
+    return next === undefined ? null : { label: 'Nueva cuota nivelada', amount: next.level };
+  }
+  return null;
 }
 
 /* ---------- Goal-seek ([ALG.GOAL]) ---------- */
@@ -189,6 +315,8 @@ export type GoalOutcome =
       readonly amount: Money;
       readonly metrics: ComparisonMetrics;
       readonly isPayoff: boolean;
+      /** The path the search ran on: the scenario when it has events, the real path otherwise. */
+      readonly basePath: 'REAL' | 'SCENARIO';
       /** The mode of the goal: REDUCE_TERM for FINISH_BY, REDUCE_INSTALLMENT for MAX_INSTALLMENT. */
       readonly mode: PrepaymentMode;
     }
@@ -219,6 +347,7 @@ export function seekGoal(paths: Paths, input: GoalInput): GoalOutcome {
           amount: result.amount,
           metrics: result.metrics,
           isPayoff: result.isPayoff,
+          basePath: request.basePath,
           mode: input.goal.kind === 'FINISH_BY' ? 'REDUCE_TERM' : 'REDUCE_INSTALLMENT',
         };
       case 'INFEASIBLE':
