@@ -52,3 +52,19 @@ Con los dos arreglos, `/app` inicial mide 167.64 kB. Decisión:
   - `sync/crypto`;
   - `dexie`.
 
+
+## Enmienda (2026-10-16): `Announcer` sin el CDK y el CDK vetado en los grafos iniciales
+
+Al medir la unión de las tarjetas de W5, la landing llegaba a unos 101.8 kB de 104. El metafile mostró que el servicio `Announcer` de `ui/feedback` usaba `LiveAnnouncer` de `@angular/cdk/a11y`, que arrastra el sanitizador de HTML de Angular al chunk de core compartido que carga la landing (el mismo mecanismo del contexto de este ADR).
+
+1. `Announcer` ya no usa `LiveAnnouncer`: escribe con `textContent` en dos regiones `aria-live` propias, una cortés y otra asertiva, ocultas a la vista (PR #81).
+2. El grafo inicial de la landing **prohíbe** todo `@angular/cdk`, y el de `/app` prohíbe `@angular/cdk/a11y`. Si alguno entra, `bundle:check` falla aunque el tamaño quepa. El CDK sigue permitido en chunks diferidos (por ejemplo, el diálogo de confirmación).
+
+Medidas gzip de la unión de W5:
+
+| Grafo inicial | Antes del PR #81 | Después del PR #81 | Al cierre de W5 (main) | Presupuesto |
+|---|---|---|---|---|
+| Landing | ~101.8 kB | ~99.3 kB | 99.29 kB | 104 kB |
+| `/app` | — | ~175 kB | 172.90 kB | 200 kB |
+
+Los presupuestos no cambian. Se revisan en W7-01 con el release, como dice la decisión.

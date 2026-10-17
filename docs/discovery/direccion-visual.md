@@ -148,7 +148,7 @@ Vista de escenario con un abono hipotético de Q 20,000.00 escrito en la celda d
 ├─────┴────────────┼──────────────┼──────────┼────────┼──────────┼────────┼──────────┼──────────────┼───────────┼──────────┤
 │ Subtotal 2025    │              │31,814.14 │5,726.55│ 9,357.48 │4,345.00│51,243.17 │              │      0.00 │          │
 ├─────┬────────────┼──────────────┼──────────┼────────┼──────────┼────────┼──────────┼──────────────┼───────────┼──────────┤
-│  12 │ 31/01/2026 │   490,642.52 │ 2,862.08 │ 515.18 │   886.21 │ 395.00 │ 4,658.47 │   489,756.31 │[20,000.00]│          │
+│  12 │ 31/01/2026 │   490,642.52 │ 2,862.08 │ 515.18 │   886.21 │ 395.00 │ 4,658.47 │   469,756.31 │[20,000.00]│          │
 │  13 │ 28/02/2026 │   469,756.31 │ 2,740.25 │ 493.24 │ 1,029.98 │ 395.00 │ 4,658.47 │   468,726.33 │ [       ] │          │
 │   … │            │              │          │        │          │        │          │              │           │          │
 │▶ 21 │ 31/10/2026 │   (fila del mes actual: fondo mes-actual y marca ▶)                            │ [       ] │          │
@@ -162,6 +162,7 @@ Vista de escenario con un abono hipotético de Q 20,000.00 escrito en la celda d
 - Las cifras van alineadas a la derecha, con dígitos tabulares. Por espacio, el boceto omite el símbolo de moneda en las celdas; el formato real lo dan los pipes de `ui/` (W3-06).
 - Las filas con `k ≤ cutoffK` (cuotas 1 a 11, `[ALG.PATHS.CUTOFF]`) no se editan. La celda «Abono» solo existe a partir de la cuota 12.
 - Escribir un abono crea o cambia un evento del **escenario activo**, nunca de los datos reales. La tabla y el resumen se recalculan al confirmar.
+- «Saldo final» es el saldo **después** del abono de la fila (`closingAfterPrepayment`, `[ALG.PREPAY]`): en la cuota 12, 490,642.52 − 886.21 − 20,000.00 = 469,756.31. Así, el «Saldo inicial» de cada fila es igual al «Saldo final» de la anterior, salvo una fila re-anclada por un saldo reportado (`[ALG.ANCHOR]`) (dictamen de W5-02).
 - Real Δ solo aparece en filas con saldo reportado, con el ícono y el texto del semáforo.
 - El subtotal anual va después de la última cuota de cada año calendario y suma lo que indica `[ALG.YEARLY]`.
 - El encabezado queda fijo al desplazarse. Con el teclado, las flechas mueven la celda activa, Enter edita y Escape cancela.

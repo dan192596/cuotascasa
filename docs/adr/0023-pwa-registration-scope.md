@@ -82,3 +82,5 @@ Hechos que explican la tabla y el resto de la decisión:
 ## Enmiendas
 
 **Enmienda (2026-10-09, W3-14).** `provideServiceWorker()` **no** está en los providers raíz. `provideAppPwa()` carga `core/pwa/pwa-runtime.ts` con `import()` después de la primera navegación a `/app`, y ese módulo crea `provideServiceWorker()` en un `EnvironmentInjector` hijo. Así, `@angular/service-worker` queda fuera del bundle de la landing. `SwUpdate` se sigue inyectando, desde ese inyector hijo, y el registro manual con Trusted Types de la decisión 3 no cambia.
+
+**Enmienda (2026-10-16, W5, PR #78).** Un registro fallido del service worker **no** es un error de la app. El service worker es una mejora para usar la app sin conexión, no parte de ella: si `register()` falla, no se avisa al `ErrorHandler`, ni con un aviso en pantalla ni en la consola. El registro vuelve a intentarse en la siguiente navegación dentro de `/app`, y se deja de escuchar el router solo cuando un registro termina bien. El caso que lo motivó: WebKit rechaza `register()` con un `TypeError` cuando una navegación rápida cancela la descarga del service worker (observado en el e2e de W5-07).

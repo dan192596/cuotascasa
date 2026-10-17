@@ -67,3 +67,11 @@ Para que dos dispositivos lleguen siempre al mismo resultado, sin importar quié
 - ADR-0005, ADR-0007, ADR-0008 (decisión 4: algoritmo y regla de purga), ADR-0009.
 - `packages/sync/src/ports.ts` (`compareRecordOrder`, `MergeDatasets`, `PurgeTombstones`), `packages/persistence/src/ports.ts` (sellado y `replaceAll`).
 - Tarjetas W0-04, W1-06, W2-08 y W6-03.
+
+## Enmiendas
+
+**Enmienda (2026-10-16, W5).** Dictamen de Opus en las revisiones de W5-02 y W5-04, que precisa la decisión 1 para los escenarios:
+
+- **Un escenario es un solo registro.** La unidad de combinación de un `Scenario` es el registro completo: `mergeDatasets` compara versiones del escenario con el orden de la decisión 2 y nunca mira dentro de `events[]`. Gana el arreglo entero de la versión ganadora.
+- **Quitar un evento hipotético lo quita del arreglo.** Ni vaciar la celda de la tabla (W5-02) ni quitar un evento en el editor de escenarios (W5-04) dejan una marca de borrado embebida: el evento sale de `events[]` y el escenario se guarda con un `updatedAt` nuevo. Una marca embebida no aportaría nada, porque la combinación no la ve. El campo `deletedAt` de un evento de escenario se conserva en el esquema por compatibilidad de formato, siempre nulo al escribir, y la fachada del motor sigue ignorando un evento con `deletedAt` no nulo.
+- **Consecuencia.** Dos ediciones simultáneas del mismo escenario en dos dispositivos no se mezclan evento por evento: gana una versión completa (los riesgos residuales de last-writer-wins ya aceptados arriba). El borrado del escenario entero sí es una marca de borrado normal.
