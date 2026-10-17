@@ -1,0 +1,472 @@
+<section class="block" [attr.aria-labelledby]="id('list-title')" data-testid="scenario-list">
+  <h2 [id]="id('list-title')" tabindex="-1">Escenarios</h2>
+  <p class="hint">
+    Un escenario es tu camino real más eventos hipotéticos. Los datos reales no cambian. Solo uno está activo a la vez.
+  </p>
+
+  @if (failureOf('scenarios'); as text) {
+    <cc-banner tone="danger" [dismissible]="false" data-testid="scenarios-failure">{{ text }}</cc-banner>
+  }
+
+  @if (scenarios().length === 0) {
+    <p data-testid="no-scenarios">Aún no tienes escenarios. Crea el primero para probar abonos y metas.</p>
+  } @else {
+    <ul class="rows">
+      @for (scenario of scenarios(); track scenario.id) {
+        <li class="row" data-testid="scenario-row" [class.is-active]="scenario.id === activeId()">
+          <div class="row-main">
+            <strong class="row-name">{{ scenario.name }}</strong>
+            @if (scenario.id === activeId()) {
+              <span class="badge" data-testid="active-badge">Activo</span>
+            }
+            <span class="muted">
+              {{ liveEventCount(scenario) }} {{ liveEventCount(scenario) === 1 ? 'evento' : 'eventos' }}
+            </span>
+          </div>
+          <div class="row-actions">
+            @if (scenario.id !== activeId()) {
+              <button
+                type="button"
+                data-testid="activate"
+                [attr.aria-label]="'Activar el escenario ' + scenario.name"
+                (click)="activate(scenario)"
+              >
+                Activar
+              </button>
+            }
+            <button
+              type="button"
+              data-testid="rename"
+              [attr.aria-label]="'Renombrar el escenario ' + scenario.name"
+              (click)="startRename(scenario)"
+            >
+              Renombrar
+            </button>
+            <button
+              type="button"
+              data-testid="duplicate"
+              [attr.aria-label]="'Duplicar el escenario ' + scenario.name"
+              (click)="duplicate(scenario)"
+            >
+              Duplicar
+            </button>
+            <button
+              type="button"
+              class="danger"
+              data-testid="delete"
+              [id]="id('delete-' + scenario.id)"
+              [attr.aria-label]="'Eliminar el escenario ' + scenario.name"
+              (click)="askDelete(scenario)"
+            >
+              Eliminar
+            </button>
+          </div>
+          @if (pendingDelete()?.id === scenario.id) {
+            <div
+              class="confirm"
+              role="group"
+              (keydown.escape)="cancelDelete()"
+              [attr.aria-label]="'Confirmar la eliminación de ' + scenario.name"
+            >
+              <p>Se eliminará «{{ scenario.name }}» con sus eventos hipotéticos. Los datos reales no cambian.</p>
+              <div class="actions">
+                <button type="button" [id]="id('delete-cancel')" data-testid="confirm-cancel" (click)="cancelDelete()">
+                  Cancelar
+                </button>
+                <button type="button" class="danger" data-testid="confirm-ok" (click)="confirmDelete()">
+                  Sí, eliminar
+                </button>
+              </div>
+            </div>
+          }
+        </li>
+      }
+    </ul>
+  }
+
+  <form [formRoot]="nameForm" class="form" data-testid="name-form">
+    <div class="field">
+      <label [for]="id('name')">{{
+        renamingId() === null ? 'Nombre del nuevo escenario' : 'Nuevo nombre del escenario'
+      }}</label>
+      <input
+        type="text"
+        autocomplete="off"
+        [id]="id('name')"
+        [formField]="nameForm.name"
+        [attr.aria-invalid]="showsErrors(nameForm.name)"
+        [attr.aria-describedby]="showsErrors(nameForm.name) ? id('name') + '-errors' : null"
+      />
+      @if (showsErrors(nameForm.name)) {
+        <div class="errors" [id]="id('name') + '-errors'">
+          @for (error of nameForm.name().errors(); track $index) {
+            <p>{{ error.message }}</p>
+          }
+        </div>
+      }
+    </div>
+    <div class="actions">
+      <button type="submit" class="primary">{{ renamingId() === null ? 'Crear escenario' : 'Guardar nombre' }}</button>
+      @if (renamingId() !== null) {
+        <button type="button" data-testid="cancel-rename" (click)="cancelRename()">Cancelar</button>
+      }
+    </div>
+  </form>
+
+  <p class="sr-only" role="status" aria-live="polite" aria-atomic="true" data-testid="status">{{ status() }}</p>
+</section>
+
+@if (active(); as scenario) {
+  <section class="block" [attr.aria-labelledby]="id('active-title')" data-testid="active-scenario">
+    <h2 [id]="id('active-title')" tabindex="-1">Escenario activo: {{ scenario.name }}</h2>
+
+    @if (engineNotice(); as notice) {
+      <cc-banner tone="warning" [dismissible]="false" data-testid="scenario-error">
+        {{ notice.text }}
+        {{
+          notice.scenarioCause
+            ? 'Quita o edita el evento que causa el problema para ver las cifras otra vez.'
+            : 'Revisa los datos del préstamo en su detalle.'
+        }}
+      </cc-banner>
+    }
+
+    @if (metrics(); as m) {
+      <div data-testid="metrics">
+        <h3>Efecto sobre el camino real</h3>
+        <dl class="metrics">
+          <dt>Interés y seguros ahorrados</dt>
+          <dd class="num" data-testid="metric-interest">{{ m.interestSaved | money: currency() }}</dd>
+          <dt>Meses ahorrados</dt>
+          <dd class="num" data-testid="metric-months">{{ m.monthsSaved }}</dd>
+          <dt>Fecha de fin</dt>
+          <dd class="num" data-testid="metric-end">{{ m.endDate | localDate }}</dd>
+          <dt>Total pagado</dt>
+          <dd class="num" data-testid="metric-total">{{ m.totalPaid | money: currency() }}</dd>
+          <dt>Ahorro neto</dt>
+          <dd class="num" data-testid="metric-net">{{ m.netSaving | money: currency() }}</dd>
+        </dl>
+        <p class="hint">
+          Son las cifras que calcula el motor, con su signo: un abono no siempre reduce el interés total.
+        </p>
+      </div>
+    } @else if (engineNotice() === null) {
+      <p class="hint" data-testid="no-metrics">Sin eventos: el escenario aún no cambia nada frente al camino real.</p>
+    }
+
+    <h3 [id]="id('events-title')" tabindex="-1">Eventos hipotéticos</h3>
+    @if (eventRows().length === 0) {
+      <p class="hint">Sin eventos todavía. Agrega un abono o un adelanto de cuotas más abajo.</p>
+    } @else {
+      <ul class="rows" [attr.aria-labelledby]="id('events-title')">
+        @for (row of eventRows(); track row.event.id) {
+          <li class="row" data-testid="event-row">
+            <div class="row-main">
+              <span>{{ row.text }}</span>
+              @if (row.extra; as extra) {
+                <span class="muted" data-testid="event-extra">
+                  {{ extra.label }}: <span class="num">{{ extra.amount | money: currency() }}</span>
+                </span>
+              }
+              @if (row.blocked) {
+                <span class="badge warn">No se aplica: la cuota {{ row.k }} ya tiene datos reales</span>
+              }
+            </div>
+            <div class="row-actions">
+              @if (row.event.type === 'Prepayment') {
+                <button type="button" data-testid="edit-event" (click)="editEvent(row.event)">Editar</button>
+              }
+              <button type="button" class="danger" data-testid="remove-event" (click)="removeEvent(row)">Quitar</button>
+            </div>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+
+  @if (canEdit()) {
+    <section class="block" [attr.aria-labelledby]="id('tools-title')" data-testid="tools">
+      <h2 [id]="id('tools-title')">Herramientas</h2>
+
+      <form
+        [formRoot]="abonoForm"
+        class="form tool"
+        data-testid="abono-form"
+        [attr.aria-labelledby]="id('abono-title')"
+      >
+        <h3 [id]="id('abono-title')">{{ editingEventId() === null ? 'Abono único' : 'Editar abono' }}</h3>
+        @if (failureOf('abono'); as text) {
+          <cc-banner tone="danger" [dismissible]="false" data-testid="abono-failure">{{ text }}</cc-banner>
+        }
+        <div class="field">
+          <label [for]="id('abono-date')">Fecha del abono</label>
+          <cc-date-input [inputId]="id('abono-date')" [formField]="abonoForm.date" />
+        </div>
+        <div class="field">
+          <label [for]="id('abono-amount')">Monto del abono</label>
+          <cc-money-input [inputId]="id('abono-amount')" [currency]="currency()" [formField]="abonoForm.amount" />
+        </div>
+        <div class="field">
+          <label [for]="id('abono-mode')">Qué reduce el abono</label>
+          <select [id]="id('abono-mode')" [formField]="abonoForm.mode">
+            @for (option of modeOptions; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label [for]="id('abono-commissionKind')">Comisión del banco por abonar</label>
+          <select [id]="id('abono-commissionKind')" [formField]="abonoForm.commissionKind">
+            <option value="NONE">Sin comisión</option>
+            <option value="FLAT">Monto fijo</option>
+            <option value="PERCENT">Porcentaje del abono</option>
+          </select>
+        </div>
+        @if (abonoForm.commissionKind().value() === 'FLAT') {
+          <div class="field">
+            <label [for]="id('abono-commissionAmount')">Monto de la comisión</label>
+            <cc-money-input
+              [inputId]="id('abono-commissionAmount')"
+              [currency]="currency()"
+              [formField]="abonoForm.commissionAmount"
+            />
+          </div>
+        }
+        @if (abonoForm.commissionKind().value() === 'PERCENT') {
+          <div class="field">
+            <label [for]="id('abono-commissionRate')">Porcentaje de la comisión</label>
+            <cc-rate-input [inputId]="id('abono-commissionRate')" [formField]="abonoForm.commissionRate" />
+          </div>
+        }
+        <div class="actions">
+          <button type="submit" class="primary" data-testid="abono-submit">
+            {{ editingEventId() === null ? 'Agregar al escenario' : 'Guardar cambios' }}
+          </button>
+          @if (editingEventId() !== null) {
+            <button type="button" (click)="cancelEditEvent()">Cancelar</button>
+          }
+        </div>
+      </form>
+
+      <form
+        [formRoot]="advanceForm"
+        class="form tool"
+        data-testid="advance-form"
+        [attr.aria-labelledby]="id('advance-title')"
+      >
+        <h3 [id]="id('advance-title')">Adelantar cuotas</h3>
+        <p class="hint">
+          Abona el capital de las próximas cuotas que elijas; la cuota no cambia y el plazo baja esa cantidad de cuotas.
+        </p>
+        @if (failureOf('advance'); as text) {
+          <cc-banner tone="danger" [dismissible]="false" data-testid="advance-failure">{{ text }}</cc-banner>
+        }
+        <div class="field">
+          <label [for]="id('advance-date')">Fecha del adelanto</label>
+          <cc-date-input [inputId]="id('advance-date')" [formField]="advanceForm.date" />
+        </div>
+        <div class="field">
+          <label [for]="id('advance-count')">Cuántas cuotas adelantar</label>
+          <input
+            type="text"
+            inputmode="numeric"
+            autocomplete="off"
+            [id]="id('advance-count')"
+            [formField]="advanceForm.count"
+            [attr.aria-invalid]="showsErrors(advanceForm.count)"
+            [attr.aria-describedby]="showsErrors(advanceForm.count) ? id('advance-count') + '-errors' : null"
+          />
+          @if (showsErrors(advanceForm.count)) {
+            <div class="errors" [id]="id('advance-count') + '-errors'">
+              @for (error of advanceForm.count().errors(); track $index) {
+                <p>{{ error.message }}</p>
+              }
+            </div>
+          }
+        </div>
+        <div class="actions">
+          <button type="submit" class="primary" data-testid="advance-submit">Agregar al escenario</button>
+        </div>
+      </form>
+
+      @if (goalReady()) {
+        <form
+          [formRoot]="goalForm"
+          class="form tool"
+          data-testid="goal-form"
+          [attr.aria-labelledby]="id('goal-title')"
+          [attr.aria-busy]="goalBusy()"
+        >
+          <h3 [id]="id('goal-title')">Calcular el abono para una meta</h3>
+          <p class="hint">
+            Encuentra el monto mínimo, al centavo, que cumple tu meta si abonas en la fecha que elijas. Después puedes
+            aplicarlo al escenario.
+          </p>
+          @if (failureOf('goal'); as text) {
+            <cc-banner tone="danger" [dismissible]="false" data-testid="goal-failure">{{ text }}</cc-banner>
+          }
+          <div class="field">
+            <label [for]="id('goal-kind')">Meta</label>
+            <select [id]="id('goal-kind')" [formField]="goalForm.kind">
+              <option value="FINISH_BY">Terminar de pagar a más tardar en una fecha</option>
+              <option value="MAX_INSTALLMENT">Que la cuota total no pase de un monto</option>
+            </select>
+          </div>
+          <div class="field">
+            <label [for]="id('goal-date')">Fecha del abono</label>
+            <cc-date-input [inputId]="id('goal-date')" [formField]="goalForm.date" />
+          </div>
+          @if (goalForm.kind().value() === 'FINISH_BY') {
+            <div class="field">
+              <label [for]="id('goal-target-date')">Terminar a más tardar el</label>
+              <cc-date-input [inputId]="id('goal-target-date')" [formField]="goalForm.targetDate" />
+            </div>
+          } @else {
+            <div class="field">
+              <label [for]="id('goal-target-amount')">Cuota total máxima</label>
+              <cc-money-input
+                [inputId]="id('goal-target-amount')"
+                [currency]="currency()"
+                [formField]="goalForm.targetAmount"
+              />
+            </div>
+          }
+          <div class="actions">
+            <button type="submit" class="primary" data-testid="goal-submit" [disabled]="goalBusy()">
+              Calcular abono
+            </button>
+            @if (goalBusy()) {
+              <span class="busy" data-testid="goal-busy">Calculando… puede tardar unos segundos.</span>
+            }
+          </div>
+
+          @if (goalState(); as state) {
+            <div class="result" data-testid="goal-result">
+              @switch (state.outcome.kind) {
+                @case ('ALREADY_MET') {
+                  <p>La meta ya se cumple con el escenario actual: no hace falta abonar.</p>
+                }
+                @case ('FOUND') {
+                  @if (found(state); as result) {
+                    <p>
+                      Abono mínimo el {{ state.input.prepaymentDate | localDate }}:
+                      <strong class="num" data-testid="goal-amount">{{ result.amount | money: currency() }}</strong>
+                    </p>
+                    @if (result.isPayoff) {
+                      <p>Este monto liquida el préstamo en esa cuota.</p>
+                    }
+                    <p class="hint" data-testid="goal-base">
+                      {{
+                        result.basePath === 'SCENARIO'
+                          ? 'Frente al escenario actual sin este abono'
+                          : 'Frente al camino real'
+                      }}
+                    </p>
+                    @if (state.level; as level) {
+                      <p>
+                        Nueva cuota nivelada (sin cargos fijos):
+                        <strong class="num" data-testid="goal-level">{{ level | money: currency() }}</strong>
+                      </p>
+                    }
+                    <dl class="metrics">
+                      <dt>Interés y seguros ahorrados</dt>
+                      <dd class="num" data-testid="goal-metric-interest">
+                        {{ result.metrics.interestSaved | money: currency() }}
+                      </dd>
+                      <dt>Meses ahorrados</dt>
+                      <dd class="num" data-testid="goal-metric-months">{{ result.metrics.monthsSaved }}</dd>
+                      <dt>Fecha de fin</dt>
+                      <dd class="num">{{ result.metrics.endDate | localDate }}</dd>
+                      <dt>Total pagado</dt>
+                      <dd class="num">{{ result.metrics.totalPaid | money: currency() }}</dd>
+                      <dt>Ahorro neto</dt>
+                      <dd class="num" data-testid="goal-metric-net">
+                        {{ result.metrics.netSaving | money: currency() }}
+                      </dd>
+                    </dl>
+                    <p class="hint">
+                      Cifras del motor, con su signo, sin comisión: un abono no siempre reduce el interés total.
+                    </p>
+                    @if (pendingApply(); as pending) {
+                      <div
+                        class="confirm"
+                        role="group"
+                        data-testid="apply-confirmation"
+                        aria-labelledby="{{ id('apply-title') }}"
+                      >
+                        <p [id]="id('apply-title')">
+                          Al aplicar este abono el préstamo termina antes; estos eventos del escenario quedarían después
+                          del fin y se quitarán:
+                        </p>
+                        <ul>
+                          @for (item of pending.plan.removed; track item.event.id) {
+                            <li data-testid="removed-event">
+                              {{ removedText(item) }}
+                            </li>
+                          }
+                        </ul>
+                        <div class="actions">
+                          <button type="button" (click)="cancelApply()" data-testid="apply-cancel">Cancelar</button>
+                          <button
+                            type="button"
+                            class="primary"
+                            [id]="id('apply-confirm')"
+                            data-testid="apply-confirm"
+                            (click)="applyGoal(true)"
+                          >
+                            Aplicar y quitarlos
+                          </button>
+                        </div>
+                      </div>
+                    } @else {
+                      <div class="actions">
+                        <button
+                          type="button"
+                          class="primary"
+                          [id]="id('goal-apply')"
+                          data-testid="goal-apply"
+                          (click)="applyGoal()"
+                        >
+                          Aplicar al escenario
+                        </button>
+                      </div>
+                    }
+                  }
+                }
+                @case ('INFEASIBLE') {
+                  @if (infeasible(state); as result) {
+                    <p>
+                      Con esa fecha no se puede cumplir la meta, ni siquiera liquidando el préstamo en esa cuota, que
+                      costaría
+                      <strong class="num" data-testid="goal-amount">{{
+                        result.payoffAmount | money: currency()
+                      }}</strong
+                      >. Prueba una fecha de meta posterior o abona antes.
+                    </p>
+                  }
+                }
+              }
+            </div>
+          }
+        </form>
+      } @else {
+        <p class="hint" data-testid="goal-unavailable">
+          La búsqueda por meta espera a que el escenario se pueda calcular. Corrige o quita el evento que causa el
+          problema.
+        </p>
+      }
+    </section>
+  } @else {
+    <section class="block" data-testid="tools-unavailable">
+      <h2>Herramientas</h2>
+      <p class="hint">
+        Las herramientas esperan a que el escenario se pueda calcular. Corrige o quita el evento que causa el problema.
+      </p>
+    </section>
+  }
+} @else {
+  <section class="block" data-testid="tools-placeholder">
+    <h2>Herramientas</h2>
+    <p>Activa o crea un escenario para probar abonos, adelantos de cuotas y metas.</p>
+  </section>
+}
