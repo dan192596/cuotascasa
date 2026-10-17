@@ -1,8 +1,8 @@
-import { LiveAnnouncer } from '@angular/cdk/a11y';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { PathKind } from '@cuotascasa/domain';
 import type { ExportFormat, ReportModel, ReportWriter } from '@cuotascasa/export';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { Announcer } from '../../ui/feedback/announcer.service.ts';
 import { ExportMenuComponent, type ExportRequest } from './export-menu.component.ts';
 import {
   EXPORT_LOADERS,
@@ -42,7 +42,9 @@ interface SetupOptions {
 
 function setup(request: ExportRequest = SCHEDULE_REQUEST, options: SetupOptions = {}) {
   const live = {
-    announce: vi.fn<(message: string, politeness: string) => Promise<void>>(() => Promise.resolve()),
+    polite: vi.fn<(message: string) => Promise<void>>(() => Promise.resolve()),
+    assertive: vi.fn<(message: string) => Promise<void>>(() => Promise.resolve()),
+    announce: vi.fn(() => Promise.resolve()),
     clear: vi.fn(),
   };
   const save = vi.fn();
@@ -67,7 +69,7 @@ function setup(request: ExportRequest = SCHEDULE_REQUEST, options: SetupOptions 
   const builders = vi.fn(() => Promise.resolve({ buildScheduleReport, buildComparisonReport }));
   TestBed.configureTestingModule({
     providers: [
-      { provide: LiveAnnouncer, useValue: live },
+      { provide: Announcer, useValue: live },
       { provide: FILE_SAVER, useValue: save },
       { provide: EXPORT_LOADERS, useValue: { writers, builders } },
     ],
@@ -234,8 +236,8 @@ describe('cc-export-menu', () => {
     const s = setup();
     await pick(s, 'csv');
     await confirmWarning(s);
-    expect(s.live.announce).toHaveBeenCalledWith('Archivo CSV listo: cuotascasa-tabla-real-2026-10-16.csv', 'polite');
-    expect(s.live.announce.mock.calls.filter(([, politeness]) => politeness === 'assertive')).toEqual([]);
+    expect(s.live.polite).toHaveBeenCalledWith('Archivo CSV listo: cuotascasa-tabla-real-2026-10-16.csv');
+    expect(s.live.assertive).not.toHaveBeenCalled();
     expect(q(s, 'export-progress')).toBeNull();
   });
 
@@ -265,7 +267,8 @@ describe('cc-export-menu', () => {
       expect(q(s, 'export-error')?.textContent?.trim()).toBe(message);
       expect(el(s).textContent).not.toContain('1234.56');
       expect(el(s).textContent).not.toContain('99.00');
-      expect(s.live.announce.mock.calls).toEqual([[message, 'assertive']]);
+      expect(s.live.assertive.mock.calls).toEqual([[message]]);
+      expect(s.live.polite).not.toHaveBeenCalled();
       expect(s.save).not.toHaveBeenCalled();
     },
   );
