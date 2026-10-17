@@ -1,7 +1,6 @@
 import { isPlatformBrowser } from '@angular/common';
 import {
   type EnvironmentProviders,
-  ErrorHandler,
   inject,
   EnvironmentInjector,
   InjectionToken,
@@ -42,13 +41,23 @@ export function provideAppPwa(options: AppPwaOptions = {}): EnvironmentProviders
     provideEnvironmentInitializer(() => {
       if (!inject(PWA_ENABLED) || !isPlatformBrowser(inject(PLATFORM_ID))) return;
       const register = inject(REGISTER_WORKER);
-      const errors = inject(ErrorHandler);
-      const subscription = inject(Router).events.subscribe((event) => {
-        if (!(event instanceof NavigationEnd) || !isAppUrl(event.urlAfterRedirects)) return;
-        subscription.unsubscribe();
-        register().catch((error: unknown) => {
-          errors.handleError(error);
-        });
+      const router = inject(Router);
+      // The worker is an offline nicety, not part of the app: a failed registration is not an app error (no toast,
+      // no console error). WebKit rejects register() with a TypeError when a quick navigation cancels the worker
+      // download, so the next navigation inside /app simply tries again.
+      let state: 'waiting' | 'registering' | 'done' = 'waiting';
+      const subscription = router.events.subscribe((event) => {
+        if (state !== 'waiting' || !(event instanceof NavigationEnd) || !isAppUrl(event.urlAfterRedirects)) return;
+        state = 'registering';
+        register().then(
+          () => {
+            state = 'done';
+            subscription.unsubscribe();
+          },
+          () => {
+            state = 'waiting';
+          },
+        );
       });
     }),
   ]);
