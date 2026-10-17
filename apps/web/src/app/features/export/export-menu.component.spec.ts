@@ -95,9 +95,12 @@ const el = (s: Setup) => s.fixture.nativeElement as HTMLElement;
 const q = (s: Setup, testId: string) => el(s).querySelector<HTMLElement>(`[data-testid="${testId}"]`);
 
 async function settle(s: Setup): Promise<void> {
-  await s.fixture.whenStable();
-  await new Promise<void>((resolve) => setTimeout(resolve, 0));
-  s.fixture.detectChanges();
+  // A few macrotask turns: the export chain awaits dynamic imports, which take more than one turn on a loaded CI runner.
+  for (let turn = 0; turn < 5; turn += 1) {
+    await s.fixture.whenStable();
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    s.fixture.detectChanges();
+  }
 }
 
 async function pick(s: Setup, format: ExportFormat): Promise<void> {
