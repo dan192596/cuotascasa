@@ -9,9 +9,10 @@ import {
 } from './loan-event.ts';
 
 /**
- * Hypothetical event embedded in a Scenario. `id` is stable (the in-cell abono edits it in place) and
- * `deletedAt` is the embedded tombstone used when the cell is emptied (spec §9, «Abono en celda»).
- * The engine facade ignores events whose deletedAt is not null.
+ * Hypothetical event embedded in a Scenario. `id` is stable (the in-cell abono edits it in place).
+ * A Scenario syncs as ONE last-writer-wins record (ADR-0024, W5 amendment): removing an event removes it from
+ * `events[]` (in-cell clear, scenario editor), so writers always store `deletedAt: null`. The field stays for format
+ * compatibility, and the engine facade still ignores an event whose deletedAt is not null.
  */
 const scenarioEventCommonShape = {
   id: uuidSchema,

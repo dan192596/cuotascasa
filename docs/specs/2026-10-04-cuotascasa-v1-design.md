@@ -358,10 +358,23 @@ El archivo central de rutas solo lo edita Opus.
 - Solo se editan filas con `k > cutoffK`. Las demás son de solo lectura.
 - Escribir un monto crea un `Prepayment` hipotético en el escenario activo, con fecha igual al vencimiento de la fila `k`, modo `REDUCE_TERM` y sin comisión. El modo y la comisión se cambian después en «Proyecciones».
 - Si el escenario activo ya tiene un único `Prepayment` en `k`, la celda edita su monto y conserva su id, su modo y su comisión. No se duplica.
-- Vaciar la celda o escribir 0 elimina ese `Prepayment` con una marca de borrado.
+- Vaciar la celda o escribir 0 **quita** ese `Prepayment` del arreglo `events` del escenario. No deja una marca de borrado embebida: el escenario se combina como un solo registro (ADR-0024, enmienda de W5).
 - Si en `k` hay otros eventos hipotéticos (más de un abono, o un `AdvanceInstallments`), la celda es de solo lectura y remite a «Proyecciones».
 - Sin escenario activo, la app **ofrece** usar el escenario «Borrador» del préstamo: activarlo o, si no existe, crearlo. Si el usuario acepta, guarda ahí el abono y lo anuncia con `aria-live`; si no, la celda no escribe nada.
 - Al confirmar, la tabla pasa a la vista escenario. La celda nunca escribe un evento real.
+- La columna «Saldo final» muestra el saldo **después** de los abonos de la fila (`closingAfterPrepayment`). Así, el «Saldo inicial» de la fila siguiente es igual a él, salvo un re-anclaje (`[ALG.ANCHOR]`). El boceto de `docs/discovery/direccion-visual.md` §4.3 lo muestra (dictamen de W5-02).
+
+**Editor de escenarios («Proyecciones», W5-04):**
+
+- Quitar un evento hipotético lo **quita** del arreglo `events` del escenario, igual que vaciar la celda. Ningún evento de escenario se guarda con `deletedAt` distinto de nulo (ADR-0024, enmienda de W5).
+- **Aplicar una meta que acorta el préstamo (C1).** Si el abono de la meta deja eventos propios del escenario después de la nueva última cuota, el editor los lista con su cuota y los quita solo cuando el usuario lo confirma. Sin confirmación no se guarda nada.
+- **Meta en una fecha ocupada (C2).** El editor no ofrece buscar la meta en una fecha que ya tiene un evento de fase 3 del escenario (`Prepayment` o `AdvanceInstallments`) en esa misma fecha: el orden entre eventos del mismo día (`[ALG.EVENTS.ORDER]`) podría dejar el abono de la meta antes que ese evento y no cumplir la meta.
+- **Red de seguridad.** Antes de pedir la confirmación de C1 y antes de guardar, el editor vuelve a correr `seekGoal` sobre el camino candidato, y solo sigue si el resultado es `ALREADY_MET`. Si no, no guarda y avisa que el abono calculado ya no cumple la meta y hay que volver a calcular; nunca pregunta por quitar eventos para un resultado que después fallaría.
+
+**Detalle del préstamo (W5-01):**
+
+- «Archivar» solo se ofrece para un préstamo activo (`status = active`).
+- Guardar una edición se rechaza si el `updatedAt` del préstamo cambió desde que se cargó el formulario (por ejemplo, por una sincronización o por otra pestaña). La pantalla avisa que el préstamo cambió y ofrece recargar los datos actuales; nunca pisa el cambio ajeno.
 
 **Valores derivados (definiciones cerradas).** Los calcula y los expone la fachada del motor (`LoanProjectionService`, W3-12), y las pantallas solo los muestran: dashboard (W4-06), detalle (W5-01), tabla (W5-02), datos reales (W5-03) y proyecciones (W5-04).
 

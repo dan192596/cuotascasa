@@ -126,7 +126,7 @@ export const PRIVACY_LAST_UPDATED = '16/10/2026';
         <h2 id="s-exportar">Exportaciones y respaldos</h2>
         <p>
           Los archivos Excel, CSV y PDF se generan en tu dispositivo y no van cifrados; la aplicación te lo avisa antes
-          de la primera descarga. El respaldo JSON puede ir cifrado con la misma frase.
+          de la primera descarga de cada sesión. El respaldo JSON puede ir cifrado con la misma frase.
         </p>
       </section>
 
