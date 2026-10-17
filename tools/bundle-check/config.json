@@ -22,7 +22,8 @@
         { "id": "angular-forms", "pattern": "@angular/forms|/angular/forms/" },
         { "id": "zod", "pattern": "/zod/" },
         { "id": "schema", "pattern": "packages/schema/|@cuotascasa/schema" },
-        { "id": "ui", "pattern": "app/ui/" }
+        { "id": "ui", "pattern": "app/ui/" },
+        { "id": "angular-cdk", "pattern": "@angular/cdk|/angular/cdk/" }
       ]
     },
     {
@@ -44,7 +45,8 @@
         { "id": "google-drive", "pattern": "packages/sync/src/google-drive|accounts\\.google\\.com|gsi/client" },
         { "id": "zod-locales", "pattern": "zod/v4/locales/(?!en\\.)" },
         { "id": "sync-crypto", "pattern": "packages/sync/src/crypto/|@cuotascasa/sync/crypto" },
-        { "id": "dexie", "pattern": "/dexie/" }
+        { "id": "dexie", "pattern": "/dexie/" },
+        { "id": "angular-cdk-a11y", "pattern": "cdk/fesm2022/a11y|@angular/cdk/a11y" }
       ]
     }
   ]
