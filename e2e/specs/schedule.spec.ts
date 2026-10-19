@@ -51,7 +51,8 @@ test('keyboard only: type an abono in the table, it lands in a new «Borrador» 
   page,
 }) => {
   // axe walks the whole 240-row grid (about 8 s per run), twice.
-  test.setTimeout(120_000);
+  // axe walks the whole 240-row grid twice; under parallel load each pass can take well over 20 s.
+  test.setTimeout(300_000);
   await seedAndOpen(page);
   await expectNoA11yViolations(page);
 
@@ -82,6 +83,8 @@ test('keyboard only: type an abono in the table, it lands in a new «Borrador» 
   expect(await focusedCell(page)).toEqual({ row: '15', column: ABONO_COLUMN });
 
   await page.keyboard.press('Enter');
+  // The in-cell editor mounts after Enter; typing before it has focus loses the digits (flaky under load).
+  await expect(page.locator('cc-ledger-table input:focus')).toBeVisible();
   await page.keyboard.type('20000');
   await page.keyboard.press('Enter');
 

@@ -153,7 +153,7 @@ Marca cada punto cuando lo compruebes. Ninguno requiere escribir datos reales.
 - [ ] En Search Console: la propiedad de dominio `<tu-dominio>` aparece como **verificada**.
 - [ ] Abre `https://<subdominio>.<tu-dominio>/` y `https://<subdominio>.<tu-dominio>/privacidad` en una ventana de incógnito: ambas cargan sin iniciar sesión, y `/privacidad` incluye el alcance de Drive y cómo borrar los datos.
 - [ ] En GitHub: la variable `GOOGLE_CLIENT_ID` existe y no hay ningún secreto de cliente guardado.
-- [ ] Tras el primer despliegue de W3-17 (`pnpm edge:check -- --base-url https://<subdominio>.<tu-dominio>` en verde): en `/app/ajustes`, Drive ya no dice «no configurado».
+- [ ] Tras el primer despliegue de W3-17 (`pnpm edge:check --base-url https://<subdominio>.<tu-dominio>` en verde): en `/app/ajustes`, Drive ya no dice «no configurado».
 - [ ] Prueba manual con el cliente del paso 10 en `http://localhost:<puerto>`: al pulsar «Conectar Drive» se abre la ventana de consentimiento, se concede `drive.appdata`, la app sincroniza y «Desconectar Drive» revoca el acceso. Compruébalo en la cuenta de Google → **Seguridad** → conexiones con apps de terceros.
 - [ ] Una cuenta que nunca usó la app puede conectar sin que aparezca «Acceso bloqueado».
 
