@@ -33,6 +33,7 @@ for (const sweepCase of SWEEP_CASES) {
       });
 
       test('no serious or critical axe violations', async ({ page }) => {
+        test.slow(sweepCase.heavy === true, 'ledger of hundreds of cells');
         const { violations } = await new AxeBuilder({ page }).analyze();
         const blocking = violations
           .filter((violation) => violation.impact === 'serious' || violation.impact === 'critical')

@@ -21,6 +21,8 @@ export interface SweepCase {
   readonly provoke?: (page: Page) => Promise<void>;
   /** Status the document answers with (404 for unknown public paths). */
   readonly status?: number;
+  /** The page renders hundreds of cells (the 240-row ledger): axe takes ~15 s alone, so the test gets triple time. */
+  readonly heavy?: boolean;
 }
 
 const LOAN = `/app/prestamos/${SYNTHETIC_LOAN_ID}`;
@@ -32,10 +34,12 @@ async function provokeWizardStep1(page: Page): Promise<void> {
 }
 
 async function provokeRealData(page: Page): Promise<void> {
-  const field = page.getByLabel('Saldo que informa el banco', { exact: true });
-  await field.fill('abc');
+  await page.getByRole('button', { name: 'Agregar saldo reportado' }).click();
+  const field = page.getByLabel('Fecha del saldo', { exact: true });
+  await field.fill('31/02/2025');
   await field.blur();
-  await expect(field).toHaveAttribute('aria-invalid', 'true');
+  await page.getByRole('button', { name: 'Guardar' }).click();
+  await expect(page.locator('[aria-invalid="true"]').first()).toBeVisible();
 }
 
 async function provokeBadImport(page: Page): Promise<void> {
@@ -70,7 +74,7 @@ export const SWEEP_CASES: readonly SweepCase[] = [
     seeded: true,
     marker: 'page-loan-detail',
   },
-  { id: 'schedule', path: `${LOAN}/tabla`, publicPage: false, seeded: true, marker: 'page-schedule' },
+  { id: 'schedule', path: `${LOAN}/tabla`, publicPage: false, seeded: true, marker: 'page-schedule', heavy: true },
   {
     id: 'schedule-unknown',
     path: '/app/prestamos/no-existe/tabla',
