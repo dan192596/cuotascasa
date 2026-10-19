@@ -156,9 +156,7 @@ async function runJourney(
 }
 
 test.describe('cross-feature journeys', () => {
-  test.beforeEach((_fixtures, testInfo) => {
-    testInfo.setTimeout(180_000);
-  });
+  test.describe.configure({ timeout: 180_000 });
 
   test('journey 1: loan, reported balance, Real Δ, scenario, comparison, exports and backup round trip', async ({
     page,

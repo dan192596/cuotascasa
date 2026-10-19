@@ -63,9 +63,7 @@ test.afterEach(({ page }) => {
   expectNoExternalRequests(page);
 });
 
-test.beforeEach((_fixtures, testInfo) => {
-  testInfo.setTimeout(120_000);
-});
+test.describe.configure({ timeout: 120_000 });
 
 test('the app is served with the production CSP and Trusted Types, and every export runs under them', async ({
   page,
