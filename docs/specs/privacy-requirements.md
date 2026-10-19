@@ -15,7 +15,7 @@
 - `Sin analítica, sin cookies de rastreo y sin servidores de terceros`: no hay analítica, telemetría, cookies de rastreo, CDN ni fuentes externas; `/` y `/privacidad` no hacen peticiones a otros orígenes (ADR-0016).
 - `Cómo revocar el acceso a Google Drive`: «Desconectar Drive» en Ajustes revoca el token; también desde la cuenta de Google (Seguridad → conexiones con apps de terceros).
 - `Cómo borrar todos tus datos`: borrar los datos del sitio en el navegador de cada dispositivo y, en Google Drive, «Administrar aplicaciones» → CuotasCasa → «Borrar datos ocultos de la aplicación» (ADR-0008, decisión 8).
-- `Exportaciones y respaldos`: los archivos Excel, CSV y PDF no van cifrados y la app lo avisa antes de la primera descarga; el respaldo JSON puede ir cifrado con la misma frase.
+- `Exportaciones y respaldos`: los archivos Excel, CSV y PDF no van cifrados y la app lo avisa antes de la primera descarga de cada sesión; el respaldo JSON puede ir cifrado con la misma frase.
 - `Cambios a esta política`: cualquier cambio en el uso de los datos se publica aquí antes de aplicarse, con la fecha de la última actualización visible en la página.
 
 ## Reglas de contenido
