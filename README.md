@@ -43,7 +43,7 @@ flowchart LR
 
 ### Garantías de privacidad
 
-- **Sin backend, sin cuentas, sin analítica, sin cookies.** Nadie del proyecto puede ver tus datos.
+- **Sin backend, sin cuentas, sin analítica, sin cookies.** El proyecto no recibe tus datos; la confianza en el código servido se explica en el [modelo de amenazas](docs/security/threat-model.md).
 - **Las páginas públicas no hacen peticiones a otros orígenes ni guardan nada** en tu navegador.
 - **Google solo se contacta si conectas Drive**, con un único alcance, `drive.appdata` (una carpeta oculta de la app). El token de acceso vive solo en memoria.
 - **La copia en Drive va cifrada en tu dispositivo** (AES-256-GCM, clave derivada de tu frase con PBKDF2-SHA256 de 600 000 iteraciones). Google solo ve un archivo ilegible, su nombre, su tamaño y su fecha.
@@ -70,7 +70,7 @@ Para ver el build con las cabeceras reales, sirve `dist/` como lo haría Cloudfl
 
 ### Flujo de trabajo por tarjetas
 
-El trabajo se divide en tarjetas ([`docs/plan/cards/`](docs/plan/cards/W6-03.md)) agrupadas en olas ([`docs/plan/waves.md`](docs/plan/waves.md)). Cada tarjeta declara los archivos que posee (`owns`) y trabaja en su propio _worktree_ de git (`.worktrees/<ID>`), en una rama `card/<ID>-<slug>`. Los archivos congelados y los contratos son de la persona que coordina. Las reglas completas están en [`docs/plan/README.md`](docs/plan/README.md) y [`CLAUDE.md`](CLAUDE.md). Los commits son convencionales y los hooks nunca se saltan.
+El trabajo se divide en tarjetas ([`docs/plan/cards/`](docs/plan/cards/W6-03.md)) agrupadas en olas ([`docs/plan/waves.md`](docs/plan/waves.md)). Cada tarjeta declara los archivos que posee (`owns`) y trabaja en su propio _worktree_ de git (`.worktrees/<ID>`), en una rama `card/<ID>-<slug>`. Los archivos congelados y los contratos son de la persona que coordina. Las reglas completas están en [`docs/plan/README.md`](docs/plan/README.md) y [`CLAUDE.md`](CLAUDE.md). Los commits son convencionales y los hooks no se saltan (la única excepción, el linaje del oráculo, se declara en el PR).
 
 ### Scripts
 
@@ -150,7 +150,7 @@ flowchart LR
 
 ### Privacy guarantees
 
-- **No backend, no accounts, no analytics, no cookies.** Nobody on the project can see your data.
+- **No backend, no accounts, no analytics, no cookies.** The project never receives your data; trust in the served code is covered in the [threat model](docs/security/threat-model.md).
 - **The public pages make no requests to other origins and store nothing** in your browser.
 - **Google is contacted only if you connect Drive**, with a single scope, `drive.appdata` (a hidden app folder). The access token lives in memory only.
 - **The Drive copy is encrypted on your device** (AES-256-GCM, key derived from your passphrase with PBKDF2-SHA256, 600,000 iterations). Google only sees an unreadable file, its name, size and date.
@@ -177,7 +177,7 @@ To see the build with the real headers, serve `dist/` the way Cloudflare would w
 
 ### Card workflow
 
-Work is split into cards ([`docs/plan/cards/`](docs/plan/cards/W6-03.md)) grouped in waves ([`docs/plan/waves.md`](docs/plan/waves.md)). Each card declares the files it owns (`owns`) and works in its own git worktree (`.worktrees/<ID>`), on a `card/<ID>-<slug>` branch. Frozen files and contracts belong to the coordinator. The full rules are in [`docs/plan/README.md`](docs/plan/README.md) and [`CLAUDE.md`](CLAUDE.md). Commits are conventional and hooks are never skipped.
+Work is split into cards ([`docs/plan/cards/`](docs/plan/cards/W6-03.md)) grouped in waves ([`docs/plan/waves.md`](docs/plan/waves.md)). Each card declares the files it owns (`owns`) and works in its own git worktree (`.worktrees/<ID>`), on a `card/<ID>-<slug>` branch. Frozen files and contracts belong to the coordinator. The full rules are in [`docs/plan/README.md`](docs/plan/README.md) and [`CLAUDE.md`](CLAUDE.md). Commits are conventional and hooks are not skipped (the only exception, the oracle lineage, is declared in the PR).
 
 ### Scripts
 
