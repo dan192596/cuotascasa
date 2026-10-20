@@ -19,6 +19,7 @@ import {
 import type { Goal, GoalSeekRequest, Paths, Schedule } from '../types/schedule.ts';
 import { goalSeek } from './index.ts';
 import { loadGoalExampleCases } from './testing/examples.ts';
+import { CI_SEED } from '../../test/properties/properties.ts';
 
 const ctx = createEngineContext();
 const m = parseMoney;
@@ -241,7 +242,9 @@ function check(input: LoanSpec, globalScan: boolean): Outcome {
     expect(result.isPayoff).toBe(true);
   }
   if (globalScan) {
-    // Minimalidad global: el primer centavo que cumple el predicado ruled decide el resultado.
+    // [ALG.GOAL] Frontera (dictamen de Opus, 2026-10-19): el resultado es una frontera del predicado ruled. Si el
+    // predicado es monótono, la frontera es única y es el mínimo global; si el primer centavo que cumple (`first`) queda
+    // por debajo del resultado, el escaneo exhibe el diente de sierra: `first` cumple y `result − 0.01` no.
     let first = CENT;
     while (!ruled(terms, baseEvents, goal, k, date, first, ctx).holds && compareMoney(first, result.amount) < 0) {
       first = moneyAdd(first, CENT);
@@ -249,14 +252,36 @@ function check(input: LoanSpec, globalScan: boolean): Outcome {
     const firstTrial = ruled(terms, baseEvents, goal, k, date, first, ctx);
     if (firstTrial.threw) {
       expect(result.isPayoff).toBe(true);
-    } else {
-      expect(result.amount).toBe(first);
+    } else if (first !== result.amount) {
+      expect(compareMoney(first, result.amount)).toBeLessThan(0);
+      expect(firstTrial.holds).toBe(true);
+      expect(ruled(terms, baseEvents, goal, k, date, moneySub(result.amount, CENT), ctx).holds).toBe(false);
+      return { exercised: true, foundKinds: 'FOUND-sawtooth' };
     }
   }
   return { exercised: true, foundKinds: result.isPayoff ? 'FOUND-payoff' : 'FOUND' };
 }
 
-describe('goal-seek properties (synthetic loans, random future events)', () => {
+/** Contraejemplo de la semilla 927123836: 0.04 cumple, 0.05–0.14 no, 0.15 en adelante sí; el resultado es 0.15. */
+const SAWTOOTH_927123836: LoanSpec = {
+  cents: 300,
+  termMonths: 20,
+  basisPoints: 0,
+  insurance: [],
+  fixedCents: 0,
+  profile: 'FHA_GT_V1',
+  day: 1,
+  real: [],
+  scenario: [{ kind: 'PREPAY_INST', month: 27, day: 1, basisPoints: 0, cents: 110, count: 1 }],
+  useScenario: true,
+  kTarget: 2,
+  dateDay: 1,
+  finishIndex: 19,
+  maxInstallmentCents: 0,
+  kind: 'FINISH_BY',
+};
+
+describe('goal-seek properties (synthetic loans, fixed CI seed, random future events)', () => {
   it('the result satisfies the goal and result − 0.01 does not, under the ruled predicate', () => {
     const seen: Record<string, number> = {};
     fc.assert(
@@ -264,13 +289,13 @@ describe('goal-seek properties (synthetic loans, random future events)', () => {
         const outcome = check(input, false);
         seen[outcome.foundKinds] = (seen[outcome.foundKinds] ?? 0) + 1;
       }),
-      { numRuns: 250 },
+      { numRuns: 250, seed: CI_SEED },
     );
     expect(seen['FOUND'] ?? 0).toBeGreaterThan(10);
     expect(seen['ALREADY_MET'] ?? 0).toBeGreaterThan(0);
   }, 120_000);
 
-  it('on small principals the result is the global minimum over every cent', () => {
+  it('on small principals the result is the global minimum, or a frontier above a rounding sawtooth', () => {
     const small = loan.map((input) => {
       const termMonths = 6 + (input.termMonths % 19);
       const tame = (event: EventSpec): EventSpec => ({ ...event, cents: 1 + (event.cents % 200) });
@@ -290,7 +315,12 @@ describe('goal-seek properties (synthetic loans, random future events)', () => {
         const outcome = check(input, true);
         seen[outcome.foundKinds] = (seen[outcome.foundKinds] ?? 0) + 1;
       }),
-      { numRuns: 150 },
+      {
+        numRuns: 150,
+        seed: CI_SEED,
+        // Regresión: diente de sierra hallado con la semilla 927123836 (ver goal-seek.spec.ts, [ALG.GOAL] Frontera).
+        examples: [[SAWTOOTH_927123836]],
+      },
     );
     expect((seen['FOUND'] ?? 0) + (seen['FOUND-payoff'] ?? 0)).toBeGreaterThan(20);
   }, 120_000);
