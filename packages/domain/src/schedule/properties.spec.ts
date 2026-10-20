@@ -1,5 +1,6 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
+import { CI_SEED } from '../../test/properties/properties.ts';
 import { createEngineContext } from '../engine-context.ts';
 import { moneySub, moneySum, parseMoney, parseRate } from '../money/index.ts';
 import type { RoundingProfile } from '../types/primitives.ts';
@@ -53,7 +54,7 @@ describe('schedule invariants (generated synthetic loans)', () => {
         expect(totals.interest).toBe(moneySum(rows.map((row) => row.interest)));
         expect(totals.totalPaid).toBe(totals.total);
       }),
-      { numRuns: 60 },
+      { numRuns: 60, seed: CI_SEED },
     );
   }, 30_000);
 });
