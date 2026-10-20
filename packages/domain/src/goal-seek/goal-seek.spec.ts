@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { thrownBy } from '../../test/support/errors.ts';
 import { parseLocalDate } from '../dates/index.ts';
 import { createEngineContext } from '../engine-context.ts';
-import { compareMoney, moneySub, parseMoney } from '../money/index.ts';
+import { compareMoney, moneySub, parseMoney, parseRate } from '../money/index.ts';
 import { buildPaths } from '../paths/index.ts';
 import { buildSchedule } from '../schedule/index.ts';
 import type { DomainEvent, HypotheticalEvent, PrepaymentEvent } from '../types/events.ts';
-import { InfeasibleGoalError } from '../types/primitives.ts';
+import { type DayOfMonth, InfeasibleGoalError } from '../types/primitives.ts';
 import type { Goal, GoalSeekRequest, Paths } from '../types/schedule.ts';
 import { goalSeek } from './index.ts';
 import { loadGoalExampleCases } from './testing/examples.ts';
@@ -152,6 +152,58 @@ describe('same-date base events (trial goes after them)', () => {
       ctx,
     );
     expect(infeasible).toEqual({ kind: 'INFEASIBLE', payoffAmount: '0.00', reason: 'GOAL_DATE_BEFORE_PREPAYMENT' });
+  });
+});
+
+describe('sawtooth below the threshold (ruling [ALG.GOAL] Frontera, 2026-10-19)', () => {
+  // Regresión de la propiedad de mínimo global (fast-check seed 927123836): Q 3.00 a 20 meses al 0 %, escenario con
+  // un abono REDUCE_INSTALLMENT de 1.10 en k = 8 que recalcula `level` a 0.05/0.06. «Cumple FINISH_BY» vale en 0.04,
+  // falla de 0.05 a 0.14 y vale de 0.15 en adelante: el redondeo de `level` crea un diente de sierra.
+  const [item] = cases;
+  const terms = {
+    ...item!.terms,
+    principal: m('3.00'),
+    termMonths: 20,
+    interestRate: parseRate('0.0000'),
+    insuranceRates: [],
+    fixedCharges: [],
+    roundingProfile: 'FHA_GT_V1' as const,
+    paymentDay: 1 as DayOfMonth,
+    disbursementDate: d('2025-01-01'),
+    firstDueDate: d('2025-02-01'),
+  };
+  const scenarioEvents: HypotheticalEvent[] = [
+    { id: 's0', type: 'Prepayment', date: d('2025-09-01'), amount: m('1.10'), mode: 'REDUCE_INSTALLMENT' },
+  ];
+  const paths = buildPaths({ terms, realEvents: [], scenarioEvents }, ctx);
+  const goal: Goal = { kind: 'FINISH_BY', date: d('2026-08-01') };
+  const meets = (amount: string): boolean => {
+    const trial: PrepaymentEvent = {
+      id: 't',
+      type: 'Prepayment',
+      date: d('2025-03-01'),
+      amount: m(amount),
+      mode: 'REDUCE_TERM',
+    };
+    const schedule = buildSchedule(terms, [], ctx, { inheritedEvents: scenarioEvents, goalPrepayment: trial });
+    return schedule.endDate <= goal.date;
+  };
+
+  it('the predicate is not monotone: an isolated cent meets the goal below the stable threshold', () => {
+    expect(['0.03', '0.04', '0.05', '0.14', '0.15', '0.16'].map(meets)).toEqual([
+      false,
+      true,
+      false,
+      false,
+      true,
+      true,
+    ]);
+  });
+
+  it('returns a frontier of the predicate (here the stable threshold 0.15), not necessarily the global minimum', () => {
+    const result = goalSeek(paths, { basePath: 'SCENARIO', prepaymentDate: d('2025-03-01'), goal }, ctx);
+    expect(result).toMatchObject({ kind: 'FOUND', amount: '0.15', isPayoff: false });
+    expect(meets('0.14')).toBe(false);
   });
 });
 

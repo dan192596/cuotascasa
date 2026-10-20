@@ -46,7 +46,7 @@ export type DataErrorCode = (typeof DATA_ERROR_CODES)[number];
 
 /**
  * Typed rejection of every store write. The UI maps `code` to Spanish text; `message` never carries entity values.
- * NOT_IMPLEMENTED is reserved for the inert W0-05 stubs (their message is the CC_STUB marker).
+ * NOT_IMPLEMENTED was for the inert W0-05 stubs; no production code throws it since W5 (test fakes still may).
  */
 export class DataError extends Error {
   override readonly name = 'DataError';
