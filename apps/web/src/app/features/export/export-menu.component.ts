@@ -103,8 +103,8 @@ const FORMATS: readonly ExportFormat[] = ['excel', 'csv', 'pdf'];
       padding: 0.25rem;
       display: grid;
       gap: 0.25rem;
-      background: var(--cc-surface, Canvas);
-      border: 1px solid var(--cc-border, currentColor);
+      background: var(--cc-color-surface);
+      border: 1px solid var(--cc-color-control-border);
       border-radius: 0.5rem;
     }
     .warning,
@@ -125,9 +125,15 @@ const FORMATS: readonly ExportFormat[] = ['excel', 'csv', 'pdf'];
     button {
       min-height: 2.75rem;
       padding: 0 1rem;
+      border: 1px solid var(--cc-color-control-border);
+      border-radius: 0.25rem;
+      background: var(--cc-color-surface);
+      color: var(--cc-color-ink);
+      font: inherit;
+      cursor: pointer;
     }
     .error {
-      color: var(--cc-danger, inherit);
+      color: var(--cc-color-danger);
     }
   `,
   host: {
