@@ -40,6 +40,16 @@ a {
   outline-offset: 2px;
 }
 
+// Native buttons never take the platform's themed look: WebKitGTK paints its own dark theme on them (white on
+// #c0c0c0, 1.8:1) unless appearance is none. Components style their buttons with tokens; unstyled ones inherit ink.
+button,
+[type='button'],
+[type='submit'],
+[type='reset'] {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
 ::selection {
   background: var(--cc-color-accent);
   color: var(--cc-color-paper);
