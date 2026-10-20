@@ -37,7 +37,22 @@ for (const sweepCase of SWEEP_CASES) {
         const { violations } = await new AxeBuilder({ page }).analyze();
         const blocking = violations
           .filter((violation) => violation.impact === 'serious' || violation.impact === 'critical')
-          .map((violation) => `${violation.impact ?? '?'} ${violation.id}: ${violation.nodes.length} node(s)`);
+          .map((violation) => {
+            // Where it is and why: selector, foreground/background colors and ratio from axe's own check data.
+            const detail = violation.nodes
+              .map((node) => {
+                const data = node.any
+                  .map((check) => check.data as Record<string, unknown> | null)
+                  .find((d) => d != null);
+                const colors =
+                  data == null
+                    ? ''
+                    : ` fg=${String(data['fgColor'])} bg=${String(data['bgColor'])} ratio=${String(data['contrastRatio'])} (needs ${String(data['expectedContrastRatio'])})`;
+                return `\n    ${node.target.join(' ')}${colors}`;
+              })
+              .join('');
+            return `${violation.impact ?? '?'} ${violation.id}: ${violation.nodes.length} node(s)${detail}`;
+          });
         // Only the exact rules listed for this state are skipped: any other violation still fails.
         const known = KNOWN_DEFECTS.filter(
           (entry) => entry.check === 'axe' && entry.caseId === sweepCase.id && entry.themes.includes(theme),

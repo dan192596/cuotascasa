@@ -115,7 +115,8 @@ export const SWEEP_CASES: readonly SweepCase[] = [
  * (what «Sistema» follows) and as the explicit `data-theme` attribute (what the toggle sets), so both token paths run.
  */
 export async function openCase(page: Page, sweepCase: SweepCase, theme: Theme): Promise<void> {
-  await page.emulateMedia({ colorScheme: theme });
+  // Reduced motion: no theme-switch transition can leave axe measuring a half-faded color.
+  await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
   if (sweepCase.seeded) {
     await page.goto('/app');
     await expect(page.getByTestId('page-dashboard')).toBeVisible();
@@ -129,6 +130,11 @@ export async function openCase(page: Page, sweepCase: SweepCase, theme: Theme): 
   if (sweepCase.provoke !== undefined) await sweepCase.provoke(page);
   await page.evaluate((value) => document.documentElement.setAttribute('data-theme', value), theme);
   await page.waitForLoadState('networkidle');
+  // Let every running CSS transition/animation finish and two frames paint, so colors are final before any probe.
+  await page.evaluate(async () => {
+    await Promise.all(document.getAnimations().map((animation) => animation.finished.catch(() => undefined)));
+    await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+  });
   // The theme really took effect: a dark page paints a dark canvas, a light page a light one.
   const luminance = await page.evaluate(() => {
     const match = /\d+(\.\d+)?/g;
