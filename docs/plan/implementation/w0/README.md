@@ -193,3 +193,20 @@ Además:
 - Las 295 rutas absolutas con el usuario del sistema se reemplazaron por la convención `REPO`/`WT`. El escáner de datos reales da 0.
 
 **Lo que no se ejecutó:** gitleaks (no está instalado; ver P2), Python 3.13 (no está instalado; ver P3) y todo lo que vive en GitHub (CI remoto y protecciones).
+
+- **Hallazgos de W6 (2026-10-19):**
+  - **Dictamen W6-02:** el barrido no encontró defectos de accesibilidad, CSP ni Trusted Types en ninguna ruta, en ambos temas ni en Chromium/WebKit. Sobre el service worker: lo correcto es la lectura de ADR-0017 y ADR-0023. Una visita a `/app` registra el worker con alcance `/`. El barrido comprueba que las páginas públicas visitadas en un contexto nuevo no registran nada, y que la caché no guarda `/` ni `/privacidad`.
+  - **Arreglado al cerrar W6:** la carrera de `e2e/specs/schedule.spec.ts`, que escribía antes de que el editor de la celda tuviera foco. También el comando `pnpm edge:check --base-url` en `google-cloud-setup.md`.
+  - **Para W7:**
+    - verificador de enlaces Markdown y paridad de encabezados ES/EN en CI;
+    - capturas solo con datos sintéticos;
+    - correr en CI los chequeos de higiene (`synthetic: true`, lista de términos, correo noreply), que hoy solo corren como hooks locales;
+    - e2e del aviso de actualización (`cc-update-prompt`), que necesita un segundo build;
+    - botón «borrar datos de este dispositivo»;
+    - tope de tamaño de archivo al importar y al descargar de Drive;
+    - medidor de fuerza en el respaldo cifrado;
+    - decidir si se agrega `workflow_dispatch` para volver a desplegar un commit;
+    - restauración desde `cuotascasa.prev.json` en la UI, como fase 2;
+    - restos de stubs de W0-05 sin uso en producción (`packages/domain/src/stub.ts`, los dos `NotImplementedError` de domain y schema, el código `NOT_IMPLEMENTED`): conservarlos como infraestructura de pruebas o borrarlos;
+    - el `TODO` de `material-theme.scss`.
+
