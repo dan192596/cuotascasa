@@ -174,8 +174,10 @@ function nextProbe(lo: Money, hi: Money, samples: readonly Sample[], round: numb
  *
  * Monotonía: «La meta es monótona respecto del monto» ([ALG.GOAL], Método). Más monto aplicado en k deja un saldo
  * menor, y con `REDUCE_TERM` (`endDate`) o `REDUCE_INSTALLMENT` (cuota k+1) la meta no empeora; el tope
- * `min(amount, closing_k)` ([ALG.PREPAY.CAP]) la hace constante desde `closing_k`. Por eso el predicado es un escalón y
- * el mínimo, al centavo, queda atrapado en `[lo, hi]`. Salvedad: con una `BANK_INSTALLMENT` en k+1 la última fila puede
+ * `min(amount, closing_k)` ([ALG.PREPAY.CAP]) la hace constante desde `closing_k`. Por eso el predicado suele ser un
+ * escalón y el mínimo, al centavo, queda atrapado en `[lo, hi]`. Frontera ([ALG.GOAL], dictamen de 2026-10-19): con un
+ * evento posterior que recalcula `level` sobre un saldo diminuto, el redondeo crea un diente de sierra; el invariante de
+ * `[lo, hi]` garantiza entonces una frontera (`hi` cumple, `hi − 0.01` no), no el mínimo global. Salvedad: con una `BANK_INSTALLMENT` en k+1 la última fila puede
  * cambiar un centavo de forma no monótona; solo importa si la base ya cumple la meta, y ese caso se resuelve antes
  * como `ALREADY_MET`, sin bisección.
  *
