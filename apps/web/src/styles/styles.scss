@@ -48,6 +48,15 @@ button,
 [type='reset'] {
   -webkit-appearance: none;
   appearance: none;
+  // Without the native look, the UA defaults (ButtonFace / ButtonText) would remain; give every button the palette.
+  // Component styles (more specific) and Material buttons override this base.
+  padding: 0.375rem 0.875rem;
+  border: 1px solid var(--cc-color-control-border);
+  border-radius: 0.25rem;
+  background-color: var(--cc-color-surface);
+  color: var(--cc-color-ink);
+  font: inherit;
+  cursor: pointer;
 }
 
 ::selection {
