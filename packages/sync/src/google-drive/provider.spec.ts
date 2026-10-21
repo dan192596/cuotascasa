@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { SyncError, type RemoteFile } from '../ports.ts';
+import { SyncError, type GisOAuth2, type GisTokenResponse, type RemoteFile } from '../ports.ts';
 import { createDriveFake, createGisFake } from '../testing/index.ts';
 import { createGoogleDriveProvider, MAX_DATA_FILE_BYTES } from './provider.ts';
 
@@ -140,6 +140,36 @@ describe('connect and token lifecycle', () => {
     expect(env.gis.revokedTokens).toEqual([token]);
     expect(env.provider.isAuthorized()).toBe(false);
     await expectCode(env.provider.findFile('cuotascasa.json'), 'AuthError');
+  });
+
+  describe('revokes a granted token it refuses (W7-01)', () => {
+    /** Wraps the fake so the callback sees a rewritten grant; the token is still issued (and revocable) by the fake. */
+    function rewriting(oauth2: GisOAuth2, rewrite: (response: GisTokenResponse) => GisTokenResponse): GisOAuth2 {
+      return {
+        initTokenClient: (config) =>
+          oauth2.initTokenClient({ ...config, callback: (r) => config.callback(rewrite(r)) }),
+        revoke: (token, done) => oauth2.revoke(token, done),
+      };
+    }
+
+    it.each([
+      ['an insufficient scope', (r: GisTokenResponse) => ({ ...r, scope: 'openid' })],
+      ['a missing scope', (r: GisTokenResponse) => ({ ...r, scope: undefined }) as unknown as GisTokenResponse],
+      ['a zero expires_in', (r: GisTokenResponse) => ({ ...r, expires_in: 0 })],
+      ['a non-numeric expires_in', (r: GisTokenResponse) => ({ ...r, expires_in: 'x' }) as unknown as GisTokenResponse],
+    ])('%s', async (_label, rewrite) => {
+      const gis = createGisFake({ now: () => 0 });
+      const provider = createGoogleDriveProvider({
+        clientId: 'cliente-sintetico',
+        loadGis: () => Promise.resolve(rewriting(gis.oauth2, rewrite)),
+        fetch: () => Promise.reject(new Error('no fetch expected')),
+        now: () => 0,
+      });
+      await expectCode(provider.connect(), 'AuthError');
+      expect(provider.isAuthorized()).toBe(false);
+      expect(gis.issuedTokens).toHaveLength(1);
+      expect(gis.revokedTokens).toEqual(gis.issuedTokens);
+    });
   });
 
   it('disconnect() without a token is a no-op that does not load GIS', async () => {

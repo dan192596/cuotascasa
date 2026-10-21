@@ -23,6 +23,8 @@ export default defineConfig({
     projects: [
       'packages/*/vitest.config.ts',
       'tools/conformance/vitest.config.{ts,mts}',
+      // Release documents (W7-01). A brace glob, not a literal path: Vitest rejects a literal path that does not exist yet.
+      'docs/release/vitest.config.{mjs,mts}',
       {
         test: {
           name: 'tools',

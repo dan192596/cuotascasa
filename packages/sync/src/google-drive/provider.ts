@@ -180,11 +180,14 @@ export function createGoogleDriveProvider(options: GoogleDriveProviderOptions): 
         gis.revoke(response.access_token);
         throw new SyncError('AuthError');
       }
+      // A token refused below was still granted: revoke it so it does not stay live at Google (W7-01).
       if (typeof response.scope !== 'string' || !response.scope.split(' ').includes(DRIVE_APPDATA_SCOPE)) {
+        gis.revoke(response.access_token);
         throw new SyncError('AuthError');
       }
       const seconds = Number(response.expires_in);
       if (!Number.isFinite(seconds) || seconds <= 0) {
+        gis.revoke(response.access_token);
         throw new SyncError('AuthError');
       }
       token = { value: response.access_token, expiresAt: options.now() + seconds * 1000 };
