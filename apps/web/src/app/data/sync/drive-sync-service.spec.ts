@@ -625,6 +625,49 @@ describe('DriveSyncService', () => {
       expect(world.drive.fileByName(REMOTE_FILE_NAME)?.content).toBe(remoteBefore);
     });
 
+    it('an oversize remote file (over 20 MiB) is InvalidRemote: nothing is saved, uploaded or copied (W7-03)', async () => {
+      const world = createWorld();
+      let cancelled = false;
+      const watching = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+        const response = await world.drive.fetch(input, init);
+        const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+        if (!url.includes('alt=media') || response.body === null) return response;
+        const reader = response.body.getReader();
+        const body = new ReadableStream<Uint8Array>({
+          async pull(controller) {
+            const { done, value } = await reader.read();
+            if (done) controller.close();
+            else controller.enqueue(value);
+          },
+          async cancel(reason) {
+            cancelled = true;
+            await reader.cancel(reason);
+          },
+        });
+        return new Response(body, { status: response.status, headers: response.headers });
+      };
+      const device = await createDevice(world, 1, { fetch: watching });
+      await enroll(device);
+      await addLoan(device, 'Casa A');
+      world.drive.seed({ name: REMOTE_FILE_NAME, content: 'a'.repeat(20 * 1024 * 1024 + 1) });
+      const localBefore = JSON.stringify(await device.store.exportAll());
+      const metaBefore = JSON.stringify(await device.store.getMeta());
+      const remoteBefore = world.drive.fileByName(REMOTE_FILE_NAME);
+      const requestsBefore = world.drive.requests.length;
+
+      await device.service.sync();
+
+      expect(cancelled).toBe(true);
+      expect(device.service.status()).toEqual({ state: 'error', code: 'InvalidRemote' });
+      expect(device.service.statusText()).toBe('No se puede leer la copia de Drive. Tus datos locales no cambiaron.');
+      expect(JSON.stringify(await device.store.exportAll())).toBe(localBefore);
+      expect(JSON.stringify(await device.store.getMeta())).toBe(metaBefore);
+      expect(world.drive.fileByName(REMOTE_FILE_NAME)).toEqual(remoteBefore);
+      expect(world.drive.files()).toHaveLength(1);
+      const methods = world.drive.requests.slice(requestsBefore).map((request) => request.operation);
+      expect(methods.every((operation) => operation === 'files.list' || operation === 'files.get.media')).toBe(true);
+    });
+
     it('a remote file that is not an envelope is InvalidRemote too, also when setting the passphrase', async () => {
       const { device } = await seededDevice(() => Promise.resolve('esto no es un sobre'));
       await device.service.sync();
