@@ -18,12 +18,14 @@ function browserFiles(dir: string = BROWSER): string[] {
 
 /**
  * External destinations a public page may link to with a plain <a> (privacy page, ADR-0016): Google's API user-data
- * policy, Google's privacy policy, and the repository issues page injected at build time (W3-17; never hardcoded).
+ * policy, Google's privacy policy, the repository issues page injected at build time (W3-17; never hardcoded) and the
+ * repository page the landing derives from it (W4-04, the «código abierto» link).
  */
 const ALLOWED_EXTERNAL_ANCHORS: readonly RegExp[] = [
   /^https:\/\/developers\.google\.com\/terms\/api-services-user-data-policy$/,
   /^https:\/\/policies\.google\.com\/privacy$/,
   /^https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/issues$/,
+  /^https:\/\/github\.com\/[\w.-]+\/[\w.-]+$/,
 ];
 
 describe('pnpm build output (ADR-0011 decision 3)', () => {
