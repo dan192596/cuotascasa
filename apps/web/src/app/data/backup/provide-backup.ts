@@ -21,6 +21,7 @@ import {
 } from '../api.ts';
 import { CLOCK, DATA_STORE, ID_GENERATOR } from '../data-layer.tokens.ts';
 import { BACKUP_SERVICE } from '../tokens.ts';
+import { MAX_DATA_FILE_BYTES } from './backup-limits.ts';
 import { BACKUP_IMPORT_MESSAGES } from './backup-messages.ts';
 import { BackupState } from './backup-state.ts';
 
@@ -214,6 +215,10 @@ class BackupServiceImpl extends BackupState implements BackupService {
     file: Blob,
     options: { readonly passphrase?: string } = {},
   ): Promise<Result<PendingImport, BackupImportError>> {
+    // A hostile or accidental huge file is refused by its size, before anything reads it into memory.
+    if (file.size > MAX_DATA_FILE_BYTES) {
+      return importError('INVALID_JSON');
+    }
     let text: string;
     try {
       text = await file.text();
