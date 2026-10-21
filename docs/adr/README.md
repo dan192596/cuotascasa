@@ -45,11 +45,12 @@ Opus revisó que cada estado esté al día. Ningún ADR cambió de estado: los 2
 | ADR | Enmienda |
 |---|---|
 | 0007 | Tope de 20 MiB al importar un respaldo (W7-03) |
-| 0008 | Tope de 20 MiB al descargar de Drive (W7-03); «Borrar datos de este dispositivo» nunca toca la copia de Drive (W7-04) |
+| 0008 | Tope de 20 MiB al descargar de Drive (W7-03); «Borrar datos de este dispositivo» nunca toca la copia de Drive (W7-04); revocación de un token rechazado (PR #100) |
+| 0009 | Piso de iteraciones también en el almacén de claves (PR #100) |
 | 0012 | Botones nativos con el estilo base de la paleta (PR #94 y #95) |
 | 0014 | Estado final de la validación privada (nunca autorizada, sin tabla real del banco), prueba de trazabilidad y pruebas que quedan para después de v1 |
 | 0015 | Higiene en CI (W7-02), la lista de términos sigue local; firma sin nombres (D27) |
-| 0016 | Resultados de la revisión de seguridad del release |
+| 0016 | Resultados de la revisión de seguridad del release y correcciones del PR #100 |
 | 0017 | «Borrar datos de este dispositivo» (W7-04); la pregunta de iOS sigue abierta en v1 |
 | 0019 | Tarjetas de corrección W7-02 a W7-04 y firma del release por aprobación del PR |
 | 0020 | Sigue Diferido; disparadores vigentes |

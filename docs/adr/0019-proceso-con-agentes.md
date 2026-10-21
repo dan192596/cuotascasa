@@ -128,4 +128,4 @@ Comprar el dominio; aprobar la paleta (W0-05), sin cuya aprobación no se congel
 - **Tarjetas de corrección antes del tag.** Los hallazgos de W6 que entran en v1 se registraron como W7-02 (higiene en CI), W7-03 (topes de tamaño) y W7-04 (borrar datos del dispositivo), con `owns` explícitos, y W7-01 depende de las tres. Quedan para después de v1 el verificador de enlaces y el e2e del aviso de actualización.
 - **Firma del release.** «Firmar el release» (acciones del dueño, arriba) es aprobar el PR de release: no se escribe ningún nombre ni usuario en el checklist (D27).
 - **Validación privada.** No se autorizó en ningún gate (ADR-0014, enmienda de W7-01).
-- **Prueba de trazabilidad.** Vive en `docs/release/` y se corre con `pnpm exec vitest run --config docs/release/vitest.config.mjs`.
+- **Prueba de trazabilidad.** Vive en `docs/release/` y corre dentro de `pnpm test` (y del CI) como el proyecto `release` de `vitest.config.ts` (PR #100); a solas, con `pnpm exec vitest run --config docs/release/vitest.config.mjs`.

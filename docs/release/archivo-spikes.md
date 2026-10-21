@@ -29,12 +29,11 @@ git ls-tree -r --name-only 8e0bce5 -- tools/spikes
 Antes de borrarlo se buscó toda referencia a `tools/spikes` fuera del propio directorio. Ninguna configuración la usa:
 ni `.github/workflows/`, ni `eslint.config.mjs`, ni `tsconfig*.json`, ni `vitest.config.ts`, ni `lefthook.yml`, ni
 `.prettierignore`, ni `.gitleaks.toml`. Las únicas menciones son documentales: el plan (`docs/plan/`, histórico),
-ADR-0021 (actualizado para remitir a este archivo) y el documento de evidencia (ver «Pendiente»).
+ADR-0021 y el documento de evidencia, que remiten a este archivo.
 
 Sus dos pruebas (`policies.spec.mjs` y `builds.spec.mjs`) corrían en el proyecto `tools` de Vitest. Probaban el propio
 spike, no la app: las políticas vigentes las prueban `tools/edge/headers/headers.spec.mjs` y `assertions.spec.mjs`.
 
-## Pendiente
+## Referencias que se ajustaron
 
-`docs/specs/spikes/csp-gis-evidence.md` (líneas 11, 12 y 213) todavía da `tools/spikes/csp-gis/` como ruta actual. No es
-de W7-01: queda como propuesta de micro-tarjeta en el informe del release para que remita a este archivo.
+`docs/specs/spikes/csp-gis-evidence.md` (comando, resultados y nota de retiro) remite ya a este archivo (PR #100).

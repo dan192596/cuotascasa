@@ -38,6 +38,11 @@ No hay servidor de datos: todo vive en el navegador y, si la persona quiere, en 
   copia previa antes de cada subida, conexión en dos pasos, revocación al desconectar y estado sin conexión.
 - **Cifrado con frase** (AES-256-GCM y PBKDF2-SHA256 con 600 000 iteraciones) y clave no exportable guardada por
   dispositivo; la frase nunca se guarda y se puede cambiar desde cualquier dispositivo con la clave.
+- **Borrar datos de este dispositivo** en Ajustes: tras escribir BORRAR, desconecta Drive si está en uso (revoca el
+  token), avisa a las demás pestañas y borra la clave y luego los datos del navegador. Nunca borra la copia de Drive, y
+  si el borrado queda a medias lo dice.
+- **Topes de tamaño:** un respaldo de más de 20 MiB se rechaza antes de leerlo, y la descarga de Drive se corta al pasar
+  ese tope.
 - **PWA:** uso sin conexión en `/app`, aviso de actualización, aviso de Safari sobre el borrado del almacenamiento y
   recordatorios de respaldo.
 - **Sistema de diseño** con fuentes autoalojadas, temas claro y oscuro, formato es-GT (`Q 1,234.56`, `dd/mm/aaaa`) y
@@ -47,8 +52,12 @@ No hay servidor de datos: todo vive en el navegador y, si la persona quiere, en 
 
 - CSP por ruta con hashes calculados después del build, Trusted Types aplicado en todas las rutas y Google solo en
   `/app`, cargado al conectar Drive.
-- Higiene de repositorio público: gitleaks en cada commit y en CI sobre el historial completo, fixtures marcados como
-  sintéticos, correo noreply, lista local de términos prohibidos e ID de cliente de Google inyectado al compilar.
+- Higiene de repositorio público: gitleaks en cada commit y en CI sobre el historial completo; marca de fixtures
+  sintéticos en los hooks y en CI (cada PR y cada push a `main`); correo noreply en los hooks y en cada PR; lista local
+  de términos prohibidos (solo en el equipo del dueño) e ID de cliente de Google inyectado al compilar.
+- Revisión de seguridad del release: `pnpm audit --prod` y gitleaks sin hallazgos. Se corrigieron sus hallazgos menores:
+  se revoca un token de Google rechazado, el almacén de claves exige el piso de iteraciones, un arranque fallido registra
+  solo el nombre del error y el barrido de CSP puede correr contra el sitio desplegado.
 - Modelo de amenazas bilingüe en `docs/security/threat-model.md`.
 
 ### Construcción por olas
@@ -69,8 +78,9 @@ No hay servidor de datos: todo vive en el navegador y, si la persona quiere, en 
   exportación y Ajustes de respaldo y Drive.
 - **W6, recorridos y documentación:** recorridos e2e entre funciones con exportaciones bajo las cabeceras de producción,
   barridos de accesibilidad, CSP y restos de stubs, README bilingüe, modelo de amenazas y guías de operación.
-- **W7, release:** higiene en CI, topes de tamaño de archivo al importar y al descargar de Drive, «Borrar datos de este
-  dispositivo», revisión de seguridad, matriz de trazabilidad R1–R28, ADR al día y retiro de `tools/spikes/`.
+- **W7, release:** higiene en CI (W7-02), topes de tamaño de archivo al importar y al descargar de Drive (W7-03),
+  «Borrar datos de este dispositivo» (W7-04), revisión de seguridad con sus correcciones, matriz de trazabilidad
+  R1–R28 con su prueba, ADR y modelo de amenazas al día, y retiro de `tools/spikes/`.
 
 ### Limitaciones conocidas
 

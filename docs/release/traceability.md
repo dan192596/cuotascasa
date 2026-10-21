@@ -12,8 +12,8 @@ menos una tarjeta fusionada (o la de release) con pruebas; lo comprueba `docs/re
 
 | Requisito | Descripción | Tarjetas |
 |---|---|---|
-| R1 | Landing prerenderizada + simulador público (cero red y cero almacenamiento) | [W0-05](../plan/cards/W0-05.md) · sin PR · 112 pruebas<br>[W2-12](../plan/cards/W2-12.md) · #25 · 1 prueba<br>[W4-03](../plan/cards/W4-03.md) · #68 · 7 pruebas<br>[W4-04](../plan/cards/W4-04.md) · #56 · 3 pruebas<br>[W6-01](../plan/cards/W6-01.md) · #89 · 2 pruebas |
-| R2 | Página de privacidad | [W0-05](../plan/cards/W0-05.md) · sin PR · 112 pruebas<br>[W4-05](../plan/cards/W4-05.md) · #59 · 4 pruebas<br>[W7-04](../plan/cards/W7-04.md) · pendiente |
+| R1 | Landing prerenderizada + simulador público (cero red y cero almacenamiento) | [W0-05](../plan/cards/W0-05.md) · sin PR · 115 pruebas<br>[W2-12](../plan/cards/W2-12.md) · #25 · 1 prueba<br>[W4-03](../plan/cards/W4-03.md) · #68 · 7 pruebas<br>[W4-04](../plan/cards/W4-04.md) · #56 · 3 pruebas<br>[W6-01](../plan/cards/W6-01.md) · #89 · 2 pruebas |
+| R2 | Página de privacidad | [W0-05](../plan/cards/W0-05.md) · sin PR · 115 pruebas<br>[W4-05](../plan/cards/W4-05.md) · #59 · 4 pruebas<br>[W7-04](../plan/cards/W7-04.md) · #99 · 7 pruebas |
 | R3 | Núcleo del motor (cuota nivelada, reparto del cargo, cargos fijos, última cuota, fechas, día de pago) | [W0-02](../plan/cards/W0-02.md) · sin PR · 0 pruebas<br>[W0-03](../plan/cards/W0-03.md) · sin PR · 53 pruebas<br>[W1-01](../plan/cards/W1-01.md) · #11 · 7 pruebas<br>[W1-02](../plan/cards/W1-02.md) · #12 · 8 pruebas<br>[W2-13](../plan/cards/W2-13.md) · #22 · 7 pruebas<br>[W3-02](../plan/cards/W3-02.md) · #50 · 2 pruebas<br>[W4-02](../plan/cards/W4-02.md) · #70 · 25 pruebas |
 | R4 | Línea de tiempo de eventos (cambio de tasa con 3 políticas, cargos fijos, abonos con modo y comisión, adelantar N, anclas, pagos reales) | [W0-02](../plan/cards/W0-02.md) · sin PR · 0 pruebas<br>[W2-03](../plan/cards/W2-03.md) · #19 · 3 pruebas<br>[W2-04](../plan/cards/W2-04.md) · #20 · 3 pruebas<br>[W2-05](../plan/cards/W2-05.md) · #18 · 5 pruebas<br>[W2-06](../plan/cards/W2-06.md) · #24 · 8 pruebas<br>[W3-02](../plan/cards/W3-02.md) · #50 · 2 pruebas<br>[W4-02](../plan/cards/W4-02.md) · #70 · 25 pruebas<br>[W4-12](../plan/cards/W4-12.md) · #65 · 3 pruebas<br>[W5-03](../plan/cards/W5-03.md) · #80 · 4 pruebas |
 | R5 | Tres caminos + métricas de comparación | [W0-02](../plan/cards/W0-02.md) · sin PR · 0 pruebas<br>[W2-05](../plan/cards/W2-05.md) · #18 · 5 pruebas<br>[W3-12](../plan/cards/W3-12.md) · #42 · 4 pruebas<br>[W4-02](../plan/cards/W4-02.md) · #70 · 25 pruebas<br>[W5-01](../plan/cards/W5-01.md) · #77 · 5 pruebas<br>[W5-05](../plan/cards/W5-05.md) · #82 · 7 pruebas |
@@ -22,21 +22,21 @@ menos una tarjeta fusionada (o la de release) con pruebas; lo comprueba `docs/re
 | R8 | Plantillas (FHA Guatemala v1, Hipotecario simple) con copia editable | [W0-02](../plan/cards/W0-02.md) · sin PR · 0 pruebas<br>[W2-07](../plan/cards/W2-07.md) · #16 · 2 pruebas<br>[W4-07](../plan/cards/W4-07.md) · #67 · 4 pruebas |
 | R9 | Modelo de datos + esquemas zod | [W0-04](../plan/cards/W0-04.md) · sin PR · 39 pruebas<br>[W1-03](../plan/cards/W1-03.md) · #8 · 4 pruebas |
 | R10 | Puerto de persistencia + adaptadores memoria y Dexie + suite de contrato + persist() | [W0-04](../plan/cards/W0-04.md) · sin PR · 39 pruebas<br>[W1-04](../plan/cards/W1-04.md) · #6 · 1 prueba<br>[W1-05](../plan/cards/W1-05.md) · #9 · 2 pruebas<br>[W3-10](../plan/cards/W3-10.md) · #34 · 1 prueba<br>[W3-11](../plan/cards/W3-11.md) · #36 · 1 prueba<br>[W3-13](../plan/cards/W3-13.md) · #37 · 4 pruebas<br>[W5-07](../plan/cards/W5-07.md) · #79 · 4 pruebas |
-| R11 | Respaldo JSON con migraciones, vista previa, instantánea, deshacer y cifrado opcional | [W0-04](../plan/cards/W0-04.md) · sin PR · 39 pruebas<br>[W1-03](../plan/cards/W1-03.md) · #8 · 4 pruebas<br>[W1-07](../plan/cards/W1-07.md) · #13 · 5 pruebas<br>[W4-08](../plan/cards/W4-08.md) · #60 · 2 pruebas<br>[W5-07](../plan/cards/W5-07.md) · #79 · 4 pruebas<br>[W6-01](../plan/cards/W6-01.md) · #89 · 2 pruebas<br>[W7-03](../plan/cards/W7-03.md) · pendiente |
-| R12 | Sincronización con Google Drive (merge, borrados, copia previa, estado offline, revocar, cifrado con frase, clave por dispositivo, cambiar frase) | [W0-04](../plan/cards/W0-04.md) · sin PR · 39 pruebas<br>[W1-06](../plan/cards/W1-06.md) · #3 · 2 pruebas<br>[W1-07](../plan/cards/W1-07.md) · #13 · 5 pruebas<br>[W1-08](../plan/cards/W1-08.md) · #14 · 0 pruebas<br>[W2-08](../plan/cards/W2-08.md) · #21 · 1 prueba<br>[W2-09](../plan/cards/W2-09.md) · #28 · 3 pruebas<br>[W3-18](../plan/cards/W3-18.md) · #43 · 0 pruebas<br>[W4-09](../plan/cards/W4-09.md) · #71 · 4 pruebas<br>[W5-08](../plan/cards/W5-08.md) · #84 · 4 pruebas<br>[W6-04](../plan/cards/W6-04.md) · #88 · 0 pruebas<br>[W7-03](../plan/cards/W7-03.md) · pendiente<br>[W7-04](../plan/cards/W7-04.md) · pendiente |
-| R13 | Dashboard | [W0-05](../plan/cards/W0-05.md) · sin PR · 112 pruebas<br>[W3-08](../plan/cards/W3-08.md) · #38 · 7 pruebas<br>[W3-09](../plan/cards/W3-09.md) · #41 · 3 pruebas<br>[W3-12](../plan/cards/W3-12.md) · #42 · 4 pruebas<br>[W4-06](../plan/cards/W4-06.md) · #64 · 3 pruebas |
-| R14 | Asistente de alta + edición + archivar/eliminar | [W0-05](../plan/cards/W0-05.md) · sin PR · 112 pruebas<br>[W3-11](../plan/cards/W3-11.md) · #36 · 1 prueba<br>[W4-07](../plan/cards/W4-07.md) · #67 · 4 pruebas<br>[W5-01](../plan/cards/W5-01.md) · #77 · 5 pruebas |
-| R15 | Tabla de amortización (vistas, Real Δ, subtotales anuales, teclado, abono en celda al escenario) | [W0-05](../plan/cards/W0-05.md) · sin PR · 112 pruebas<br>[W3-07](../plan/cards/W3-07.md) · #32 · 1 prueba<br>[W5-02](../plan/cards/W5-02.md) · #87 · 4 pruebas |
-| R16 | Pantalla de datos reales | [W0-05](../plan/cards/W0-05.md) · sin PR · 112 pruebas<br>[W4-12](../plan/cards/W4-12.md) · #65 · 3 pruebas<br>[W5-03](../plan/cards/W5-03.md) · #80 · 4 pruebas |
-| R17 | Proyecciones + comparación + gráfica | [W0-05](../plan/cards/W0-05.md) · sin PR · 112 pruebas<br>[W5-04](../plan/cards/W5-04.md) · #85 · 4 pruebas<br>[W5-05](../plan/cards/W5-05.md) · #82 · 7 pruebas |
-| R18 | Ajustes (recordatorios de respaldo, import/export, Drive, frase, persistencia, aviso Safari) | [W0-05](../plan/cards/W0-05.md) · sin PR · 112 pruebas<br>[W3-13](../plan/cards/W3-13.md) · #37 · 4 pruebas<br>[W4-06](../plan/cards/W4-06.md) · #64 · 3 pruebas<br>[W4-08](../plan/cards/W4-08.md) · #60 · 2 pruebas<br>[W5-07](../plan/cards/W5-07.md) · #79 · 4 pruebas<br>[W5-08](../plan/cards/W5-08.md) · #84 · 4 pruebas<br>[W6-02](../plan/cards/W6-02.md) · #91 · 3 pruebas<br>[W7-04](../plan/cards/W7-04.md) · pendiente |
+| R11 | Respaldo JSON con migraciones, vista previa, instantánea, deshacer y cifrado opcional | [W0-04](../plan/cards/W0-04.md) · sin PR · 39 pruebas<br>[W1-03](../plan/cards/W1-03.md) · #8 · 4 pruebas<br>[W1-07](../plan/cards/W1-07.md) · #13 · 5 pruebas<br>[W4-08](../plan/cards/W4-08.md) · #60 · 3 pruebas<br>[W5-07](../plan/cards/W5-07.md) · #79 · 4 pruebas<br>[W6-01](../plan/cards/W6-01.md) · #89 · 2 pruebas<br>[W7-03](../plan/cards/W7-03.md) · #98 · 8 pruebas |
+| R12 | Sincronización con Google Drive (merge, borrados, copia previa, estado offline, revocar, cifrado con frase, clave por dispositivo, cambiar frase) | [W0-04](../plan/cards/W0-04.md) · sin PR · 39 pruebas<br>[W1-06](../plan/cards/W1-06.md) · #3 · 2 pruebas<br>[W1-07](../plan/cards/W1-07.md) · #13 · 5 pruebas<br>[W1-08](../plan/cards/W1-08.md) · #14 · 0 pruebas<br>[W2-08](../plan/cards/W2-08.md) · #21 · 1 prueba<br>[W2-09](../plan/cards/W2-09.md) · #28 · 3 pruebas<br>[W3-18](../plan/cards/W3-18.md) · #43 · 0 pruebas<br>[W4-09](../plan/cards/W4-09.md) · #71 · 4 pruebas<br>[W5-08](../plan/cards/W5-08.md) · #84 · 4 pruebas<br>[W6-04](../plan/cards/W6-04.md) · #88 · 0 pruebas<br>[W7-03](../plan/cards/W7-03.md) · #98 · 8 pruebas<br>[W7-04](../plan/cards/W7-04.md) · #99 · 7 pruebas |
+| R13 | Dashboard | [W0-05](../plan/cards/W0-05.md) · sin PR · 115 pruebas<br>[W3-08](../plan/cards/W3-08.md) · #38 · 7 pruebas<br>[W3-09](../plan/cards/W3-09.md) · #41 · 3 pruebas<br>[W3-12](../plan/cards/W3-12.md) · #42 · 4 pruebas<br>[W4-06](../plan/cards/W4-06.md) · #64 · 3 pruebas |
+| R14 | Asistente de alta + edición + archivar/eliminar | [W0-05](../plan/cards/W0-05.md) · sin PR · 115 pruebas<br>[W3-11](../plan/cards/W3-11.md) · #36 · 1 prueba<br>[W4-07](../plan/cards/W4-07.md) · #67 · 4 pruebas<br>[W5-01](../plan/cards/W5-01.md) · #77 · 5 pruebas |
+| R15 | Tabla de amortización (vistas, Real Δ, subtotales anuales, teclado, abono en celda al escenario) | [W0-05](../plan/cards/W0-05.md) · sin PR · 115 pruebas<br>[W3-07](../plan/cards/W3-07.md) · #32 · 1 prueba<br>[W5-02](../plan/cards/W5-02.md) · #87 · 4 pruebas |
+| R16 | Pantalla de datos reales | [W0-05](../plan/cards/W0-05.md) · sin PR · 115 pruebas<br>[W4-12](../plan/cards/W4-12.md) · #65 · 3 pruebas<br>[W5-03](../plan/cards/W5-03.md) · #80 · 4 pruebas |
+| R17 | Proyecciones + comparación + gráfica | [W0-05](../plan/cards/W0-05.md) · sin PR · 115 pruebas<br>[W5-04](../plan/cards/W5-04.md) · #85 · 4 pruebas<br>[W5-05](../plan/cards/W5-05.md) · #82 · 7 pruebas |
+| R18 | Ajustes (recordatorios de respaldo, import/export, Drive, frase, persistencia, aviso Safari) | [W0-05](../plan/cards/W0-05.md) · sin PR · 115 pruebas<br>[W3-13](../plan/cards/W3-13.md) · #37 · 4 pruebas<br>[W4-06](../plan/cards/W4-06.md) · #64 · 3 pruebas<br>[W4-08](../plan/cards/W4-08.md) · #60 · 3 pruebas<br>[W5-07](../plan/cards/W5-07.md) · #79 · 4 pruebas<br>[W5-08](../plan/cards/W5-08.md) · #84 · 4 pruebas<br>[W6-02](../plan/cards/W6-02.md) · #91 · 3 pruebas<br>[W7-04](../plan/cards/W7-04.md) · #99 · 7 pruebas |
 | R19 | Exportar Excel/CSV/PDF (carga diferida) | [W0-03](../plan/cards/W0-03.md) · sin PR · 53 pruebas<br>[W2-12](../plan/cards/W2-12.md) · #25 · 1 prueba<br>[W3-15](../plan/cards/W3-15.md) · #40 · 2 pruebas<br>[W4-10](../plan/cards/W4-10.md) · #55 · 1 prueba<br>[W4-11](../plan/cards/W4-11.md) · #54 · 1 prueba<br>[W5-06](../plan/cards/W5-06.md) · #83 · 2 pruebas<br>[W6-01](../plan/cards/W6-01.md) · #89 · 2 pruebas |
-| R20 | PWA offline + aviso de actualización | [W0-05](../plan/cards/W0-05.md) · sin PR · 112 pruebas<br>[W2-02](../plan/cards/W2-02.md) · #23 · 3 pruebas<br>[W3-14](../plan/cards/W3-14.md) · #46 · 9 pruebas |
-| R21 | Sistema de diseño (fuentes autoalojadas, tokens claro/oscuro, Material compacto, pipes es-GT, accesibilidad AA) | [W0-05](../plan/cards/W0-05.md) · sin PR · 112 pruebas<br>[W3-05](../plan/cards/W3-05.md) · #33 · 6 pruebas<br>[W3-06](../plan/cards/W3-06.md) · #35 · 4 pruebas<br>[W3-07](../plan/cards/W3-07.md) · #32 · 1 prueba<br>[W3-08](../plan/cards/W3-08.md) · #38 · 7 pruebas<br>[W3-09](../plan/cards/W3-09.md) · #41 · 3 pruebas<br>[W4-03](../plan/cards/W4-03.md) · #68 · 7 pruebas<br>[W4-04](../plan/cards/W4-04.md) · #56 · 3 pruebas<br>[W6-02](../plan/cards/W6-02.md) · #91 · 3 pruebas |
-| R22 | Seguridad (CSP, Trusted Types, política de dependencias) | [W0-01](../plan/cards/W0-01.md) · sin PR · 7 pruebas<br>[W0-06](../plan/cards/W0-06.md) · sin PR · 12 pruebas<br>[W1-07](../plan/cards/W1-07.md) · #13 · 5 pruebas<br>[W1-08](../plan/cards/W1-08.md) · #14 · 0 pruebas<br>[W1-09](../plan/cards/W1-09.md) · #10 · 3 pruebas<br>[W1-10](../plan/cards/W1-10.md) · #7 · 6 pruebas<br>[W2-02](../plan/cards/W2-02.md) · #23 · 3 pruebas<br>[W2-09](../plan/cards/W2-09.md) · #28 · 3 pruebas<br>[W2-10](../plan/cards/W2-10.md) · #29 · 2 pruebas<br>[W3-16](../plan/cards/W3-16.md) · #47 · 0 pruebas<br>[W6-02](../plan/cards/W6-02.md) · #91 · 3 pruebas<br>[W7-01](../plan/cards/W7-01.md) · PR de release · 1 prueba |
-| R23 | Higiene de repo público (gitleaks, gitignore, denylist local, noreply, push protection, client ID al compilar) | [W0-01](../plan/cards/W0-01.md) · sin PR · 7 pruebas<br>[W0-06](../plan/cards/W0-06.md) · sin PR · 12 pruebas<br>[W1-10](../plan/cards/W1-10.md) · #7 · 6 pruebas<br>[W2-01](../plan/cards/W2-01.md) · #17 · 0 pruebas<br>[W3-17](../plan/cards/W3-17.md) · #49 · 2 pruebas<br>[W7-01](../plan/cards/W7-01.md) · PR de release · 1 prueba<br>[W7-02](../plan/cards/W7-02.md) · pendiente |
-| R24 | Infraestructura de pruebas (oráculo, fixtures sintéticos, diff en CI, propiedades, contrato, e2e Chromium+WebKit, axe, presupuestos, owns-check) | [W0-01](../plan/cards/W0-01.md) · sin PR · 7 pruebas<br>[W0-02](../plan/cards/W0-02.md) · sin PR · 0 pruebas<br>[W0-04](../plan/cards/W0-04.md) · sin PR · 39 pruebas<br>[W0-06](../plan/cards/W0-06.md) · sin PR · 12 pruebas<br>[W1-02](../plan/cards/W1-02.md) · #12 · 8 pruebas<br>[W1-03](../plan/cards/W1-03.md) · #8 · 4 pruebas<br>[W1-04](../plan/cards/W1-04.md) · #6 · 1 prueba<br>[W1-06](../plan/cards/W1-06.md) · #3 · 2 pruebas<br>[W2-01](../plan/cards/W2-01.md) · #17 · 0 pruebas<br>[W2-06](../plan/cards/W2-06.md) · #24 · 8 pruebas<br>[W2-11](../plan/cards/W2-11.md) · #27 · 5 pruebas<br>[W2-12](../plan/cards/W2-12.md) · #25 · 1 prueba<br>[W2-13](../plan/cards/W2-13.md) · #22 · 7 pruebas<br>[W3-01](../plan/cards/W3-01.md) · #48 · 0 pruebas<br>[W3-02](../plan/cards/W3-02.md) · #50 · 2 pruebas<br>[W3-04](../plan/cards/W3-04.md) · cerrada sin cambios<br>[W3-16](../plan/cards/W3-16.md) · #47 · 0 pruebas<br>[W4-01](../plan/cards/W4-01.md) · #57 · 0 pruebas<br>[W4-02](../plan/cards/W4-02.md) · #70 · 25 pruebas<br>[W6-01](../plan/cards/W6-01.md) · #89 · 2 pruebas<br>[W6-02](../plan/cards/W6-02.md) · #91 · 3 pruebas<br>[W7-02](../plan/cards/W7-02.md) · pendiente |
-| R25 | CI/CD + despliegue en Cloudflare con rewrites acotados y 404 | [W0-05](../plan/cards/W0-05.md) · sin PR · 112 pruebas<br>[W0-06](../plan/cards/W0-06.md) · sin PR · 12 pruebas<br>[W1-09](../plan/cards/W1-09.md) · #10 · 3 pruebas<br>[W2-02](../plan/cards/W2-02.md) · #23 · 3 pruebas<br>[W3-16](../plan/cards/W3-16.md) · #47 · 0 pruebas<br>[W3-17](../plan/cards/W3-17.md) · #49 · 2 pruebas<br>[W4-05](../plan/cards/W4-05.md) · #59 · 4 pruebas<br>[W6-04](../plan/cards/W6-04.md) · #88 · 0 pruebas<br>[W7-01](../plan/cards/W7-01.md) · PR de release · 1 prueba |
+| R20 | PWA offline + aviso de actualización | [W0-05](../plan/cards/W0-05.md) · sin PR · 115 pruebas<br>[W2-02](../plan/cards/W2-02.md) · #23 · 3 pruebas<br>[W3-14](../plan/cards/W3-14.md) · #46 · 9 pruebas |
+| R21 | Sistema de diseño (fuentes autoalojadas, tokens claro/oscuro, Material compacto, pipes es-GT, accesibilidad AA) | [W0-05](../plan/cards/W0-05.md) · sin PR · 115 pruebas<br>[W3-05](../plan/cards/W3-05.md) · #33 · 6 pruebas<br>[W3-06](../plan/cards/W3-06.md) · #35 · 4 pruebas<br>[W3-07](../plan/cards/W3-07.md) · #32 · 1 prueba<br>[W3-08](../plan/cards/W3-08.md) · #38 · 7 pruebas<br>[W3-09](../plan/cards/W3-09.md) · #41 · 3 pruebas<br>[W4-03](../plan/cards/W4-03.md) · #68 · 7 pruebas<br>[W4-04](../plan/cards/W4-04.md) · #56 · 3 pruebas<br>[W6-02](../plan/cards/W6-02.md) · #91 · 3 pruebas |
+| R22 | Seguridad (CSP, Trusted Types, política de dependencias) | [W0-01](../plan/cards/W0-01.md) · sin PR · 10 pruebas<br>[W0-06](../plan/cards/W0-06.md) · sin PR · 12 pruebas<br>[W1-07](../plan/cards/W1-07.md) · #13 · 5 pruebas<br>[W1-08](../plan/cards/W1-08.md) · #14 · 0 pruebas<br>[W1-09](../plan/cards/W1-09.md) · #10 · 4 pruebas<br>[W1-10](../plan/cards/W1-10.md) · #7 · 9 pruebas<br>[W2-02](../plan/cards/W2-02.md) · #23 · 3 pruebas<br>[W2-09](../plan/cards/W2-09.md) · #28 · 3 pruebas<br>[W2-10](../plan/cards/W2-10.md) · #29 · 3 pruebas<br>[W3-16](../plan/cards/W3-16.md) · #47 · 0 pruebas<br>[W6-02](../plan/cards/W6-02.md) · #91 · 3 pruebas<br>[W7-01](../plan/cards/W7-01.md) · PR de release · 1 prueba |
+| R23 | Higiene de repo público (gitleaks, gitignore, denylist local, noreply, push protection, client ID al compilar) | [W0-01](../plan/cards/W0-01.md) · sin PR · 10 pruebas<br>[W0-06](../plan/cards/W0-06.md) · sin PR · 12 pruebas<br>[W1-10](../plan/cards/W1-10.md) · #7 · 9 pruebas<br>[W2-01](../plan/cards/W2-01.md) · #17 · 0 pruebas<br>[W3-17](../plan/cards/W3-17.md) · #49 · 2 pruebas<br>[W7-01](../plan/cards/W7-01.md) · PR de release · 1 prueba<br>[W7-02](../plan/cards/W7-02.md) · #97 · 3 pruebas |
+| R24 | Infraestructura de pruebas (oráculo, fixtures sintéticos, diff en CI, propiedades, contrato, e2e Chromium+WebKit, axe, presupuestos, owns-check) | [W0-01](../plan/cards/W0-01.md) · sin PR · 10 pruebas<br>[W0-02](../plan/cards/W0-02.md) · sin PR · 0 pruebas<br>[W0-04](../plan/cards/W0-04.md) · sin PR · 39 pruebas<br>[W0-06](../plan/cards/W0-06.md) · sin PR · 12 pruebas<br>[W1-02](../plan/cards/W1-02.md) · #12 · 8 pruebas<br>[W1-03](../plan/cards/W1-03.md) · #8 · 4 pruebas<br>[W1-04](../plan/cards/W1-04.md) · #6 · 1 prueba<br>[W1-06](../plan/cards/W1-06.md) · #3 · 2 pruebas<br>[W2-01](../plan/cards/W2-01.md) · #17 · 0 pruebas<br>[W2-06](../plan/cards/W2-06.md) · #24 · 8 pruebas<br>[W2-11](../plan/cards/W2-11.md) · #27 · 5 pruebas<br>[W2-12](../plan/cards/W2-12.md) · #25 · 1 prueba<br>[W2-13](../plan/cards/W2-13.md) · #22 · 7 pruebas<br>[W3-01](../plan/cards/W3-01.md) · #48 · 0 pruebas<br>[W3-02](../plan/cards/W3-02.md) · #50 · 2 pruebas<br>[W3-04](../plan/cards/W3-04.md) · cerrada sin cambios<br>[W3-16](../plan/cards/W3-16.md) · #47 · 0 pruebas<br>[W4-01](../plan/cards/W4-01.md) · #57 · 0 pruebas<br>[W4-02](../plan/cards/W4-02.md) · #70 · 25 pruebas<br>[W6-01](../plan/cards/W6-01.md) · #89 · 2 pruebas<br>[W6-02](../plan/cards/W6-02.md) · #91 · 3 pruebas<br>[W7-02](../plan/cards/W7-02.md) · #97 · 3 pruebas |
+| R25 | CI/CD + despliegue en Cloudflare con rewrites acotados y 404 | [W0-05](../plan/cards/W0-05.md) · sin PR · 115 pruebas<br>[W0-06](../plan/cards/W0-06.md) · sin PR · 12 pruebas<br>[W1-09](../plan/cards/W1-09.md) · #10 · 4 pruebas<br>[W2-02](../plan/cards/W2-02.md) · #23 · 3 pruebas<br>[W3-16](../plan/cards/W3-16.md) · #47 · 0 pruebas<br>[W3-17](../plan/cards/W3-17.md) · #49 · 2 pruebas<br>[W4-05](../plan/cards/W4-05.md) · #59 · 4 pruebas<br>[W6-04](../plan/cards/W6-04.md) · #88 · 0 pruebas<br>[W7-01](../plan/cards/W7-01.md) · PR de release · 1 prueba |
 | R26 | Documentación (README bilingüe, modelo de amenazas, guía de Google Cloud, checklist manual de Drive, ADRs al día) | [W3-18](../plan/cards/W3-18.md) · #43 · 0 pruebas<br>[W6-03](../plan/cards/W6-03.md) · #90 · 0 pruebas<br>[W6-04](../plan/cards/W6-04.md) · #88 · 0 pruebas<br>[W7-01](../plan/cards/W7-01.md) · PR de release · 1 prueba |
 | R27 | Multimoneda por préstamo GTQ/USD sin mezclar; totales por moneda | [W0-03](../plan/cards/W0-03.md) · sin PR · 53 pruebas<br>[W0-04](../plan/cards/W0-04.md) · sin PR · 39 pruebas<br>[W1-01](../plan/cards/W1-01.md) · #11 · 7 pruebas<br>[W2-05](../plan/cards/W2-05.md) · #18 · 5 pruebas<br>[W3-06](../plan/cards/W3-06.md) · #35 · 4 pruebas<br>[W3-11](../plan/cards/W3-11.md) · #36 · 1 prueba<br>[W3-12](../plan/cards/W3-12.md) · #42 · 4 pruebas<br>[W3-15](../plan/cards/W3-15.md) · #40 · 2 pruebas<br>[W4-06](../plan/cards/W4-06.md) · #64 · 3 pruebas<br>[W4-07](../plan/cards/W4-07.md) · #67 · 4 pruebas<br>[W4-10](../plan/cards/W4-10.md) · #55 · 1 prueba |
 | R28 | Estado del préstamo activo/pagado/archivado | [W0-04](../plan/cards/W0-04.md) · sin PR · 39 pruebas<br>[W3-11](../plan/cards/W3-11.md) · #36 · 1 prueba<br>[W3-12](../plan/cards/W3-12.md) · #42 · 4 pruebas<br>[W4-06](../plan/cards/W4-06.md) · #64 · 3 pruebas<br>[W5-01](../plan/cards/W5-01.md) · #77 · 5 pruebas |
@@ -48,6 +48,9 @@ Solo las tarjetas fusionadas y la de release.
 ### W0-01
 
 - `tools/catalog-check/check.spec.ts`
+- `tools/hygiene/ci/ci-workflow.spec.ts`
+- `tools/hygiene/ci/noreply-range.spec.ts`
+- `tools/hygiene/ci/synthetic-flag-ci.spec.ts`
 - `tools/hygiene/commit-msg.spec.ts`
 - `tools/hygiene/denylist.spec.ts`
 - `tools/hygiene/gitignore.spec.ts`
@@ -180,10 +183,12 @@ Solo las tarjetas fusionadas y la de release.
 - `apps/web/src/app/core/theme/theme-toggle.contract.spec.ts`
 - `apps/web/src/app/core/theme/theme.service.spec.ts`
 - `apps/web/src/app/data/api.spec.ts`
+- `apps/web/src/app/data/backup/backup-size-cap.spec.ts`
 - `apps/web/src/app/data/backup/backup-state.spec.ts`
 - `apps/web/src/app/data/backup/provide-backup.spec.ts`
 - `apps/web/src/app/data/data-boundary.spec.ts`
-- `apps/web/src/app/data/device/stub.spec.ts`
+- `apps/web/src/app/data/device/preload.spec.ts`
+- `apps/web/src/app/data/device/provide-device-data.spec.ts`
 - `apps/web/src/app/data/engine/derive.spec.ts`
 - `apps/web/src/app/data/engine/loan-projection-service.spec.ts`
 - `apps/web/src/app/data/engine/map-entities.spec.ts`
@@ -227,6 +232,7 @@ Solo las tarjetas fusionadas y la de release.
 - `apps/web/src/app/features/settings/backup/backup-model.spec.ts`
 - `apps/web/src/app/features/settings/backup/settings-backup.component.spec.ts`
 - `apps/web/src/app/features/settings/backup/settings-backup.contract.spec.ts`
+- `apps/web/src/app/features/settings/device/settings-device.component.spec.ts`
 - `apps/web/src/app/features/settings/sync/passphrase-strength.spec.ts`
 - `apps/web/src/app/features/settings/sync/settings-sync.component.spec.ts`
 - `apps/web/src/app/features/settings/sync/settings-sync.contract.spec.ts`
@@ -338,9 +344,13 @@ Solo las tarjetas fusionadas y la de release.
 - `tools/edge/edge.spec.ts`
 - `tools/edge/headers/assertions.spec.mjs`
 - `tools/edge/headers/headers.spec.mjs`
+- `tools/edge/headers/smoke-csp.spec.mjs`
 
 ### W1-10
 
+- `tools/hygiene/ci/ci-workflow.spec.ts`
+- `tools/hygiene/ci/noreply-range.spec.ts`
+- `tools/hygiene/ci/synthetic-flag-ci.spec.ts`
 - `tools/hygiene/commit-msg.spec.ts`
 - `tools/hygiene/denylist.spec.ts`
 - `tools/hygiene/gitignore.spec.ts`
@@ -404,6 +414,7 @@ Solo las tarjetas fusionadas y la de release.
 
 - `tools/edge/headers/assertions.spec.mjs`
 - `tools/edge/headers/headers.spec.mjs`
+- `tools/edge/headers/smoke-csp.spec.mjs`
 
 ### W2-11
 
@@ -584,6 +595,7 @@ Solo las tarjetas fusionadas y la de release.
 
 ### W4-08
 
+- `apps/web/src/app/data/backup/backup-size-cap.spec.ts`
 - `apps/web/src/app/data/backup/backup-state.spec.ts`
 - `apps/web/src/app/data/backup/provide-backup.spec.ts`
 
@@ -680,3 +692,30 @@ Solo las tarjetas fusionadas y la de release.
 ### W7-01
 
 - `docs/release/release-docs.spec.mjs`
+
+### W7-02
+
+- `tools/hygiene/ci/ci-workflow.spec.ts`
+- `tools/hygiene/ci/noreply-range.spec.ts`
+- `tools/hygiene/ci/synthetic-flag-ci.spec.ts`
+
+### W7-03
+
+- `apps/web/src/app/data/backup/backup-size-cap.spec.ts`
+- `apps/web/src/app/data/backup/backup-state.spec.ts`
+- `apps/web/src/app/data/backup/provide-backup.spec.ts`
+- `apps/web/src/app/data/sync/drive-sync-service.spec.ts`
+- `apps/web/src/app/data/sync/local-dataset.spec.ts`
+- `apps/web/src/app/data/sync/provide-sync.spec.ts`
+- `apps/web/src/app/data/sync/sync-status-text.spec.ts`
+- `packages/sync/src/google-drive/provider.spec.ts`
+
+### W7-04
+
+- `apps/web/src/app/data/device/preload.spec.ts`
+- `apps/web/src/app/data/device/provide-device-data.spec.ts`
+- `apps/web/src/app/features/settings/device/settings-device.component.spec.ts`
+- `apps/web/src/app/public/privacy/privacy-page.component.spec.ts`
+- `apps/web/src/app/public/privacy/privacy-page.dist.spec.ts`
+- `e2e/specs/settings-device.spec.ts`
+- `e2e/specs/sweeps/stubs-and-worker.sweep.spec.ts`

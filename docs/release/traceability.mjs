@@ -23,7 +23,8 @@ export const RELEASE_CARD = 'W7-01';
  * Cards of v1 that are not merged yet. MUST BE EMPTY AT TAG TIME (`--check --release`). An entry that merges makes the
  * release test fail until it is removed here, so the list drains itself as W7-02..W7-04 land.
  */
-export const PENDING_RELEASE_CARDS = ['W7-02', 'W7-03', 'W7-04'];
+/** @type {string[]} */
+export const PENDING_RELEASE_CARDS = [];
 
 /** Cards closed without a merge, with the reason (docs/plan/implementation/w0/README.md, «Hallazgos de W3»). */
 export const CLOSED_WITHOUT_CHANGES = {

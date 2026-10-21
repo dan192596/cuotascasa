@@ -17,14 +17,19 @@ Resultados posibles: **aprobado**, **fallido** (con su tarjeta de corrección), 
 | Cifrado: IV aleatorio de 96 bits por cada cifrado, con prueba de unicidad | aprobado | 2026-10-21 |
 | Cifrado: clave AES-GCM 256 no exportable, usos exactos `encrypt` y `decrypt`; la frase nunca se guarda | aprobado | 2026-10-21 |
 | Cifrado: la cabecera completa del sobre va como AAD; errores con código fijo, sin texto en claro | aprobado | 2026-10-21 |
-| Token de Drive: solo en memoria (variable de cierre), nunca en almacenamiento; se revoca al desconectar y cuando llega tarde | aprobado, con un hallazgo bajo (abajo) | 2026-10-21 |
-| Token de Drive: un token con alcance insuficiente o vencimiento inválido se descarta sin revocarlo | hallazgo bajo: propuesta de corrección en el informe del release | 2026-10-21 |
+| Token de Drive: solo en memoria (variable de cierre), nunca en almacenamiento; se revoca al desconectar y cuando llega tarde | aprobado | 2026-10-21 |
+| Token de Drive: un token con alcance insuficiente o vencimiento inválido también se revoca al rechazarlo | aprobado: corregido en el PR #100 | 2026-10-21 |
 | Políticas CSP y Trusted Types de `tools/edge/headers/policies.mjs` contra ADR-0021 y lo que la app usa | aprobado: copia literal de ADR-0021 §7; sin `'unsafe-inline'` ni `'unsafe-eval'` en `script-src`; Google solo en `/app` y con ruta | 2026-10-21 |
-| Herramienta para el barrido de CSP con Playwright contra la URL de producción | fallido: `smoke-csp.mjs` ignora `--base-url`; propuesta de micro-tarjeta en el informe del release | 2026-10-21 |
-| Higiene en CI (`synthetic: true` y correo noreply) | pendiente: W7-02 | — |
-| Tope de tamaño de archivo al importar y al descargar de Drive | pendiente: W7-03 | — |
-| «Borrar datos de este dispositivo» | pendiente: W7-04 | — |
-| `PENDING_RELEASE_CARDS` vacía y `node docs/release/traceability.mjs --check --release` en verde | pendiente: después de W7-02, W7-03 y W7-04 | — |
+| Herramienta para el barrido de CSP con Playwright contra la URL de producción | aprobado: `smoke-csp.mjs --base-url` (PR #100) | 2026-10-21 |
+| Almacén de claves: no guarda ni carga una clave por debajo del piso de iteraciones (defensa en profundidad) | aprobado: PR #100 | 2026-10-21 |
+| Arranque fallido: la consola registra solo el nombre del error, nunca el objeto ni su mensaje | aprobado: PR #100 | 2026-10-21 |
+| Bitácora del oráculo: línea de la corrida del motor previa a W4-02 y declaración del dueño del 2026-10-21 | aprobado: PR #100 | 2026-10-21 |
+| Documento de evidencia del spike: remite al archivo de `tools/spikes/` retirado | aprobado: PR #100 | 2026-10-21 |
+| La prueba del release corre en `pnpm test` y en CI (proyecto `docs/release` en `vitest.config.ts`) | aprobado: PR #100 | 2026-10-21 |
+| Higiene en CI: marca `synthetic: true` en cada PR y en cada push a `main`; correo noreply en cada commit del PR | aprobado: W7-02 (PR #97) | 2026-10-21 |
+| Tope de 20 MiB al importar un respaldo y al descargar de Drive | aprobado: W7-03 (PR #98) | 2026-10-21 |
+| «Borrar datos de este dispositivo» en Ajustes; la copia de Drive no se toca | aprobado: W7-04 (PR #99) | 2026-10-21 |
+| `PENDING_RELEASE_CARDS` vacía y `node docs/release/traceability.mjs --check --release` en verde | aprobado | 2026-10-21 |
 | `docs/release/` sin identificadores reales: gitleaks y lista local de términos con 0 coincidencias | aprobado | 2026-10-21 |
 
 ## 2. Pendiente del dueño
@@ -39,8 +44,8 @@ Cada ítem lo hace el dueño. Opus solo anota aquí el resultado y la fecha.
 | Secret scanning y push protection activos en el repositorio (nueva verificación) | ADR-0015 | pendiente | — |
 | Cloudflare Web Analytics apagado, en la zona y en el Worker | `docs/guides/cloudflare-deploy.md` | pendiente | — |
 | `DEPLOY_ENABLED` = `true` como variable del repositorio, después de la compuerta de despliegue | `docs/guides/cloudflare-deploy.md` | pendiente | — |
-| `pnpm edge:check --base-url` contra producción sale con código 0 | `docs/guides/cloudflare-deploy.md` | pendiente | — |
-| Barrido de CSP con Playwright contra la URL de producción: 0 violaciones | depende de la micro-tarjeta del barrido | pendiente | — |
+| `pnpm edge:check --base-url https://<subdominio>.<tu-dominio>` contra producción sale con código 0 | `docs/guides/cloudflare-deploy.md` | pendiente | — |
+| Barrido de CSP con Playwright contra la URL de producción: `pnpm exec node tools/edge/headers/smoke-csp.mjs --base-url https://<subdominio>.<tu-dominio>` sale con código 0 (0 violaciones) | `docs/guides/cloudflare-deploy.md` | pendiente | — |
 | Checklist manual de Drive completo (sección 3) | `docs/guides/drive-sync-manual-checklist.md` | pendiente | — |
 | «Borrar datos de este dispositivo» en un dispositivo real: los datos locales y la clave desaparecen y la copia de Drive sigue | W7-04 | pendiente | — |
 
@@ -127,9 +132,11 @@ el error pasa la compuerta.
 | W2-01 | 2026-10-09 | validación privada: no autorizada | Oráculo validado solo contra los ejemplos sintéticos; perfil `core` sin otra fuente de datos |
 | W3-01 | 2026-10-09 | validación privada: no autorizada | Igual que W2-01, con el perfil `full`; también en `docs/specs/conformance-triage.md` |
 | W4-01 | 2026-10-16 | validación privada: no autorizada | Igual que W3-01, tras regenerar los perfiles con el mismo oráculo |
-| W4-02 | 2026-10-16 | validación privada: no autorizada | Corrida privada del motor previa al merge de W4-02, no autorizada por pedido del dueño en W4-01. La bitácora no tiene línea propia para esta corrida: ver el informe del release |
+| W4-02 | 2026-10-16 | validación privada: no autorizada | Corrida privada del motor (`motor 5fd6ab4`) previa al merge de W4-02, no autorizada por pedido del dueño en W4-01: el motor se validó solo contra los fixtures del oráculo y los ejemplos sintéticos |
 
 ### Sin tabla privada del banco (decisión del dueño, 2026-10-21)
+
+La declaración consta también en `docs/specs/oracle-validation-log.md` («Autorizaciones del dueño»).
 
 El dueño no tiene una tabla real del banco, así que el motor **nunca se comparó con una tabla real**. El release v1.0.0
 sale con ese riesgo aceptado: los cálculos coinciden al centavo con el oráculo independiente y con los ejemplos
@@ -148,6 +155,7 @@ nunca se publica nada, ni sus valores ni el detalle de la comparación: en la bi
 | `style-src 'unsafe-inline'` deja abierta la inyección de CSS | ADR-0021, «Consecuencias» |
 | La coincidencia por ruta de `connect-src` con Google real solo se prueba en producción | ADR-0021, «Riesgos»; barrido de CSP de la sección 2 |
 | La lista local de términos prohibidos no corre en CI: es privada y vive solo en el equipo del dueño | ADR-0015, decisión 6; W7-02 |
+| «Borrar datos de este dispositivo» puede quedar a medias si el navegador bloquea un borrado (otra pestaña abierta); la app lo dice y pide cerrar las demás pestañas y reintentar | ADR-0017, enmienda de W7; `docs/security/threat-model.md` |
 
 ## 5. Firma
 
