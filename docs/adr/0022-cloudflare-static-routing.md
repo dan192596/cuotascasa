@@ -1,6 +1,6 @@
 # ADR-0022: Enrutamiento estático en Cloudflare Workers (assets, rewrites acotados y 404)
 
-Estado: Aceptado (con enmiendas de W2-02)
+Estado: Aceptado
 
 Fecha: 2026-10-09
 
@@ -79,7 +79,7 @@ Otros hechos: las reglas de `_headers` se evalúan contra la **URL pedida**, no 
 
 ## Referencias
 
-- ADR-0002, ADR-0011, ADR-0016, ADR-0017, ADR-0021 (reservado), ADR-0023 (reservado).
+- ADR-0002, ADR-0011, ADR-0016, ADR-0017, ADR-0021, ADR-0023.
 - Tarjeta W1-09; W2-02, W3-14 y W3-17.
 - Cloudflare Workers, activos estáticos: https://developers.cloudflare.com/workers/static-assets/
 
@@ -97,3 +97,6 @@ Se acepta la decisión tal como está. Las precisiones de abajo no la cambian.
    - `/index.csr` debe llevar la CSP de la app, porque el service worker sirve el shell de `/app` con las cabeceras guardadas de esa respuesta (ADR-0023, hecho 4).
 5. Los marcadores no cambian: la 404 prerenderizada lleva `nghm`, como la landing, y la tabla de `edge:check` solo pide el título en las filas 404.
 
+### 2026-10-21, W7-01 (Opus): vigencia
+
+El estado pasa a escribirse «Aceptado», como los demás ADR: las precisiones de W2-02 siguen arriba y no cambian la decisión. La revalidación en el dominio real con `pnpm edge:check --base-url` la corre el flujo de despliegue y queda como ítem del dueño en `docs/release/v1-checklist.md` (sección 2), porque el despliegue sigue apagado hasta que el dueño active `DEPLOY_ENABLED`.

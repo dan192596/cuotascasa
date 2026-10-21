@@ -80,3 +80,7 @@ Además, conviene que la app funcione sin conexión, y la landing debe seguir si
 ## Enmiendas
 
 **Enmienda (2026-10-09, W3): pregunta abierta.** En iOS, los navegadores distintos de Safari (Chrome, Firefox, Edge) también usan WebKit y sufren la misma limpieza de almacenamiento de ITP. Aun así, el aviso de la decisión 6 se muestra solo en Safari, como piden la tarjeta W3-13 y este ADR. Se revisa en los chequeos manuales de W6: si se confirma el mismo riesgo, se amplía la detección a todos los navegadores de iOS que no corren como app instalada.
+
+**Enmienda (2026-10-21, W7, decisión del dueño).** v1 incluye **«Borrar datos de este dispositivo»** en Ajustes (W7-04). Borra las dos bases de IndexedDB de la app (`cuotascasa` y `cuotascasa-keys`), tras una confirmación que exige escribir BORRAR, y recarga `/app` vacía. No toca la caché del service worker, que solo guarda el shell y nunca datos (ADR-0023), ni la copia de Drive (ADR-0008, enmienda de W7). Así, un dispositivo compartido ya no depende de «Borrar datos del sitio» del navegador.
+
+**Enmienda (2026-10-21, W7-01): la pregunta abierta de W3 sigue abierta en v1.** Los barridos de W6 no la resolvieron, porque necesitan un iPhone real. v1 sale con el aviso solo en Safari; el paso 9 del checklist manual de Drive lo comprueba y su resultado decide una tarjeta posterior al release. Queda como riesgo aceptado en `docs/release/v1-checklist.md`.

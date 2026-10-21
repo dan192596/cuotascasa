@@ -10,7 +10,7 @@ Enmienda a: ADR-0016 (solo el `base-uri` de «CSP por ruta»: `'self'` en lugar 
 
 ## Contexto
 
-ADR-0016 fija la CSP por área, prohíbe `'unsafe-inline'` y `'unsafe-eval'` en `script-src`, y deja para este ADR tres cosas: cómo se cubren los scripts inline del prerender, si Trusted Types se aplica y la lista exacta de orígenes de Google en `/app/*`. El spike W1-08 (`docs/specs/spikes/csp-gis-evidence.md`, `tools/spikes/csp-gis/results.json`) midió 228 celdas en Chromium y WebKit. ADR-0022 fija cómo Cloudflare aplica `_headers`: las reglas se evalúan contra la URL pedida y la página 404 solo recibe las cabeceras de `/*`.
+ADR-0016 fija la CSP por área, prohíbe `'unsafe-inline'` y `'unsafe-eval'` en `script-src`, y deja para este ADR tres cosas: cómo se cubren los scripts inline del prerender, si Trusted Types se aplica y la lista exacta de orígenes de Google en `/app/*`. El spike W1-08 (`docs/specs/spikes/csp-gis-evidence.md` y su `results.json`, archivado en W7-01) midió 228 celdas en Chromium y WebKit. ADR-0022 fija cómo Cloudflare aplica `_headers`: las reglas se evalúan contra la URL pedida y la página 404 solo recibe las cabeceras de `/*`.
 
 Hechos de W1-08 que pesan aquí (sección del documento de evidencia entre paréntesis):
 
@@ -92,7 +92,7 @@ Fuera de este ADR: HSTS, `Referrer-Policy` y `Permissions-Policy` siguen como lo
 ## Referencias
 
 - ADR-0002, ADR-0008, ADR-0011, ADR-0016, ADR-0022 y ADR-0023.
-- `docs/specs/spikes/csp-gis-evidence.md` y `tools/spikes/csp-gis/results.json` (W1-08).
+- `docs/specs/spikes/csp-gis-evidence.md` (W1-08) y `docs/release/archivo-spikes.md`, que dice cómo consultar el `results.json` retirado de `tools/spikes/`.
 - Tarjetas W2-02, W2-09, W2-10, W2-11, W3-14, W5-05 y W5-06.
 - CSP Level 3 y Trusted Types (W3C): https://www.w3.org/TR/CSP3/ y https://www.w3.org/TR/trusted-types/
 
@@ -105,3 +105,5 @@ Fuera de este ADR: HSTS, `Referrer-Policy` y `Permissions-Policy` siguen como lo
 - la URL de issues de GitHub que se inyecta al compilar, reconocida por patrón (nunca un usuario de GitHub escrito en el código).
 
 La prueba del build rechaza cualquier otro `href` externo.
+
+**Enmienda (2026-10-21, W7-01).** `tools/spikes/csp-gis/` se retiró antes del release, como estaba previsto. El código y `results.json` siguen en el historial de git; `docs/release/archivo-spikes.md` dice en qué commit y cómo consultarlos. La revisión de seguridad de W7-01 comparó `tools/edge/headers/policies.mjs` con la decisión 7: es copia literal, y la app no necesita ningún origen ni directiva más. Queda pendiente del dueño medir en producción la coincidencia por ruta de `connect-src` con Google real (riesgo de este ADR), con `edge:check --base-url` y un barrido de CSP con Playwright contra la URL de producción (`docs/release/v1-checklist.md`, sección 2).

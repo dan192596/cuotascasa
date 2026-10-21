@@ -92,6 +92,6 @@ Decisiones que fijó la implementación y aceptó Opus tras la revisión de segu
 
 ## Referencias
 
-- ADR-0007, ADR-0008, ADR-0015, ADR-0016, ADR-0021 (reservado).
+- ADR-0007, ADR-0008, ADR-0015, ADR-0016, ADR-0021.
 - Tarjetas W1-07, W2-08, W4-08, W4-09 y W5-08.
 - OWASP Password Storage Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html

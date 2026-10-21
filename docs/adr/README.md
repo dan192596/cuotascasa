@@ -29,12 +29,35 @@ Cada ADR documenta una decisión importante: su contexto, la decisión, las alte
 | [0019](0019-proceso-con-agentes.md) | Proceso de desarrollo con agentes | Aceptado | 2026-10-04 |
 | [0020](0020-fase-multiusuario-diferida.md) | Fase multiusuario diferida (diseño Supabase archivado) | Diferido | 2026-10-04 |
 | [0021](0021-csp-trusted-types-gis.md) | CSP por ruta, Trusted Types y carga de GIS | Aceptado | 2026-10-09 |
-| [0022](0022-cloudflare-static-routing.md) | Enrutamiento estático en Cloudflare | Aceptado, con enmiendas (W2-02) | 2026-10-09 |
+| [0022](0022-cloudflare-static-routing.md) | Enrutamiento estático en Cloudflare | Aceptado | 2026-10-09 |
 | [0023](0023-pwa-registration-scope.md) | Alcance y registro del service worker | Aceptado | 2026-10-09 |
 | [0024](0024-sync-merge-order.md) | Orden total de la combinación en la sincronización | Aceptado | 2026-10-05 |
 | [0025](0025-presupuestos-de-bundle.md) | Presupuestos de bundle de la landing y de /app | Aceptado | 2026-10-16 |
 
 El siguiente número libre es el **0026**.
+
+La fecha es la de la decisión original. Las precisiones posteriores están en la sección «Enmiendas» de cada ADR.
+
+## Revisión de vigencia antes de v1.0.0 (W7-01, 2026-10-21)
+
+Opus revisó que cada estado esté al día. Ningún ADR cambió de estado: los 24 aceptados siguen vigentes y ADR-0020 sigue **Diferido**, con sus tres disparadores listados y ninguno cumplido. Las decisiones de W6 y W7 que faltaban quedaron como enmiendas:
+
+| ADR | Enmienda |
+|---|---|
+| 0007 | Tope de 20 MiB al importar un respaldo (W7-03) |
+| 0008 | Tope de 20 MiB al descargar de Drive (W7-03); «Borrar datos de este dispositivo» nunca toca la copia de Drive (W7-04) |
+| 0012 | Botones nativos con el estilo base de la paleta (PR #94 y #95) |
+| 0014 | Estado final de la validación privada (nunca autorizada, sin tabla real del banco), prueba de trazabilidad y pruebas que quedan para después de v1 |
+| 0015 | Higiene en CI (W7-02), la lista de términos sigue local; firma sin nombres (D27) |
+| 0016 | Resultados de la revisión de seguridad del release |
+| 0017 | «Borrar datos de este dispositivo» (W7-04); la pregunta de iOS sigue abierta en v1 |
+| 0019 | Tarjetas de corrección W7-02 a W7-04 y firma del release por aprobación del PR |
+| 0020 | Sigue Diferido; disparadores vigentes |
+| 0021 | Retiro de `tools/spikes/` y revisión de las políticas |
+| 0022 | Estado escrito como «Aceptado»; la revalidación en el dominio real queda con el dueño |
+| 0023 | Dictamen del barrido de W6-02 |
+
+Además, las referencias «(reservado)» de ADR-0002, ADR-0008, ADR-0009 y ADR-0022 ya no aplican y se quitaron.
 
 ## Estados
 
