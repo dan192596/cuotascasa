@@ -75,6 +75,25 @@ async function deviceId(page: Page): Promise<string | null> {
   });
 }
 
+async function metaKeys(page: Page): Promise<string[]> {
+  return page.evaluate(async (): Promise<string[]> => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const open = indexedDB.open('cuotascasa');
+      open.onsuccess = () => resolve(open.result);
+      open.onerror = () => reject(open.error ?? new Error('open failed'));
+    });
+    try {
+      return await new Promise<string[]>((resolve, reject) => {
+        const keys = db.transaction('meta', 'readonly').objectStore('meta').getAllKeys();
+        keys.onsuccess = () => resolve((keys.result as IDBValidKey[]).map(String).sort());
+        keys.onerror = () => reject(keys.error ?? new Error('keys failed'));
+      });
+    } finally {
+      db.close();
+    }
+  });
+}
+
 /** Seeds the synthetic loan, connects Drive, sets the passphrase and syncs: the key store and the Drive copy exist. */
 async function connectedAndSynced(page: Page, mock: GoogleMock): Promise<void> {
   await page.goto('/app');
@@ -140,8 +159,11 @@ test('erases both databases, revokes the Drive token, leaves the Drive copy unto
   expect(oldDeviceId).not.toBeNull();
 
   const copy = googleMock.drive.fileByName('cuotascasa.json')?.content;
+  // A previous copy next to the current one (a second upload would leave it): it must stay byte for byte.
+  googleMock.drive.seed({ name: 'cuotascasa.prev.json', content: '{"synthetic":"previous copy"}' });
   const prev = googleMock.drive.fileByName('cuotascasa.prev.json')?.content;
   expect(copy).toBeDefined();
+  expect(prev).toBe('{"synthetic":"previous copy"}');
   const filesBefore = googleMock.drive.files().map((file) => ({ name: file.name, content: file.content }));
   const token = googleMock.gis.issuedTokens.at(-1);
   expect(token).toBeDefined();
@@ -170,8 +192,11 @@ test('erases both databases, revokes the Drive token, leaves the Drive copy unto
   for (const [store, rows] of Object.entries(data.rows)) {
     if (store !== 'meta') expect(rows, `rows in ${store}`).toBe(0);
   }
-  const newDeviceId = await deviceId(page).catch(() => null);
-  if (newDeviceId !== null) expect(newDeviceId).not.toBe(oldDeviceId);
+  // The reload created an empty store: its meta holds only the new device id, nothing about syncs or backups.
+  expect(await metaKeys(page)).toEqual(['deviceId']);
+  const newDeviceId = await deviceId(page);
+  expect(newDeviceId).not.toBeNull();
+  expect(newDeviceId).not.toBe(oldDeviceId);
 
   // Drive is no longer connected on this device.
   await page.goto('/app/ajustes');
