@@ -91,6 +91,21 @@ describe('runHeaderChecks against a fake origin', () => {
   let server;
   afterEach(() => server?.close());
 
+  it('reports / when the edge serves the /* policy next to a second one (the live failure)', async () => {
+    const landing = html('landing()');
+    const star = expectedPolicy('public', [hashSource('landing()')]);
+    server = createServer((req, res) => {
+      for (const [name, value] of Object.entries(BASE)) res.setHeader(name, value);
+      res.setHeader('content-security-policy', req.url === '/' ? [star, expectedPolicy('public', [])] : star);
+      res.statusCode = req.url === '/' ? 200 : 404;
+      res.end(req.url === '/' ? landing : html(''));
+    });
+    await new Promise((done) => server.listen(0, '127.0.0.1', done));
+    const result = await runHeaderChecks(`http://127.0.0.1:${server.address().port}`);
+    expect(result.failures.filter((f) => f.startsWith('/ ')).join('\n')).toMatch(/content-security-policy/);
+    expect(result.failures.some((f) => f.startsWith('/nope '))).toBe(false);
+  });
+
   it('fails every row when the origin serves no CSP', async () => {
     server = createServer((_req, res) => res.end('x'));
     await new Promise((done) => server.listen(0, '127.0.0.1', done));

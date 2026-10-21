@@ -17,15 +17,19 @@ const BASELINE = {
  * @property {string} path
  * @property {number} status
  * @property {'public' | 'app' | 'worker'} kind
- * @property {string} [hashFrom] path whose body provides the script hashes (default: the route itself)
+ * @property {string | string[]} [hashFrom] path(s) whose bodies provide the script hashes, as a union in order
+ *   (default: the route itself)
  */
+
+/** The `/*` policy serves the landing and the 404 page: the union of their hashes (apps/web/public/_headers). */
+const STAR_HASH_FROM = ['/', '/nope'];
 
 /** @type {HeaderRoute[]} */
 export const HEADER_ROUTES = [
-  { path: '/', status: 200, kind: 'public' },
+  { path: '/', status: 200, kind: 'public', hashFrom: STAR_HASH_FROM },
   { path: '/privacidad', status: 200, kind: 'public' },
-  { path: '/nope', status: 404, kind: 'public' },
-  { path: '/application', status: 404, kind: 'public' },
+  { path: '/nope', status: 404, kind: 'public', hashFrom: STAR_HASH_FROM },
+  { path: '/application', status: 404, kind: 'public', hashFrom: STAR_HASH_FROM },
   { path: '/app', status: 200, kind: 'app' },
   { path: '/app/', status: 200, kind: 'app', hashFrom: '/app' },
   { path: '/app/prestamos/x/tabla', status: 200, kind: 'app', hashFrom: '/app' },
@@ -93,8 +97,13 @@ export async function runHeaderChecks(baseUrl) {
   for (const route of HEADER_ROUTES) {
     try {
       const response = await get(baseUrl, route.path);
-      const source = route.hashFrom === undefined ? response : await get(baseUrl, route.hashFrom);
-      const hashes = extractInlineScripts(source.body).map(hashSource);
+      const sources = route.hashFrom === undefined ? [route.path] : [route.hashFrom].flat();
+      /** @type {string[]} */
+      const hashes = [];
+      for (const path of sources) {
+        const { body } = path === route.path ? response : await get(baseUrl, path);
+        for (const hash of extractInlineScripts(body).map(hashSource)) if (!hashes.includes(hash)) hashes.push(hash);
+      }
       for (const failure of checkResponse(route, response, hashes)) failures.push(`${route.path} ${failure}`);
     } catch (error) {
       failures.push(`${route.path} request failed: ${error instanceof Error ? error.message : String(error)}`);
