@@ -123,8 +123,8 @@ describe('IndexedDB KeyStore in this engine', () => {
     const entry = await deriveStoredKey(PASSPHRASE, { iterations: TEST_ITERATIONS });
     const sealed = await encrypt(entry, PLAINTEXT);
 
-    await createIndexedDbKeyStore({ databaseName: name }).save(entry);
-    const loaded = await createIndexedDbKeyStore({ databaseName: name }).load();
+    await createIndexedDbKeyStore({ databaseName: name, ...TEST_FLOOR }).save(entry);
+    const loaded = await createIndexedDbKeyStore({ databaseName: name, ...TEST_FLOOR }).load();
 
     expect(loaded).not.toBeNull();
     const key = loaded as StoredKey;
@@ -136,14 +136,14 @@ describe('IndexedDB KeyStore in this engine', () => {
     // And the loaded key encrypts for the original one.
     await expect(decrypt(entry, await encrypt(key, 'de vuelta'), TEST_FLOOR)).resolves.toBe('de vuelta');
 
-    await createIndexedDbKeyStore({ databaseName: name }).clear();
-    await expect(createIndexedDbKeyStore({ databaseName: name }).load()).resolves.toBeNull();
+    await createIndexedDbKeyStore({ databaseName: name, ...TEST_FLOOR }).clear();
+    await expect(createIndexedDbKeyStore({ databaseName: name, ...TEST_FLOOR }).load()).resolves.toBeNull();
   });
 
   it('IndexedDB content inspection: no passphrase and no raw key bytes are persisted', async () => {
     const name = databaseName();
     const entry = await deriveStoredKey(PASSPHRASE, { iterations: TEST_ITERATIONS });
-    await createIndexedDbKeyStore({ databaseName: name }).save(entry);
+    await createIndexedDbKeyStore({ databaseName: name, ...TEST_FLOOR }).save(entry);
 
     const { stores, values } = await dumpDatabase(name);
     expect(stores).toEqual([KEY_STORE_STORE]);

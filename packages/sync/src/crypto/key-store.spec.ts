@@ -1,10 +1,11 @@
 import { IDBDatabase as FakeIDBDatabase, IDBFactory } from 'fake-indexeddb';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { StoredKey } from '../ports.ts';
+import { PBKDF2_ITERATIONS, type StoredKey } from '../ports.ts';
 import { decrypt, deriveStoredKey, encrypt } from './index.ts';
 import { KEY_STORE_DATABASE, KEY_STORE_RECORD, KEY_STORE_STORE, createIndexedDbKeyStore } from './key-store.ts';
 
 const TEST_ITERATIONS = 1_000;
+const TEST_FLOOR = { minIterations: TEST_ITERATIONS } as const;
 const PASSPHRASE = 'frase sintética del almacén de claves';
 
 async function testKey(): Promise<StoredKey> {
@@ -50,7 +51,7 @@ describe('IndexedDB KeyStore (node, fake-indexeddb)', () => {
   });
 
   it('starts empty', async () => {
-    const store = createIndexedDbKeyStore({ indexedDB: new IDBFactory() });
+    const store = createIndexedDbKeyStore({ indexedDB: new IDBFactory(), ...TEST_FLOOR });
     await expect(store.load()).resolves.toBeNull();
   });
 
@@ -58,9 +59,9 @@ describe('IndexedDB KeyStore (node, fake-indexeddb)', () => {
     const factory = new IDBFactory();
     const entry = await testKey();
     const sealed = await encrypt(entry, 'payload sintético');
-    await createIndexedDbKeyStore({ indexedDB: factory }).save(entry);
+    await createIndexedDbKeyStore({ indexedDB: factory, ...TEST_FLOOR }).save(entry);
 
-    const loaded = await createIndexedDbKeyStore({ indexedDB: factory }).load();
+    const loaded = await createIndexedDbKeyStore({ indexedDB: factory, ...TEST_FLOOR }).load();
     expect(loaded).not.toBeNull();
     expect(loaded?.saltId).toBe(entry.saltId);
     expect(loaded?.iterations).toBe(TEST_ITERATIONS);
@@ -73,14 +74,14 @@ describe('IndexedDB KeyStore (node, fake-indexeddb)', () => {
   it('persists exactly key, saltId and iterations, even if the caller passes extra fields', async () => {
     const factory = new IDBFactory();
     const entry = { ...(await testKey()), passphrase: PASSPHRASE } as StoredKey;
-    await createIndexedDbKeyStore({ indexedDB: factory }).save(entry);
+    await createIndexedDbKeyStore({ indexedDB: factory, ...TEST_FLOOR }).save(entry);
     const raw = (await readRaw(factory)) as Record<string, unknown>;
     expect(Object.keys(raw).sort()).toEqual(['iterations', 'key', 'saltId']);
     expect(JSON.stringify(raw)).not.toContain(PASSPHRASE);
   });
 
   it('save replaces the previous key and clear removes it', async () => {
-    const store = createIndexedDbKeyStore({ indexedDB: new IDBFactory() });
+    const store = createIndexedDbKeyStore({ indexedDB: new IDBFactory(), ...TEST_FLOOR });
     const first = await testKey();
     const second = await testKey();
     await store.save(first);
@@ -92,8 +93,10 @@ describe('IndexedDB KeyStore (node, fake-indexeddb)', () => {
 
   it('uses a separate database when given another name', async () => {
     const factory = new IDBFactory();
-    await createIndexedDbKeyStore({ indexedDB: factory, databaseName: 'otra-base' }).save(await testKey());
-    await expect(createIndexedDbKeyStore({ indexedDB: factory }).load()).resolves.toBeNull();
+    await createIndexedDbKeyStore({ indexedDB: factory, databaseName: 'otra-base', ...TEST_FLOOR }).save(
+      await testKey(),
+    );
+    await expect(createIndexedDbKeyStore({ indexedDB: factory, ...TEST_FLOOR }).load()).resolves.toBeNull();
     await expect(readRaw(factory, 'otra-base')).resolves.toBeTruthy();
   });
 
@@ -145,7 +148,7 @@ describe('IndexedDB KeyStore (node, fake-indexeddb)', () => {
 
     it.each(cases)('%s', async (_label, make) => {
       const factory = new IDBFactory();
-      const store = createIndexedDbKeyStore({ indexedDB: factory });
+      const store = createIndexedDbKeyStore({ indexedDB: factory, ...TEST_FLOOR });
       await expect(store.save(await make())).rejects.toThrow(TypeError);
       await expect(store.load()).resolves.toBeNull();
     });
@@ -170,16 +173,50 @@ describe('IndexedDB KeyStore (node, fake-indexeddb)', () => {
 
     it.each(cases)('%s', async (_label, make) => {
       const factory = new IDBFactory();
-      const store = createIndexedDbKeyStore({ indexedDB: factory });
+      const store = createIndexedDbKeyStore({ indexedDB: factory, ...TEST_FLOOR });
       await store.clear();
       await writeRaw(factory, await make());
       await expect(store.load()).resolves.toBeNull();
     });
   });
 
+  describe('enforces the PBKDF2 iteration floor (defense in depth)', () => {
+    it('load ignores a record below the production floor by default', async () => {
+      const factory = new IDBFactory();
+      await createIndexedDbKeyStore({ indexedDB: factory }).clear();
+      await writeRaw(factory, { ...(await testKey()), iterations: PBKDF2_ITERATIONS - 1 });
+      await expect(createIndexedDbKeyStore({ indexedDB: factory }).load()).resolves.toBeNull();
+    });
+
+    it('load accepts a record at the production floor by default', async () => {
+      const factory = new IDBFactory();
+      await createIndexedDbKeyStore({ indexedDB: factory }).clear();
+      await writeRaw(factory, { ...(await testKey()), iterations: PBKDF2_ITERATIONS });
+      const loaded = await createIndexedDbKeyStore({ indexedDB: factory }).load();
+      expect(loaded?.iterations).toBe(PBKDF2_ITERATIONS);
+    });
+
+    it('save refuses a key below the production floor by default', async () => {
+      const factory = new IDBFactory();
+      const store = createIndexedDbKeyStore({ indexedDB: factory });
+      await expect(store.save(await testKey())).rejects.toThrow(TypeError);
+      await expect(store.load()).resolves.toBeNull();
+    });
+
+    it('honours the minIterations test seam', async () => {
+      const factory = new IDBFactory();
+      const store = createIndexedDbKeyStore({ indexedDB: factory, minIterations: TEST_ITERATIONS });
+      await store.clear();
+      await writeRaw(factory, { ...(await testKey()), iterations: TEST_ITERATIONS - 1 });
+      await expect(store.load()).resolves.toBeNull();
+      await store.save(await testKey());
+      expect((await store.load())?.iterations).toBe(TEST_ITERATIONS);
+    });
+  });
+
   it('rejects with a fixed message when IndexedDB is unavailable', async () => {
     expect('indexedDB' in globalThis).toBe(false);
-    await expect(createIndexedDbKeyStore().load()).rejects.toThrow('IndexedDB is not available');
+    await expect(createIndexedDbKeyStore(TEST_FLOOR).load()).rejects.toThrow('IndexedDB is not available');
   });
 
   it('defaults to globalThis.indexedDB', async () => {
@@ -188,7 +225,7 @@ describe('IndexedDB KeyStore (node, fake-indexeddb)', () => {
     Object.defineProperty(globalThis, 'indexedDB', { value: factory, configurable: true, writable: true });
     try {
       const entry = await testKey();
-      await createIndexedDbKeyStore().save(entry);
+      await createIndexedDbKeyStore(TEST_FLOOR).save(entry);
       expect(((await readRaw(factory)) as StoredKey).saltId).toBe(entry.saltId);
     } finally {
       if (original === undefined) {
@@ -210,7 +247,7 @@ describe('IndexedDB KeyStore (node, fake-indexeddb)', () => {
         return request;
       },
     } as unknown as IDBFactory;
-    await expect(createIndexedDbKeyStore({ indexedDB: failing }).load()).rejects.toThrow(
+    await expect(createIndexedDbKeyStore({ indexedDB: failing, ...TEST_FLOOR }).load()).rejects.toThrow(
       'Could not open the key store',
     );
   });
@@ -226,7 +263,7 @@ describe('IndexedDB KeyStore (node, fake-indexeddb)', () => {
       };
       open.onerror = () => reject(new Error('open failed'));
     });
-    const store = createIndexedDbKeyStore({ indexedDB: factory });
+    const store = createIndexedDbKeyStore({ indexedDB: factory, ...TEST_FLOOR });
     for (const call of [() => store.load(), () => store.clear()]) {
       const error: unknown = await call().then(
         () => null,
@@ -240,7 +277,7 @@ describe('IndexedDB KeyStore (node, fake-indexeddb)', () => {
 
   it('rejects with a fixed message when the transaction aborts', async () => {
     const factory = new IDBFactory();
-    const store = createIndexedDbKeyStore({ indexedDB: factory });
+    const store = createIndexedDbKeyStore({ indexedDB: factory, ...TEST_FLOOR });
     await store.clear();
     const prototype = FakeIDBDatabase.prototype as IDBDatabase;
     const original = prototype.transaction;
