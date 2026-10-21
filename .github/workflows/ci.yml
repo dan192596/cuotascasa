@@ -1,4 +1,4 @@
-# CI (W0-06). After W0, .github/ is edited only by W2-01, W3-16 and W3-17 (docs/plan/frozen-files.json).
+# CI (W0-06). After W0, .github/ is edited only by W2-01, W3-16, W3-17 and W7-02 (docs/plan/frozen-files.json).
 # Actions are pinned to full commit SHAs (tag in the comment); Renovate (W1-10) proposes updates.
 name: CI
 
@@ -89,6 +89,16 @@ jobs:
           BASE_REF: ${{ github.base_ref }}
           HEAD_REF: ${{ github.head_ref }}
         run: node tools/owns-check/check.mjs --base "origin/$BASE_REF" --branch "$HEAD_REF"
+      # Hygiene checks that also run as local hooks (lefthook.yml, ADR-0015), now enforced on every PR (W7-02).
+      # The real-data denylist (tools/hygiene/denylist.mjs) is NOT run here, by design: its term list is private,
+      # lives only on the owner's machine and must never be put in the repo, a placeholder or a secret.
+      - name: 'Hygiene: synthetic flag'
+        run: node tools/hygiene/synthetic-flag.mjs
+      - name: 'Hygiene: noreply identities'
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: node tools/hygiene/ci/noreply-range.mjs --base "$BASE_SHA"
       - name: Audit production dependencies
         run: pnpm audit --prod --audit-level high
 
