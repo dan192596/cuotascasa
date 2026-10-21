@@ -8,11 +8,14 @@ Registro de las compuertas del oráculo (`docs/plan/README.md`, sección 6; ADR-
 
 Ninguna. A la fecha de W2-01 (2026-10-09) el dueño no autorizó la carpeta privada ni la validación privada, así que no existe `~/.cuotascasa-private/` y no se corrió ninguna comparación privada. En W3-01 (2026-10-09) el dueño la volvió a negar en el chat: tampoco se creó la carpeta ni se corrió ninguna comparación privada. En W4-01 (2026-10-16) el dueño la volvió a negar: no se creó la carpeta ni se tocó ningún dato real. Además pidió que **no se le vuelva a preguntar hasta W7**: la próxima consulta es la del checklist del release (W7-01), y la corrida privada del motor previa al merge de W4-02 se registra como no autorizada sin volver a preguntar.
 
+En W7-01 (2026-10-21), consultado para el checklist del release, el dueño declaró que no dispone de ninguna tabla privada del banco. Si la obtiene más adelante, podrá compararse en privado, y la comparación nunca se publica.
+
 ## Registro
 
 2026-10-09 · W2-01 · oráculo eed3bb7 · validación privada: no autorizada
 2026-10-09 · W3-01 · oráculo a31fc33 · validación privada: no autorizada
 2026-10-16 · W4-01 · oráculo a31fc33 · validación privada: no autorizada
+2026-10-16 · W4-02 · motor 5fd6ab4 · validación privada: no autorizada
 
 ## Riesgo residual
 
