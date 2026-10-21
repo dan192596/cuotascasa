@@ -73,9 +73,9 @@ El siguiente número libre es el **0025**. Solo Opus crea ADR nuevos.
 | W4 | Motor conforme, superficie pública, primeras pantallas | 12 (1) | Gate W4-01, luego 11 listas a la vez; lotes de ≤ 6 Sonnet | **Primera versión publicable:** landing, simulador, dashboard y asistente; motor conforme al centavo (W4-02) |
 | W5 | Pantallas restantes | 8 (0) | 8 listas a la vez; lotes de ≤ 6 Sonnet | **Todas las pantallas** |
 | W6 | Recorridos e2e, barridos y docs | 4 (0) | 4 listas a la vez; lotes de ≤ 6 Sonnet | Producto probado de punta a punta en Chromium y WebKit |
-| W7 | Release | 1 (1) | — | **v1.0.0** |
+| W7 | Release | 4 (1) | W7-02 ∥ W7-03 ∥ W7-04 (tarjetas de corrección registradas el 2026-10-21) → W7-01 | **v1.0.0** |
 
-En total son 58 tarjetas Sonnet y 14 Opus.
+En total son 61 tarjetas Sonnet y 14 Opus: las 72 aprobadas más las tres de corrección de W7.
 
 «N listas a la vez» cuenta las tarjetas que pueden empezar; se lanzan en lotes de ≤ 6 Sonnet (sección 3, paso 2).
 

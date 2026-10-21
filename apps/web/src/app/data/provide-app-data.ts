@@ -4,6 +4,7 @@
  */
 import { type EnvironmentProviders, makeEnvironmentProviders } from '@angular/core';
 import { provideBackup } from './backup/provide-backup.ts';
+import { provideDeviceData } from './device/provide-device-data.ts';
 import { provideEngineFacade } from './engine/provide-engine-facade.ts';
 import { provideDataStores } from './providers/provide-data-stores.ts';
 import { provideStores } from './stores/provide-stores.ts';
@@ -16,5 +17,6 @@ export function provideAppData(): EnvironmentProviders {
     provideEngineFacade(),
     provideBackup(),
     provideSync(),
+    provideDeviceData(),
   ]);
 }

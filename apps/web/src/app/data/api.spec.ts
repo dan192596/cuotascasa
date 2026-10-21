@@ -16,6 +16,7 @@ import { describe, expectTypeOf, it } from 'vitest';
 import type {
   AnchorDelta,
   CurrencyTotals,
+  DeviceDataService,
   LoanProjection,
   LoanProjectionService,
   LoanValidation,
@@ -75,5 +76,12 @@ describe('data/api.ts LoanProjectionService (spec §9 «Valores derivados»)', (
     expectTypeOf<LoanProjection['realDeltaPerComponent']>().toEqualTypeOf<Signal<readonly ComponentRealDelta[]>>();
     expectTypeOf<LoanProjection['paths']>().toEqualTypeOf<Signal<Paths | null>>();
     expectTypeOf<LoanProjection['error']>().toEqualTypeOf<Signal<DomainError | null>>();
+  });
+});
+
+describe('data/api.ts DeviceDataService (W7-04)', () => {
+  it('declares only clearAll(): Promise<void>', () => {
+    expectTypeOf<DeviceDataService>().toEqualTypeOf<{ clearAll(): Promise<void> }>();
+    expectTypeOf<keyof DeviceDataService>().toEqualTypeOf<'clearAll'>();
   });
 });

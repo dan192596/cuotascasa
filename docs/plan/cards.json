@@ -798,7 +798,44 @@
       "docs/adr/",
       "docs/release/",
       "tools/spikes/",
-      "CHANGELOG.md"
+      "CHANGELOG.md",
+      "docs/security/threat-model.md"
+    ]
+  },
+  {
+    "id": "W7-02",
+    "wave": "W7",
+    "executor": "sonnet",
+    "branch": "card/W7-02-ci-hygiene-synthetic-flag-and-noreply-checks-on",
+    "owns": [
+      ".github/workflows/ci.yml",
+      "tools/hygiene/ci/"
+    ]
+  },
+  {
+    "id": "W7-03",
+    "wave": "W7",
+    "executor": "sonnet",
+    "branch": "card/W7-03-file-size-caps-for-backup-import-and-drive-downl",
+    "owns": [
+      "apps/web/src/app/data/backup/",
+      "apps/web/src/app/data/sync/",
+      "packages/sync/src/google-drive/provider.ts",
+      "packages/sync/src/google-drive/provider.spec.ts"
+    ]
+  },
+  {
+    "id": "W7-04",
+    "wave": "W7",
+    "executor": "sonnet",
+    "branch": "card/W7-04-borrar-datos-de-este-dispositivo",
+    "owns": [
+      "apps/web/src/app/data/device/",
+      "apps/web/src/app/features/settings/device/",
+      "apps/web/src/app/features/settings/settings-page.component.ts",
+      "apps/web/src/app/public/privacy/",
+      "e2e/specs/settings-device.spec.ts",
+      "e2e/specs/sweeps/stubs-and-worker.sweep.spec.ts"
     ]
   }
 ]
