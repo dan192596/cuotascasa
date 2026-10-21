@@ -1,4 +1,4 @@
-import type { KeyStore, StoredKey } from '../ports.ts';
+import { PBKDF2_ITERATIONS, type KeyStore, type StoredKey } from '../ports.ts';
 import { decodeBase64Url } from './base64url.ts';
 import { SALT_BYTES } from './envelope.ts';
 
@@ -6,6 +6,7 @@ import { SALT_BYTES } from './envelope.ts';
  * Per-device key store (ADR-0009 decision 5): one IndexedDB record holding the non-extractable CryptoKey (persisted by
  * structured clone, so its bytes never reach JavaScript), its base64url salt id and iteration count. The passphrase is
  * never given to the store, and save() copies only those three fields after checking the key cannot be exported.
+ * As defense in depth, a record below the iteration floor is neither saved nor loaded (W7-01).
  */
 
 export const KEY_STORE_DATABASE = 'cuotascasa-keys';
@@ -17,6 +18,8 @@ export interface IndexedDbKeyStoreOptions {
   readonly indexedDB?: IDBFactory | undefined;
   /** Defaults to KEY_STORE_DATABASE. */
   readonly databaseName?: string;
+  /** Test seam (D25): lowest accepted iteration count. Defaults to PBKDF2_ITERATIONS; only tests pass less. */
+  readonly minIterations?: number;
 }
 
 function isDeviceKey(key: unknown): key is CryptoKey {
@@ -36,7 +39,7 @@ function isDeviceKey(key: unknown): key is CryptoKey {
   );
 }
 
-function isStoredKey(value: unknown): value is StoredKey {
+function isStoredKey(value: unknown, minIterations: number): value is StoredKey {
   if (value === null || typeof value !== 'object') {
     return false;
   }
@@ -52,12 +55,13 @@ function isStoredKey(value: unknown): value is StoredKey {
     salt !== null &&
     salt.length >= SALT_BYTES &&
     Number.isSafeInteger(record['iterations']) &&
-    (record['iterations'] as number) >= 1
+    (record['iterations'] as number) >= Math.max(1, minIterations)
   );
 }
 
 export function createIndexedDbKeyStore(options: IndexedDbKeyStoreOptions = {}): KeyStore {
   const databaseName = options.databaseName ?? KEY_STORE_DATABASE;
+  const minIterations = options.minIterations ?? PBKDF2_ITERATIONS;
 
   function open(): Promise<IDBDatabase> {
     const factory = options.indexedDB ?? (globalThis as { indexedDB?: IDBFactory }).indexedDB;
@@ -101,7 +105,7 @@ export function createIndexedDbKeyStore(options: IndexedDbKeyStoreOptions = {}):
   return {
     async load(): Promise<StoredKey | null> {
       const value: unknown = await run('readonly', (store) => store.get(KEY_STORE_RECORD));
-      if (!isStoredKey(value)) {
+      if (!isStoredKey(value, minIterations)) {
         return null;
       }
       return { key: value.key, saltId: value.saltId, iterations: value.iterations };
@@ -109,7 +113,7 @@ export function createIndexedDbKeyStore(options: IndexedDbKeyStoreOptions = {}):
 
     async save(entry: StoredKey): Promise<void> {
       const record = { key: entry.key, saltId: entry.saltId, iterations: entry.iterations };
-      if (!isStoredKey(record)) {
+      if (!isStoredKey(record, minIterations)) {
         throw new TypeError(
           'Only a non-extractable AES-GCM 256 encrypt/decrypt key with a valid salt id and iterations can be stored',
         );

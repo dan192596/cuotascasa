@@ -8,8 +8,8 @@ Requisitos: R12 (sincronización con Drive) y R22 (seguridad). Contexto: ADR-001
 
 | Elemento | Detalle |
 |---|---|
-| Comando | `node tools/spikes/csp-gis/run.mjs` (sale con 0 si las comprobaciones negativas pasan y hay al menos un candidato sin violaciones) |
-| Resultados | `tools/spikes/csp-gis/results.json`: todas las celdas, las cabeceras candidatas y los hashes de los bloques inline |
+| Comando | `node tools/spikes/csp-gis/run.mjs` (salía con 0 si las comprobaciones negativas pasaban y había al menos un candidato sin violaciones). Retirado en W7: `git show 8e0bce5:tools/spikes/csp-gis/run.mjs` y `docs/release/archivo-spikes.md` |
+| Resultados | `git show 8e0bce5:tools/spikes/csp-gis/results.json` (retirado en W7): todas las celdas, las cabeceras candidatas y los hashes de los bloques inline |
 | Motores | Chromium 153.0.8010.12 y WebKit 26.6 (el WebKit de Playwright, **no** Safari), ambos headless |
 | Compilaciones | Se hacen en una copia temporal del espacio de trabajo; `angular.json`, `app.config.ts` y la landing del repo no se tocan |
 | Servidor | Servidor estático local que envía las cabeceras candidatas por clase de ruta y reproduce las reglas de ADR-0022: `/` y `/privacidad` prerenderizadas, `/app/**` reescrita al shell CSR con 200, el resto responde 404 con el shell |
@@ -210,7 +210,7 @@ Con violaciones (resumen):
 
 ## 9. Código del spike
 
-`tools/spikes/csp-gis/` es código desechable fuera de la compilación de producción; se retira en W7-01.
+`tools/spikes/csp-gis/` era código desechable fuera de la compilación de producción y se retiró en W7. Sigue disponible en el historial: `git show 8e0bce5:tools/spikes/csp-gis/<archivo>` (por ejemplo, `git show 8e0bce5:tools/spikes/csp-gis/run.mjs`). El inventario de spikes retirados está en `docs/release/archivo-spikes.md`.
 
 | Archivo | Para qué |
 |---|---|

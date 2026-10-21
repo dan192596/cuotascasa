@@ -315,7 +315,10 @@ describe('DriveSyncService', () => {
       await device.service.sync();
 
       expect(PBKDF2_ITERATIONS).toBe(600_000);
-      const stored = await createIndexedDbKeyStore({ indexedDB: device.indexedDb }).load();
+      const stored = await createIndexedDbKeyStore({
+        indexedDB: device.indexedDb,
+        minIterations: TEST_ITERATIONS,
+      }).load();
       expect(stored?.key.extractable).toBe(false);
       expect(stored?.iterations).toBe(600_000);
 
@@ -413,7 +416,9 @@ describe('DriveSyncService', () => {
       const second = await createDevice(world, 2);
       await enroll(second);
       const salt = parseEnvelope(world.drive.fileByName(REMOTE_FILE_NAME)?.content ?? '').kdf.salt;
-      expect((await createIndexedDbKeyStore({ indexedDB: second.indexedDb }).load())?.saltId).toBe(salt);
+      expect(
+        (await createIndexedDbKeyStore({ indexedDB: second.indexedDb, minIterations: TEST_ITERATIONS }).load())?.saltId,
+      ).toBe(salt);
 
       await addLoan(second, 'Casa B');
       await second.service.sync();
@@ -437,7 +442,9 @@ describe('DriveSyncService', () => {
       expect(second.service.statusText()).toBe(
         'La frase no coincide con la copia de Drive: revísala e inténtalo de nuevo',
       );
-      expect(await createIndexedDbKeyStore({ indexedDB: second.indexedDb }).load()).toBeNull();
+      expect(
+        await createIndexedDbKeyStore({ indexedDB: second.indexedDb, minIterations: TEST_ITERATIONS }).load(),
+      ).toBeNull();
       expect(await loanNames(second)).toEqual([]);
     });
 
@@ -477,7 +484,9 @@ describe('DriveSyncService', () => {
       const after = parseEnvelope(world.drive.fileByName(REMOTE_FILE_NAME)?.content ?? '');
       expect(after.kdf.salt).not.toBe(oldSalt);
       expect(world.drive.fileByName(REMOTE_PREV_FILE_NAME)?.content).toBe(before);
-      expect((await createIndexedDbKeyStore({ indexedDB: first.indexedDb }).load())?.saltId).toBe(after.kdf.salt);
+      expect(
+        (await createIndexedDbKeyStore({ indexedDB: first.indexedDb, minIterations: TEST_ITERATIONS }).load())?.saltId,
+      ).toBe(after.kdf.salt);
       // The same device keeps syncing without KeyMismatch.
       await addLoan(first, 'Casa B');
       await first.service.sync();
@@ -511,14 +520,19 @@ describe('DriveSyncService', () => {
       await enroll(first);
       await addLoan(first, 'Casa A');
       await first.service.sync();
-      const oldKey = await createIndexedDbKeyStore({ indexedDB: first.indexedDb }).load();
+      const oldKey = await createIndexedDbKeyStore({
+        indexedDB: first.indexedDb,
+        minIterations: TEST_ITERATIONS,
+      }).load();
       const remoteBefore = world.drive.fileByName(REMOTE_FILE_NAME)?.content;
 
       world.drive.failNext({ kind: 'network' }, { operation: 'files.update.multipart' });
       await first.service.changePassphrase('frase nueva de prueba');
 
       expect(first.service.status().state).toBe('offline');
-      expect((await createIndexedDbKeyStore({ indexedDB: first.indexedDb }).load())?.saltId).toBe(oldKey?.saltId);
+      expect(
+        (await createIndexedDbKeyStore({ indexedDB: first.indexedDb, minIterations: TEST_ITERATIONS }).load())?.saltId,
+      ).toBe(oldKey?.saltId);
       expect(world.drive.fileByName(REMOTE_FILE_NAME)?.content).toBe(remoteBefore);
       await first.service.sync();
       expect(first.service.status().state).toBe('idle');
@@ -532,9 +546,13 @@ describe('DriveSyncService', () => {
       expect(device.service.status()).toEqual({ state: 'needs-passphrase', reason: 'KeyMismatch' });
 
       await device.service.setPassphrase(PASSPHRASE);
-      const oldSalt = (await createIndexedDbKeyStore({ indexedDB: device.indexedDb }).load())?.saltId;
+      const oldSalt = (
+        await createIndexedDbKeyStore({ indexedDB: device.indexedDb, minIterations: TEST_ITERATIONS }).load()
+      )?.saltId;
       await device.service.changePassphrase('frase nueva de prueba');
-      expect((await createIndexedDbKeyStore({ indexedDB: device.indexedDb }).load())?.saltId).not.toBe(oldSalt);
+      expect(
+        (await createIndexedDbKeyStore({ indexedDB: device.indexedDb, minIterations: TEST_ITERATIONS }).load())?.saltId,
+      ).not.toBe(oldSalt);
       expect(device.service.status().state).toBe('idle');
     });
   });
@@ -604,7 +622,7 @@ describe('DriveSyncService', () => {
       const device = await createDevice(world, 1);
       await enroll(device);
       await addLoan(device, 'Casa A');
-      const key = await createIndexedDbKeyStore({ indexedDB: device.indexedDb }).load();
+      const key = await createIndexedDbKeyStore({ indexedDB: device.indexedDb, minIterations: TEST_ITERATIONS }).load();
       if (key === null) throw new Error('no key');
       world.drive.seed({ name: REMOTE_FILE_NAME, content: await content(key) });
       return { world, device };
@@ -625,6 +643,49 @@ describe('DriveSyncService', () => {
       expect(world.drive.fileByName(REMOTE_FILE_NAME)?.content).toBe(remoteBefore);
     });
 
+    it('an oversize remote file (over 20 MiB) is InvalidRemote: nothing is saved, uploaded or copied (W7-03)', async () => {
+      const world = createWorld();
+      let cancelled = false;
+      const watching = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+        const response = await world.drive.fetch(input, init);
+        const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+        if (!url.includes('alt=media') || response.body === null) return response;
+        const reader = response.body.getReader();
+        const body = new ReadableStream<Uint8Array>({
+          async pull(controller) {
+            const { done, value } = await reader.read();
+            if (done) controller.close();
+            else controller.enqueue(value);
+          },
+          async cancel(reason) {
+            cancelled = true;
+            await reader.cancel(reason);
+          },
+        });
+        return new Response(body, { status: response.status, headers: response.headers });
+      };
+      const device = await createDevice(world, 1, { fetch: watching });
+      await enroll(device);
+      await addLoan(device, 'Casa A');
+      world.drive.seed({ name: REMOTE_FILE_NAME, content: 'a'.repeat(20 * 1024 * 1024 + 1) });
+      const localBefore = JSON.stringify(await device.store.exportAll());
+      const metaBefore = JSON.stringify(await device.store.getMeta());
+      const remoteBefore = world.drive.fileByName(REMOTE_FILE_NAME);
+      const requestsBefore = world.drive.requests.length;
+
+      await device.service.sync();
+
+      expect(cancelled).toBe(true);
+      expect(device.service.status()).toEqual({ state: 'error', code: 'InvalidRemote' });
+      expect(device.service.statusText()).toBe('No se puede leer la copia de Drive. Tus datos locales no cambiaron.');
+      expect(JSON.stringify(await device.store.exportAll())).toBe(localBefore);
+      expect(JSON.stringify(await device.store.getMeta())).toBe(metaBefore);
+      expect(world.drive.fileByName(REMOTE_FILE_NAME)).toEqual(remoteBefore);
+      expect(world.drive.files()).toHaveLength(1);
+      const methods = world.drive.requests.slice(requestsBefore).map((request) => request.operation);
+      expect(methods.every((operation) => operation === 'files.list' || operation === 'files.get.media')).toBe(true);
+    });
+
     it('a remote file that is not an envelope is InvalidRemote too, also when setting the passphrase', async () => {
       const { device } = await seededDevice(() => Promise.resolve('esto no es un sobre'));
       await device.service.sync();
@@ -635,7 +696,9 @@ describe('DriveSyncService', () => {
       const fresh = await createDevice(world, 2);
       await enroll(fresh);
       expect(fresh.service.status()).toEqual({ state: 'error', code: 'InvalidRemote' });
-      expect(await createIndexedDbKeyStore({ indexedDB: fresh.indexedDb }).load()).toBeNull();
+      expect(
+        await createIndexedDbKeyStore({ indexedDB: fresh.indexedDb, minIterations: TEST_ITERATIONS }).load(),
+      ).toBeNull();
     });
 
     it('never derives a key with the iterations of a weak or hostile remote envelope (WeakParams)', async () => {
@@ -652,7 +715,9 @@ describe('DriveSyncService', () => {
         await enroll(device);
         expect(device.service.status()).toEqual({ state: 'error', code: 'WeakParams' });
         expect(Date.now() - started).toBeLessThan(5_000);
-        expect(await createIndexedDbKeyStore({ indexedDB: device.indexedDb }).load()).toBeNull();
+        expect(
+          await createIndexedDbKeyStore({ indexedDB: device.indexedDb, minIterations: TEST_ITERATIONS }).load(),
+        ).toBeNull();
       }
     });
   });
@@ -670,7 +735,8 @@ async function remoteKeySalt(world: World): Promise<string> {
 }
 
 async function localKeySalt(device: Device): Promise<string | undefined> {
-  return (await createIndexedDbKeyStore({ indexedDB: device.indexedDb }).load())?.saltId;
+  return (await createIndexedDbKeyStore({ indexedDB: device.indexedDb, minIterations: TEST_ITERATIONS }).load())
+    ?.saltId;
 }
 
 /** Two enrolled devices that share a passphrase, the first one already synced. */
@@ -973,10 +1039,17 @@ describe('DriveSyncService: review fixes', () => {
       async (code) => {
         const world = createWorld();
         const crypto = await realCrypto();
-        const device = await createDevice(world, 1, code === 'WeakParams' ? { minIterations: 5_000 } : {});
+        const device = await createDevice(
+          world,
+          1,
+          code === 'WeakParams' ? { iterations: 5_000, minIterations: 5_000 } : {},
+        );
         await enroll(device);
         await addLoan(device, 'Casa A');
-        const key = await createIndexedDbKeyStore({ indexedDB: device.indexedDb }).load();
+        const key = await createIndexedDbKeyStore({
+          indexedDB: device.indexedDb,
+          minIterations: TEST_ITERATIONS,
+        }).load();
         if (key === null) throw new Error('no key');
         const foreign =
           code === 'KeyMismatch'
@@ -985,7 +1058,8 @@ describe('DriveSyncService: review fixes', () => {
                 saltId: key.saltId,
                 iterations: code === 'WeakParams' ? 1_000 : TEST_ITERATIONS,
               });
-        // WeakParams: the device accepts >= 5 000 iterations, the file says 1 000; the others use the test iterations.
+        // WeakParams: the device enrolls and accepts >= 5 000 iterations (the key store refuses a key below its floor),
+        // the file says 1 000; the others use the test iterations.
         world.drive.seed({ name: REMOTE_FILE_NAME, content: serializeEnvelope(await crypto.encrypt(foreign, 'x')) });
         const localBefore = JSON.stringify(await device.store.exportAll());
         const remoteBefore = world.drive.fileByName(REMOTE_FILE_NAME)?.content;

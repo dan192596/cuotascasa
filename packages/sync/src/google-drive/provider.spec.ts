@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { SyncError, type RemoteFile } from '../ports.ts';
+import { SyncError, type GisOAuth2, type GisTokenResponse, type RemoteFile } from '../ports.ts';
 import { createDriveFake, createGisFake } from '../testing/index.ts';
-import { createGoogleDriveProvider } from './index.ts';
+import { createGoogleDriveProvider, MAX_DATA_FILE_BYTES } from './provider.ts';
 
 const ALLOWED_PREFIXES = ['https://www.googleapis.com/drive/v3/', 'https://www.googleapis.com/upload/drive/v3/'];
 
@@ -140,6 +140,36 @@ describe('connect and token lifecycle', () => {
     expect(env.gis.revokedTokens).toEqual([token]);
     expect(env.provider.isAuthorized()).toBe(false);
     await expectCode(env.provider.findFile('cuotascasa.json'), 'AuthError');
+  });
+
+  describe('revokes a granted token it refuses (W7-01)', () => {
+    /** Wraps the fake so the callback sees a rewritten grant; the token is still issued (and revocable) by the fake. */
+    function rewriting(oauth2: GisOAuth2, rewrite: (response: GisTokenResponse) => GisTokenResponse): GisOAuth2 {
+      return {
+        initTokenClient: (config) =>
+          oauth2.initTokenClient({ ...config, callback: (r) => config.callback(rewrite(r)) }),
+        revoke: (token, done) => oauth2.revoke(token, done),
+      };
+    }
+
+    it.each([
+      ['an insufficient scope', (r: GisTokenResponse) => ({ ...r, scope: 'openid' })],
+      ['a missing scope', (r: GisTokenResponse) => ({ ...r, scope: undefined }) as unknown as GisTokenResponse],
+      ['a zero expires_in', (r: GisTokenResponse) => ({ ...r, expires_in: 0 })],
+      ['a non-numeric expires_in', (r: GisTokenResponse) => ({ ...r, expires_in: 'x' }) as unknown as GisTokenResponse],
+    ])('%s', async (_label, rewrite) => {
+      const gis = createGisFake({ now: () => 0 });
+      const provider = createGoogleDriveProvider({
+        clientId: 'cliente-sintetico',
+        loadGis: () => Promise.resolve(rewriting(gis.oauth2, rewrite)),
+        fetch: () => Promise.reject(new Error('no fetch expected')),
+        now: () => 0,
+      });
+      await expectCode(provider.connect(), 'AuthError');
+      expect(provider.isAuthorized()).toBe(false);
+      expect(gis.issuedTokens).toHaveLength(1);
+      expect(gis.revokedTokens).toEqual(gis.issuedTokens);
+    });
   });
 
   it('disconnect() without a token is a no-op that does not load GIS', async () => {
@@ -295,5 +325,151 @@ describe('token storage', () => {
     await env.provider.authorize();
     await env.provider.disconnect();
     expect(touched).toEqual([]);
+  });
+});
+
+describe('download size cap (W7-03)', () => {
+  const FILE: RemoteFile = { id: 'archivo-1', name: 'cuotascasa.json', modifiedTime: '', version: '1' };
+
+  async function stubbed(respond: () => Response | Promise<Response>) {
+    const now = () => 1_000_000;
+    const gis = createGisFake({ now });
+    const fetchStub = vi.fn(() => Promise.resolve().then(respond));
+    const provider = createGoogleDriveProvider({
+      clientId: 'cliente-sintetico',
+      loadGis: () => Promise.resolve(gis.oauth2),
+      fetch: fetchStub,
+      now,
+    });
+    await provider.connect();
+    return { provider, fetchStub };
+  }
+
+  /** A body that hands out `chunks` chunks of `size` bytes and counts how many were pulled and whether it was cancelled. */
+  function chunked(chunks: number, size: number) {
+    const state = { pulled: 0, cancelled: false };
+    // highWaterMark 0: the stream itself reads ahead of nothing, so `pulled` only counts what the provider asked for.
+    const stream = new ReadableStream<Uint8Array>(
+      {
+        pull(controller) {
+          if (state.pulled >= chunks) {
+            controller.close();
+            return;
+          }
+          state.pulled += 1;
+          controller.enqueue(new Uint8Array(size).fill(0x61));
+        },
+        cancel() {
+          state.cancelled = true;
+        },
+      },
+      { highWaterMark: 0 },
+    );
+    return { state, stream };
+  }
+
+  it('exports a 20 MiB cap', () => {
+    expect(MAX_DATA_FILE_BYTES).toBe(20 * 1024 * 1024);
+  });
+
+  it('rejects a Content-Length over the cap with InvalidRemote without reading the body', async () => {
+    const { state, stream } = chunked(1, 10);
+    const { provider } = await stubbed(
+      () => new Response(stream, { headers: { 'Content-Length': String(MAX_DATA_FILE_BYTES + 1) } }),
+    );
+    await expectCode(provider.downloadFile(FILE), 'InvalidRemote');
+    expect(state.pulled).toBe(0);
+    expect(state.cancelled).toBe(true);
+  });
+
+  it('rejects an over-cap Content-Length on a response without a body', async () => {
+    const { provider } = await stubbed(
+      () => new Response(null, { headers: { 'Content-Length': String(MAX_DATA_FILE_BYTES + 1) } }),
+    );
+    await expectCode(provider.downloadFile(FILE), 'InvalidRemote');
+  });
+
+  it('cancels a body that passes the cap when there is no Content-Length, as soon as it passes', async () => {
+    const chunk = 1024 * 1024;
+    const { state, stream } = chunked(1000, chunk);
+    const { provider } = await stubbed(() => new Response(stream));
+    await expectCode(provider.downloadFile(FILE), 'InvalidRemote');
+    expect(state.cancelled).toBe(true);
+    // 20 chunks of 1 MiB are exactly the cap; the 21st passes it and is the last one read.
+    expect(state.pulled).toBe(21);
+  });
+
+  it('cancels a body that outgrows a smaller, lying Content-Length', async () => {
+    const { state, stream } = chunked(1000, 1024 * 1024);
+    const { provider } = await stubbed(() => new Response(stream, { headers: { 'Content-Length': '100' } }));
+    await expectCode(provider.downloadFile(FILE), 'InvalidRemote');
+    expect(state.cancelled).toBe(true);
+    expect(state.pulled).toBe(21);
+  });
+
+  it('accepts a body of exactly the cap, with the same text as response.text()', async () => {
+    const { stream } = chunked(20, 1024 * 1024);
+    const { provider } = await stubbed(
+      () => new Response(stream, { headers: { 'Content-Length': String(MAX_DATA_FILE_BYTES) } }),
+    );
+    const text = await provider.downloadFile(FILE);
+    expect(text.length).toBe(MAX_DATA_FILE_BYTES);
+    expect(text.startsWith('aaaa')).toBe(true);
+  });
+
+  it('decodes multi-byte UTF-8 split across chunks and strips a BOM like response.text()', async () => {
+    const original = '﻿{"nota":"cuota — ñandú 🏠"}';
+    const bytes = new TextEncoder().encode(original);
+    const expected = await new Response(bytes).text();
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        for (const byte of bytes) {
+          controller.enqueue(Uint8Array.of(byte));
+        }
+        controller.close();
+      },
+    });
+    const { provider } = await stubbed(() => new Response(stream));
+    expect(await provider.downloadFile(FILE)).toBe(expected);
+  });
+
+  it('ignores a malformed Content-Length and an empty body', async () => {
+    const { provider } = await stubbed(() => new Response('{"a":1}', { headers: { 'Content-Length': 'abc' } }));
+    expect(await provider.downloadFile(FILE)).toBe('{"a":1}');
+    const empty = await stubbed(() => new Response(null));
+    expect(await empty.provider.downloadFile(FILE)).toBe('');
+  });
+
+  it('keeps a failure while reading the stream as NetworkError', async () => {
+    const stream = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        controller.error(new TypeError('network error'));
+      },
+    });
+    const { provider } = await stubbed(() => new Response(stream));
+    await expectCode(provider.downloadFile(FILE), 'NetworkError');
+  });
+
+  it('copyFile through the download path also stops on an oversize source', async () => {
+    const env = await setup();
+    const huge = env.drive.seed({ name: 'cuotascasa.json', content: 'a'.repeat(MAX_DATA_FILE_BYTES + 1) });
+    env.drive.seed({ name: 'cuotascasa.prev.json', content: '{}' });
+    await expectCode(
+      env.provider.copyFile(
+        { id: huge.id, name: 'cuotascasa.json', modifiedTime: '', version: '1' },
+        'cuotascasa.prev.json',
+      ),
+      'InvalidRemote',
+    );
+    expect(env.drive.fileByName('cuotascasa.prev.json')?.content).toBe('{}');
+  });
+
+  it('the Drive fake serves a real stream: an oversize file is refused', async () => {
+    const env = await setup();
+    const big = env.drive.seed({ name: 'cuotascasa.json', content: 'a'.repeat(MAX_DATA_FILE_BYTES + 1) });
+    await expectCode(
+      env.provider.downloadFile({ id: big.id, name: 'cuotascasa.json', modifiedTime: '', version: '1' }),
+      'InvalidRemote',
+    );
   });
 });

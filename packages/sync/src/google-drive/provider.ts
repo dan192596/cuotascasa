@@ -30,6 +30,13 @@ export interface GoogleDriveProviderOptions {
   readonly revokeTimeoutMs?: number;
 }
 
+/**
+ * Largest Drive file the app will read, in bytes (also the cap of the backup import in apps/web data/backup; keep the
+ * two equal). A household's sync file is about 6 MB of JSON and about 8 MB as an encrypted envelope (base64), so 20 MiB
+ * leaves more than 2x headroom for the largest realistic dataset while a hostile or corrupt file never fills memory.
+ */
+export const MAX_DATA_FILE_BYTES = 20 * 1024 * 1024;
+
 const FIELDS = 'id,name,modifiedTime,version';
 const RATE_LIMIT_REASONS = new Set(['rateLimitExceeded', 'userRateLimitExceeded']);
 /** The token is treated as expired this long before GIS says so, so a call never starts with a dying token. */
@@ -173,11 +180,14 @@ export function createGoogleDriveProvider(options: GoogleDriveProviderOptions): 
         gis.revoke(response.access_token);
         throw new SyncError('AuthError');
       }
+      // A token refused below was still granted: revoke it so it does not stay live at Google (W7-01).
       if (typeof response.scope !== 'string' || !response.scope.split(' ').includes(DRIVE_APPDATA_SCOPE)) {
+        gis.revoke(response.access_token);
         throw new SyncError('AuthError');
       }
       const seconds = Number(response.expires_in);
       if (!Number.isFinite(seconds) || seconds <= 0) {
+        gis.revoke(response.access_token);
         throw new SyncError('AuthError');
       }
       token = { value: response.access_token, expiresAt: options.now() + seconds * 1000 };
@@ -220,14 +230,6 @@ export function createGoogleDriveProvider(options: GoogleDriveProviderOptions): 
     }
   }
 
-  async function text(response: Response): Promise<string> {
-    try {
-      return await response.text();
-    } catch {
-      throw new SyncError('NetworkError');
-    }
-  }
-
   async function findFile(name: RemoteFileName): Promise<RemoteFile | null> {
     const q = encodeURIComponent(`name = '${name.replace(/[\\']/g, '\\$&')}'`);
     const response = await call(
@@ -238,8 +240,52 @@ export function createGoogleDriveProvider(options: GoogleDriveProviderOptions): 
     return first === undefined ? null : toRemote(first);
   }
 
+  /** Reads the body as UTF-8 text, refusing (InvalidRemote) anything over MAX_DATA_FILE_BYTES without buffering it all. */
+  /** Reads the body as UTF-8 text; over MAX_DATA_FILE_BYTES it stops (InvalidRemote) without buffering the rest. */
+  async function readCapped(response: Response): Promise<string> {
+    const body = response.body;
+    const declared = Number(response.headers.get('Content-Length'));
+    if (Number.isFinite(declared) && declared > MAX_DATA_FILE_BYTES) {
+      await body?.cancel().catch(() => undefined);
+      throw new SyncError('InvalidRemote');
+    }
+    if (body === null) {
+      return '';
+    }
+    const reader = body.getReader();
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+      total += value.byteLength;
+      if (total > MAX_DATA_FILE_BYTES) {
+        await reader.cancel().catch(() => undefined);
+        throw new SyncError('InvalidRemote');
+      }
+      chunks.push(value);
+    }
+    const bytes = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    return new TextDecoder('utf-8').decode(bytes);
+  }
+
+  async function cappedText(response: Response): Promise<string> {
+    try {
+      return await readCapped(response);
+    } catch (error) {
+      throw error instanceof SyncError ? error : new SyncError('NetworkError');
+    }
+  }
+
   async function downloadFile(file: RemoteFile): Promise<string> {
-    return text(await call(`${DRIVE_FILES_URL}/${encodeURIComponent(file.id)}?alt=media`));
+    return cappedText(await call(`${DRIVE_FILES_URL}/${encodeURIComponent(file.id)}?alt=media`));
   }
 
   async function createFile(name: RemoteFileName, content: string): Promise<RemoteFile> {

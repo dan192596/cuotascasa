@@ -296,7 +296,10 @@ export class DriveSyncService implements SyncService {
       fetch: options.fetch ?? ((input, init) => globalThis.fetch(input, init)),
       now: options.nowMs ?? (() => Date.now()),
     });
-    const keys = crypto.createIndexedDbKeyStore({ indexedDB: options.indexedDb });
+    const keys = crypto.createIndexedDbKeyStore({
+      indexedDB: options.indexedDb,
+      ...(options.minIterations === undefined ? {} : { minIterations: options.minIterations }),
+    });
     const session = sessionModule.createSyncSession(
       { provider, local: createLocalDataset(store), keys, clock, locks },
       {

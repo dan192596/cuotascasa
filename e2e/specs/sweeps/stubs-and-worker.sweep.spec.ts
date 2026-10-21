@@ -27,7 +27,7 @@ async function distFiles(directory: string): Promise<string[]> {
  * with DataError('NOT_IMPLEMENTED')); every other marker still fails there. An entry whose marker is no longer in dist
  * fails too, so the allowance cannot outlive its stub. The release (W7-01) requires this list to be empty.
  */
-const PENDING_STUBS: readonly string[] = ['CC_STUB:W7-04'];
+const PENDING_STUBS: readonly string[] = [];
 const PENDING_STUB_MARKERS: ReadonlySet<string> = new Set(['CC_STUB', 'NOT_IMPLEMENTED']);
 
 test('no stub marker anywhere in the production dist', async () => {
