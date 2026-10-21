@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
 /** Date of the last change to this policy, dd/mm/aaaa (docs/specs/privacy-requirements.md). Update it with the text. */
-export const PRIVACY_LAST_UPDATED = '16/10/2026';
+export const PRIVACY_LAST_UPDATED = '21/10/2026';
 
 /**
  * Public privacy policy (R2). The h2 texts are frozen by docs/specs/privacy-requirements.md and verified against the
@@ -117,8 +117,9 @@ export const PRIVACY_LAST_UPDATED = '16/10/2026';
       <section aria-labelledby="s-borrar">
         <h2 id="s-borrar">Cómo borrar todos tus datos</h2>
         <p>
-          Borra los datos del sitio en el navegador de cada dispositivo. En Google Drive, entra a «Administrar
-          aplicaciones», elige CuotasCasa y usa «Borrar datos ocultos de la aplicación».
+          Borra los datos del sitio en el navegador de cada dispositivo o con «Borrar datos de este dispositivo» en
+          Ajustes. En Google Drive, entra a «Administrar aplicaciones», elige CuotasCasa y usa «Borrar datos ocultos de
+          la aplicación».
         </p>
       </section>
 
