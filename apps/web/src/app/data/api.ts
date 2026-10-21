@@ -1,7 +1,7 @@
 /**
  * Frozen contract between the app (features/, core/) and the data layer (data/) — card W0-05.
  * Only `import type` from the packages (ADR-0010 §5): this file never pulls adapters into a bundle.
- * Implementations: stores W3-11, engine facade W3-12, backup W4-08, sync W4-09, storage health W3-13.
+ * Implementations: stores W3-11, engine facade W3-12, backup W4-08, sync W4-09, storage health W3-13, device data W7-04.
  * Changing it takes an Opus contract micro-card (docs/plan/README.md §5).
  */
 import type { Signal } from '@angular/core';
@@ -46,7 +46,8 @@ export type DataErrorCode = (typeof DATA_ERROR_CODES)[number];
 
 /**
  * Typed rejection of every store write. The UI maps `code` to Spanish text; `message` never carries entity values.
- * NOT_IMPLEMENTED was for the inert W0-05 stubs; no production code throws it since W5 (test fakes still may).
+ * NOT_IMPLEMENTED is for inert stubs: the W0-05 ones are gone since W5 (test fakes still may throw it); the only one left
+ * is the device-data stub registered with W7-04, which that card replaces.
  */
 export class DataError extends Error {
   override readonly name = 'DataError';
@@ -355,6 +356,26 @@ export interface SyncService {
   sync(): Promise<void>;
   /** Revokes the token and forgets it. */
   disconnect(): Promise<void>;
+}
+
+/* ---------- Device data (W7-04) ---------- */
+
+/**
+ * «Borrar datos de este dispositivo» (Ajustes). Registered by Opus with card W7-04 (owner decision of 2026-10-21).
+ */
+export interface DeviceDataService {
+  /**
+   * Erases everything this app keeps on this device and nothing else:
+   * 1. When Drive is connected, disconnects it first (SyncService.disconnect: the token is revoked and forgotten).
+   * 2. Deletes both IndexedDB databases of the app: the data store (records, tombstones, snapshots, sync and backup
+   *    marks, device settings) and the per-device key store.
+   * Never reads, writes or deletes the Drive copy (cuotascasa.json, cuotascasa.prev.json): removing it is a separate
+   * step in Google Drive (privacy page, «Cómo borrar todos tus datos»).
+   * Resolves once both databases are gone. The data layer of this tab is then closed and its signals are stale, so the
+   * caller leaves with a full page load of /app. Rejects with DataError('STORAGE') when a database could not be deleted
+   * (e.g. another open tab blocks it); the message never carries record values.
+   */
+  clearAll(): Promise<void>;
 }
 
 /* ---------- Storage health (W3-13, ADR-0017) ---------- */

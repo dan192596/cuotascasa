@@ -574,7 +574,8 @@
   {
     "path": "apps/web/src/app/features/settings/settings-page.component.ts",
     "editableBy": [
-      "W0-05"
+      "W0-05",
+      "W7-04"
     ]
   },
   {
@@ -700,7 +701,8 @@
       "W0-06",
       "W2-01",
       "W3-16",
-      "W3-17"
+      "W3-17",
+      "W7-02"
     ]
   },
   {

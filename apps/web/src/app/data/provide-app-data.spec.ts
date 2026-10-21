@@ -5,6 +5,7 @@ import type { StorageEstimateView, StorageHealth } from './api.ts';
 import { provideAppData } from './provide-app-data.ts';
 import {
   BACKUP_SERVICE,
+  DEVICE_DATA_SERVICE,
   LOAN_EVENTS_STORE,
   LOAN_PROJECTION_SERVICE,
   LOANS_STORE,
@@ -44,6 +45,7 @@ describe('provideAppData()', () => {
       LOAN_PROJECTION_SERVICE,
       BACKUP_SERVICE,
       SYNC_SERVICE,
+      DEVICE_DATA_SERVICE,
     ];
     for (const token of tokens) {
       expect(TestBed.inject(token, null), String(token)).not.toBeNull();

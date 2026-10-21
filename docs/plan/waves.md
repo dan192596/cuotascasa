@@ -126,11 +126,14 @@ Prove the whole product end to end on Chromium and WebKit under production heade
 
 ## W7 · Release
 
-Final security and hygiene review on the deployed site, owner-assisted manual Drive verification, traceability matrix, ADRs brought current, spikes retired, v1.0.0.
+Fix cards from the W6 findings (CI hygiene, file-size caps, device data erase), then the final security and hygiene review on the deployed site, owner-assisted manual Drive verification, traceability matrix, ADRs brought current, spikes retired, v1.0.0.
 
 | Tarjeta | Ejecutor | Tamaño | Depende de | Título |
 |---|---|---|---|---|
-| [W7-01](cards/W7-01.md) | opus | M | W6-01, W6-02, W6-03, W6-04, W4-02 | Security and release review, manual Drive verification, traceability, ADR currency, v1.0.0 |
+| [W7-01](cards/W7-01.md) | opus | M | W6-01, W6-02, W6-03, W6-04, W4-02, W7-02, W7-03, W7-04 | Security and release review, manual Drive verification, traceability, ADR currency, v1.0.0 |
+| [W7-02](cards/W7-02.md) | sonnet | S | W1-10, W3-16, W6-02 | CI hygiene: synthetic-flag and noreply checks on every PR |
+| [W7-03](cards/W7-03.md) | sonnet | S | W4-08, W4-09, W5-07, W5-08 | File-size caps for backup import and Drive download |
+| [W7-04](cards/W7-04.md) | sonnet | M | W4-05, W4-09, W5-07, W5-08, W6-02 | Borrar datos de este dispositivo |
 
 ## Contratos congelados en W0
 

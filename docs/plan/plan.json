@@ -2620,7 +2620,7 @@
     {
       "id": "W7",
       "name": "Release",
-      "goal": "Final security and hygiene review on the deployed site, owner-assisted manual Drive verification, traceability matrix, ADRs brought current, spikes retired, v1.0.0.",
+      "goal": "Fix cards from the W6 findings (CI hygiene, file-size caps, device data erase), then the final security and hygiene review on the deployed site, owner-assisted manual Drive verification, traceability matrix, ADRs brought current, spikes retired, v1.0.0.",
       "cards": [
         {
           "id": "W7-01",
@@ -2630,30 +2630,35 @@
             "docs/adr/",
             "docs/release/",
             "tools/spikes/",
-            "CHANGELOG.md"
+            "CHANGELOG.md",
+            "docs/security/threat-model.md"
           ],
           "depends_on": [
             "W6-01",
             "W6-02",
             "W6-03",
             "W6-04",
-            "W4-02"
+            "W4-02",
+            "W7-02",
+            "W7-03",
+            "W7-04"
           ],
           "contracts_used": [
             "docs/guides/",
-            "docs/security/threat-model.md",
             "docs/plan/cards.json",
             "docs/specs/oracle-validation-log.md"
           ],
-          "deliverables": "Review of CSP/TT on the deployed site, crypto and token handling, dependency audit and full-history gitleaks. Re-verification that secret scanning and push protection are on and that the OAuth consent screen is published. Execution of the manual Drive checklist with the owner; docs/release/v1-checklist.md records only item, result and date (no emails, accounts, device names or screenshots) and is signed with the owner's GitHub username. If docs/specs/oracle-validation-log.md has any 'validación privada: no autorizada' line, docs/release/v1-checklist.md records the residual risk (no private validation against a real bank table for those gates). docs/release/traceability.md generated from docs/plan/cards.json mapping R1-R28 to merged cards and tests. ADRs updated, with the Supabase multi-user ADR kept deferred and its triggers listed. tools/spikes/ removed with an archival note. CHANGELOG and the v1.0.0 tag.",
+          "deliverables": "Review of CSP/TT on the deployed site, crypto and token handling, dependency audit and full-history gitleaks. Re-verification that secret scanning and push protection are on and that the OAuth consent screen is published. Execution of the manual Drive checklist with the owner; docs/release/v1-checklist.md records only item, result and date (no emails, accounts, device names or screenshots) and is signed off by the owner through their approval of the release PR; the owner's GitHub username is not written in any file (D27, owner decision 2026-10-21). If docs/specs/oracle-validation-log.md has any 'validación privada: no autorizada' line, docs/release/v1-checklist.md records the residual risk (no private validation against a real bank table for those gates). It also records the owner decision of 2026-10-21 as a residual risk: no private bank table is available, so the engine was never compared with a real one; if the owner gets one later it may be compared privately, outside the repo, and nothing of it is ever published. docs/release/traceability.md generated from docs/plan/cards.json mapping R1-R28 to merged cards and tests. ADRs updated, with the Supabase multi-user ADR kept deferred and its triggers listed. tools/spikes/ removed with an archival note. CHANGELOG and the v1.0.0 tag. docs/security/threat-model.md brought current with W7-02 (synthetic-flag and noreply now run in CI; the denylist stays a local hook), W7-03 (size caps on backup import and Drive download) and W7-04 (residual risk 2: «Borrar datos de este dispositivo» now exists and never deletes the Drive copy), with the Spanish and English headings kept in parity. The PENDING_STUBS list of e2e/specs/sweeps/stubs-and-worker.sweep.spec.ts is empty (W7-04 removes its entry).",
           "acceptance_criteria": [
             "edge:check --base-url is green on production and a Playwright sweep of the production URL finds zero CSP violations",
             "pnpm audit --prod reports no high or critical issue; full-history gitleaks clean",
             "The manual Drive checklist is 100% passed, recorded with date",
             "A test over traceability.md fails if any R1-R28 lacks a merged card with tests; it passes",
-            "Every ADR status is current and the release checklist is signed off by the owner with their GitHub username",
+            "Every ADR status is current and the release checklist is signed off by the owner through their approval of the release PR, with no GitHub username written in any file (D27)",
             "docs/release/ contains no real identifiers (gitleaks and denylist clean)",
-            "If docs/specs/oracle-validation-log.md contains any 'validación privada: no autorizada' line, docs/release/v1-checklist.md records the residual risk for each such gate (test)"
+            "If docs/specs/oracle-validation-log.md contains any 'validación privada: no autorizada' line, docs/release/v1-checklist.md records the residual risk for each such gate (test)",
+            "docs/release/v1-checklist.md records the residual risk that no private bank table was available (owner decision 2026-10-21)",
+            "docs/security/threat-model.md reflects W7-02, W7-03 and W7-04, and no PENDING_STUBS entry remains in the stub sweep"
           ],
           "requirements": [
             "R22",
@@ -2662,7 +2667,129 @@
             "R26"
           ],
           "size": "M",
-          "notes": "Any defect found becomes its own small fix card, registered in docs/plan/plan.json, with the views, cards.json and frozen-files.json regenerated on a branch opus/register-<ID> before the card branch is created, with explicit owns, merged before the tag. Launch context (D28): docs/plan/cards.json only feeds owns-check and has no requirements; build the R1–R28 traceability from docs/plan/plan.json or docs/plan/traceability.md."
+          "notes": "Any defect found becomes its own small fix card, registered in docs/plan/plan.json, with the views, cards.json and frozen-files.json regenerated on a branch opus/register-<ID> before the card branch is created, with explicit owns, merged before the tag. Launch context (D28): docs/plan/cards.json only feeds owns-check and has no requirements; build the R1–R28 traceability from docs/plan/plan.json or docs/plan/traceability.md. Registered fix cards (2026-10-21, owner decisions in chat): W7-02 CI hygiene, W7-03 file-size caps, W7-04 «Borrar datos de este dispositivo»; all three merge before the tag."
+        },
+        {
+          "id": "W7-02",
+          "title": "CI hygiene: synthetic-flag and noreply checks on every PR",
+          "executor": "sonnet",
+          "owns": [
+            ".github/workflows/ci.yml",
+            "tools/hygiene/ci/"
+          ],
+          "depends_on": [
+            "W1-10",
+            "W3-16",
+            "W6-02"
+          ],
+          "contracts_used": [
+            "tools/hygiene/synthetic-flag.mjs",
+            "tools/hygiene/noreply.mjs",
+            "tools/hygiene/lib.mjs",
+            "lefthook.yml",
+            "docs/adr/0015-higiene-repo-publico.md"
+          ],
+          "deliverables": "Two hygiene checks that today run only as local hooks (lefthook.yml) also run in CI on every pull request (finding of the W6 close, docs/plan/implementation/w0/README.md «Hallazgos de W6»). (1) Synthetic flag: a CI step runs `node tools/hygiene/synthetic-flag.mjs` over the checked-out tree (every JSON under FIXTURE_DIRS has top-level synthetic: true and no file there is ignored by git). Reuse the script as is; do not copy its rules. (2) Noreply: tools/hygiene/ci/noreply-range.mjs checks every non-merge commit of the PR range (`git rev-list --no-merges <base>..<head>`, base = origin/$BASE_REF as the owns-check step does): the author and the committer e-mail of each commit must be a GitHub noreply address (`<id>+<user>@users.noreply.github.com`, the NOREPLY_SUFFIX and emailOf of tools/hygiene/noreply.mjs) or exactly `noreply@github.com` (GitHub's own committer for web edits and merges). Output lists only the short SHA and which identity failed (author or committer), never the e-mail itself, names or commit messages. Exit 0 on pass, 1 on a violation, 2 on a git or usage error. (3) .github/workflows/ci.yml: two steps in the verify job next to owns-check (the noreply step only on pull_request; the synthetic step on pull_request and push), with the same pinned-SHA style and no new action or dependency; keep the header comment accurate (W7-02 is now in the editableBy of .github/). (4) The real-data denylist (tools/hygiene/denylist.mjs) CANNOT run in CI: its term list is private and lives only on the owner's machine, outside the repo. Do not add it, a placeholder list or a secret-backed variant; state this in a comment of the CI step block and in tools/hygiene/ci/README.md (short, Spanish).",
+          "acceptance_criteria": [
+            "tools/hygiene/ci/*.spec.ts builds throwaway git repos: a fixture JSON without synthetic: true makes the CI synthetic step's command exit 1, and the flagged fixture exits 0",
+            "The same specs: a non-merge commit whose author or committer is not a noreply address makes noreply-range.mjs exit 1 naming only the short SHA and the identity; noreply@github.com as committer, <id>+<user>@users.noreply.github.com and merge commits pass",
+            "Both checks exit 0 on the repository itself (a spec runs them on the current checkout, with base = the merge-base with main)",
+            "ci.yml runs both steps (noreply only on pull_request) and the denylist is documented as local-only; actions stay SHA-pinned",
+            "No e-mail address other than the two noreply forms appears in code, tests, output or docs"
+          ],
+          "requirements": [
+            "R23",
+            "R24"
+          ],
+          "size": "S",
+          "notes": "Owner decision 2026-10-21: v1 includes the hygiene checks in CI. Test identities are synthetic (e.g. 1+tester@users.noreply.github.com and a non-noreply one on a reserved domain such as example.com). The real-data denylist stays a local pre-commit hook (ADR-0015 §6); W7-01 updates docs/security/threat-model.md accordingly."
+        },
+        {
+          "id": "W7-03",
+          "title": "File-size caps for backup import and Drive download",
+          "executor": "sonnet",
+          "owns": [
+            "apps/web/src/app/data/backup/",
+            "apps/web/src/app/data/sync/",
+            "packages/sync/src/google-drive/provider.ts",
+            "packages/sync/src/google-drive/provider.spec.ts"
+          ],
+          "depends_on": [
+            "W4-08",
+            "W4-09",
+            "W5-07",
+            "W5-08"
+          ],
+          "contracts_used": [
+            "apps/web/src/app/data/api.ts",
+            "packages/sync/src/ports.ts",
+            "packages/sync/src/testing/",
+            "packages/schema/src/backup/",
+            "docs/specs/drive-api-subset.md",
+            "docs/adr/0007-formato-de-respaldo-json.md",
+            "docs/adr/0008-sincronizacion-google-drive.md"
+          ],
+          "deliverables": "A hostile or accidental huge file must never be read whole into memory. One cap, MAX_DATA_FILE_BYTES = 20 MiB (20 * 1024 * 1024), applies to both paths; export it from one module of each owned area, with the same value and a comment with the reasoning below. (1) Backup import (data/backup/provide-backup.ts, previewImport): check `file.size` BEFORE `file.text()`; over the cap, return importError('INVALID_JSON') without calling text(), arrayBuffer() or stream(). The existing fixed Spanish text of INVALID_JSON («El archivo no es un respaldo válido: no se pudo leer su contenido.») is the user-facing message; do not add a code, because BackupImportErrorCode is a frozen contract (data/api.ts) mirrored by the UI of features/settings/backup (W5-07). (2) Drive download: RemoteFile carries no size (packages/sync/src/ports.ts and the Drive fake's `fields` allowlist are frozen), so the cap is on the response. In packages/sync/src/google-drive/provider.ts, downloadFile rejects with SyncError('InvalidRemote') when Content-Length is present and above the cap, before reading the body; otherwise it reads response.body as a stream, counts bytes and cancels the stream and rejects with SyncError('InvalidRemote') as soon as the count passes the cap (no Content-Length, or a lying one). Under the cap it decodes UTF-8 exactly as response.text() did. A network failure while reading stays SyncError('NetworkError'). InvalidRemote already maps to «No se puede leer la copia de Drive. Tus datos locales no cambiaron.» in data/sync/sync-status-text.ts, and the session already stops without saving or uploading on it (ADR-0008 decision 4). Touch data/sync/ only if a test or that text needs it. (3) Sizing: a spec builds a seeded synthetic backup at the high end of a household (e.g. 10 loans × 360 ActualPayments with breakdown, 360 ReportedBalances and 100 LoanEvents each, 20 scenarios × 50 events per loan, plus tombstones) and records in its comment the size of the plain JSON and of the encrypted envelope (base64, about 4/3); the cap must keep at least 2× headroom over the encrypted size (Opus estimate: about 6 MB plain and 8 MB encrypted, so 20 MiB). If the measured headroom is under 2×, stop and ask Opus.",
+          "acceptance_criteria": [
+            "A Blob/File whose size is over the cap is rejected with INVALID_JSON and its text(), arrayBuffer() and stream() are never called (spy), and nothing is written",
+            "A normal backup (the e2e synthetic backup fixture and the large synthetic one of the sizing spec) still previews and imports",
+            "Drive download: Content-Length over the cap rejects with SyncError('InvalidRemote') without reading the body; a body that passes the cap without Content-Length (or with a smaller lying one) is cancelled as soon as it passes and rejects with InvalidRemote; at or under the cap the text is identical to response.text()",
+            "Sync session and DriveSyncService tests show an oversize remote file stops the sync with the InvalidRemote status text, saving and uploading nothing",
+            "packages/sync keeps coverage ≥ 95 %; the sizing spec records plain and encrypted sizes and asserts the 2× headroom"
+          ],
+          "requirements": [
+            "R11",
+            "R12"
+          ],
+          "size": "S",
+          "notes": "Owner decision 2026-10-21: v1 includes file-size caps. The Drive fake (packages/sync/src/testing/) is frozen; to serve a large or lying response in the provider spec, pass the provider a hand-written fetch stub, not a change to the fake. Do not add an error code anywhere (frozen contracts); if the fixed Spanish texts prove misleading, stop and ask Opus for a contract micro-card."
+        },
+        {
+          "id": "W7-04",
+          "title": "Borrar datos de este dispositivo",
+          "executor": "sonnet",
+          "owns": [
+            "apps/web/src/app/data/device/",
+            "apps/web/src/app/features/settings/device/",
+            "apps/web/src/app/features/settings/settings-page.component.ts",
+            "apps/web/src/app/public/privacy/",
+            "e2e/specs/settings-device.spec.ts",
+            "e2e/specs/sweeps/stubs-and-worker.sweep.spec.ts"
+          ],
+          "depends_on": [
+            "W4-05",
+            "W4-09",
+            "W5-07",
+            "W5-08",
+            "W6-02"
+          ],
+          "contracts_used": [
+            "apps/web/src/app/data/api.ts",
+            "apps/web/src/app/data/tokens.ts",
+            "apps/web/src/app/data/provide-app-data.ts",
+            "apps/web/src/app/data/data-layer.tokens.ts",
+            "apps/web/src/app/ui/feedback/",
+            "docs/specs/privacy-requirements.md",
+            "docs/specs/component-contracts.md",
+            "e2e/support/",
+            "docs/adr/0008-sincronizacion-google-drive.md",
+            "docs/adr/0009-cifrado-con-frase.md"
+          ],
+          "deliverables": "(1) data/device/provide-device-data.ts replaces Opus's inert stub (same export provideDeviceData; delete data/device/stub.spec.ts) with the DeviceDataService of data/api.ts: clearAll() disconnects Drive through SYNC_SERVICE when it is connected (the token is revoked), closes the DataStore (DATA_STORE of data-layer.tokens.ts), then deletes both IndexedDB databases of the app: the data store (DEXIE_DB_NAME of @cuotascasa/persistence/dexie, 'cuotascasa') and the key store (KEY_STORE_DATABASE of @cuotascasa/sync/crypto, 'cuotascasa-keys'), and resolves when both are gone. It never calls the Drive API except the revocation that disconnect() does; the Drive copy stays. A blocked or failed deletion rejects with DataError('STORAGE'). (2) features/settings/device/: a cc-settings-device component, hosted by settings-page.component.ts after cc-settings-sync, with a «Borrar datos de este dispositivo» section: what is erased (préstamos, datos reales, escenarios, ajustes de este dispositivo y la clave de cifrado guardada) and what is not (la copia en Google Drive, with the same steps as /privacidad: «Administrar aplicaciones» → CuotasCasa → «Borrar datos ocultos de la aplicación»); a destructive confirm that only enables the action after typing BORRAR (case-sensitive, trimmed), focus management and Escape to cancel. On success: a polite announcement through the root Announcer («Se borraron los datos de este dispositivo.») and then a full page load of /app (location.replace), because the in-memory stores are stale; /app then shows the empty dashboard. On failure: an assertive, fixed Spanish message and nothing else changes. (3) public/privacy/: the «Cómo borrar todos tus datos» paragraph adds «o con “Borrar datos de este dispositivo” en Ajustes» to the browser option, keeping every frozen heading and id of docs/specs/privacy-requirements.md and the zero-network, zero-storage rule of the public pages. (4) e2e/specs/sweeps/stubs-and-worker.sweep.spec.ts: remove the 'CC_STUB:W7-04' entry from PENDING_STUBS (leave the list empty and the mechanism in place). (5) e2e/specs/settings-device.spec.ts with the shared Google fakes (@cuotascasa/sync/testing): seed data and connect Drive, run the flow, then assert both databases are empty (absent, or recreated empty by the reload), the Drive fake still holds the same cuotascasa.json (and .prev) byte for byte, and the GIS fake lists the access token in revokedTokens.",
+          "acceptance_criteria": [
+            "Unit tests of clearAll: disconnects only when connected, closes the store, deletes exactly the two databases (fake-indexeddb), never calls the provider's file methods, and rejects with DataError('STORAGE') on a blocked deletion",
+            "Component tests: the action stays disabled until BORRAR is typed; cancel and Escape change nothing; success announces politely and navigates with a full load to /app; failure announces assertively",
+            "E2E in Chromium and WebKit: after the flow both databases are empty: 'cuotascasa-keys' is absent or holds no key, and 'cuotascasa' is absent or holds no record and no snapshot (the reload of /app may recreate an empty store with a new deviceId); /app shows the empty dashboard, the Drive fake's files are unchanged and the GIS fake lists the token in revokedTokens",
+            "The privacy page keeps its frozen headings and ids, mentions the new option, and its public-page e2e (no network, no storage) still passes",
+            "PENDING_STUBS is empty and the stub sweep passes; data/device/stub.spec.ts is deleted; axe finds no serious or critical issue on /app/ajustes in both themes"
+          ],
+          "requirements": [
+            "R18",
+            "R2",
+            "R12"
+          ],
+          "size": "M",
+          "notes": "Owner decision 2026-10-21: v1 includes this button. Opus registered the contract (DeviceDataService in data/api.ts, DEVICE_DATA_SERVICE in data/tokens.ts, provideDeviceData() wired in data/provide-app-data.ts) and an inert stub that rejects with NOT_IMPLEMENTED; until this card merges the stub sweep allows its marker through PENDING_STUBS. The service worker cache holds only the app shell, never user data, so it is left alone. If closing the DataStore or the key store cannot release every IndexedDB connection of the tab (deleteDatabase stays blocked), stop and ask Opus; do not edit packages/ or data/sync/."
         }
       ]
     }
@@ -3245,7 +3372,8 @@
     {
       "path": "apps/web/src/app/features/settings/settings-page.component.ts",
       "editableBy": [
-        "W0-05"
+        "W0-05",
+        "W7-04"
       ]
     },
     {
@@ -3371,7 +3499,8 @@
         "W0-06",
         "W2-01",
         "W3-16",
-        "W3-17"
+        "W3-17",
+        "W7-02"
       ]
     },
     {

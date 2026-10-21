@@ -5,6 +5,7 @@
 import { InjectionToken } from '@angular/core';
 import type {
   BackupService,
+  DeviceDataService,
   LoanEventsStore,
   LoanProjectionService,
   LoansStore,
@@ -25,5 +26,7 @@ export const SETTINGS_STORE = new InjectionToken<SettingsStore>('SettingsStore')
 export const LOAN_PROJECTION_SERVICE = new InjectionToken<LoanProjectionService>('LoanProjectionService');
 export const BACKUP_SERVICE = new InjectionToken<BackupService>('BackupService');
 export const SYNC_SERVICE = new InjectionToken<SyncService>('SyncService');
+/** «Borrar datos de este dispositivo» (W7-04). */
+export const DEVICE_DATA_SERVICE = new InjectionToken<DeviceDataService>('DeviceDataService');
 /** Provided by provideStorageHealth() (core/storage-health, W3-13) next to provideAppData() in app-area.routes.ts. */
 export const STORAGE_HEALTH = new InjectionToken<StorageHealth>('StorageHealth');
