@@ -1,4 +1,4 @@
-// Angular Material 22 (M3) at compact density, mapped onto the design tokens (ADR-0012 decision 7).
+// Angular Material 22 (M3) at compact density, mapped onto the design tokens (ADR-0012 decision 7, ADR-0026).
 // mat.theme() emits the --mat-sys-* system tokens; the block below points the colour roles at --cc-color-* so Material
 // follows light-dark() and data-theme with no second palette. mat.$azure-palette only fills the roles left unmapped.
 @use '@angular/material' as mat;
@@ -45,8 +45,9 @@ html {
   --mat-sys-on-secondary: var(--cc-color-paper);
   --mat-sys-secondary-container: var(--cc-color-band);
   --mat-sys-on-secondary-container: var(--cc-color-ink);
-  --mat-sys-tertiary: var(--cc-color-positive);
-  --mat-sys-on-tertiary: var(--cc-color-paper);
+  // ADR-0026: fucsia is the primary action; turquoise (what you save) is the tertiary role, with black text on it.
+  --mat-sys-tertiary: var(--cc-color-saving);
+  --mat-sys-on-tertiary: var(--cc-color-on-color);
   --mat-sys-error: var(--cc-color-danger);
   --mat-sys-on-error: var(--cc-color-paper);
   --mat-sys-error-container: var(--cc-color-band);

@@ -28,17 +28,20 @@ describe('self-hosted fonts in dist (ADR-0012 §8)', () => {
     expect(offenders).toEqual([]);
   });
 
-  it('ships the two families as same-origin woff2 files', () => {
+  it('ships the two families as same-origin woff2 files (ADR-0026: Bricolage Grotesque replaces Source Serif 4)', () => {
     const names = files(DIST).map((file) => file.toLowerCase());
-    expect(names.some((n) => n.includes('source-serif-4') && n.endsWith('.woff2'))).toBe(true);
-    expect(names.some((n) => n.includes('jetbrains-mono') && n.endsWith('.woff2'))).toBe(true);
+    const woff2 = names.filter((n) => n.endsWith('.woff2'));
+    expect(woff2.filter((n) => n.includes('bricolage-grotesque'))).toHaveLength(1);
+    expect(woff2.filter((n) => n.includes('jetbrains-mono'))).toHaveLength(2);
+    expect(woff2.filter((n) => n.includes('source-serif-4'))).toEqual([]);
     expect(names.filter((n) => n.endsWith('.woff'))).toEqual([]);
-    expect(names.filter((n) => n.endsWith('.woff2'))).toHaveLength(4);
+    expect(woff2).toHaveLength(3);
     const css = files(DIST)
       .filter((file) => file.endsWith('.css'))
       .map((file) => readFileSync(file, 'utf8'))
       .join('\n');
-    expect(css).toMatch(/font-family:\s*["']?Source Serif 4/);
+    expect(css).toMatch(/font-family:\s*["']?Bricolage Grotesque/);
+    expect(css).not.toMatch(/Source Serif/);
     expect(css).toMatch(/font-family:\s*["']?JetBrains Mono/);
   });
 });

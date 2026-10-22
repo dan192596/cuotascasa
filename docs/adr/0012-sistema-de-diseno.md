@@ -91,3 +91,10 @@ Restricciones: escritorio primero, formatos de Guatemala, accesibilidad AA y nin
 - **Roles de Material sobre los tokens.** `material-theme.scss` apunta los roles de color `--mat-sys-*` a los tokens `--cc-*`, que siguen siendo la única fuente de color.
 - **Avisos propios en vez de `MatSnackBar`.** El aviso de errores (`cc-error-toast`, en `core/errors`) y el aviso de actualización (`cc-update-prompt`, en `core/pwa`) son componentes ligeros propios, para cuidar los presupuestos del bundle de la landing y de `/app`.
 - **Montos negativos.** El signo va antes del símbolo: `-Q 1,234.50` (y `-US$ 1,234.50`); el cero nunca lleva signo.
+
+**Enmienda (2026-10-22, W8-01).** La identidad «Mercado» ([ADR-0026](0026-identidad-mercado.md)) cambia cuatro decisiones de este ADR. Las demás siguen vigentes.
+
+- **Decisión 1:** la paleta pasa a «Mercado» (versión congelada en `docs/specs/design-palette.md`, aprobada el 2026-10-22) y la tipografía a Bricolage Grotesque, con JetBrains Mono en las cifras. Source Serif 4 sale del producto. Ver ADR-0026, secciones 1 y 3.
+- **Decisión 2:** el hero de `/` deja de ser la casa y pasa a ser el mosaico de bloques; el medidor de casa sigue en el panel. Ver ADR-0026, sección 4.
+- **Decisión 4:** fucsia = «ya es tuyo» y acción principal; turquesa = lo que te ahorras; verde, ámbar y rojo quedan solo para el semáforo y los errores. Ver ADR-0026, sección 2.
+- **Decisión 8:** las fuentes siguen autoalojadas en woff2; Bricolage llega desde `@fontsource-variable/bricolage-grotesque` en un solo archivo variable. Ver ADR-0026, sección 3.

@@ -7,6 +7,12 @@ Fecha: 2026-10-04
 - Los bocetos son guía de diseño.
 - El dueño **aprobó la paleta el 2026-10-06** tal como se propuso (sección 3); la versión congelada es `docs/specs/design-palette.md`.
 
+> **Reemplazado en parte el 2026-10-22.** La identidad «Mercado» ([ADR-0026](../adr/0026-identidad-mercado.md) y
+> [`../specs/2026-10-22-identidad-mercado-design.md`](../specs/2026-10-22-identidad-mercado-design.md)) sustituye la
+> paleta «tinta sobre papel» (sección 3), la tipografía con serifa, el hero de la casa en la landing (sección 4.1) y el
+> relleno verde del medidor (sección 5), que pasa a fucsia. La paleta vigente es `docs/specs/design-palette.md`. Los
+> bocetos de la tabla, del panel y del asistente siguen siendo guía de jerarquía y contenido.
+
 > **Regla de datos.** Los números de los bocetos salen del ejemplo sintético de [`../algorithm.md`](../algorithm.md)
 > (`[ALG.EXAMPLE]`) o se calculan a partir de él. Si algún valor difiere del algoritmo, manda el algoritmo. Los nombres
 > «Préstamo casa» y «Banco A» son genéricos.
