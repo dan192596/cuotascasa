@@ -289,8 +289,10 @@ describe('cc-settings-sync: connected', () => {
   });
 
   it('shows the pending changes text of the service, offline too', () => {
-    const f = mount(fakeSync({ state: 'offline', pendingChanges: 3 }, 'Cambios sin sincronizar (3)'));
-    expect(text(f, 'drive-status')).toBe('Cambios sin sincronizar (3)');
+    const f = mount(
+      fakeSync({ state: 'offline', pendingChanges: 3 }, 'Sin conexión con Drive · Cambios sin sincronizar (3)'),
+    );
+    expect(text(f, 'drive-status')).toBe('Sin conexión con Drive · Cambios sin sincronizar (3)');
     expect(el(f, 'drive-sync')).not.toBeNull();
   });
 
@@ -382,7 +384,7 @@ describe('cc-settings-sync: change passphrase', () => {
   });
 
   it.each([
-    ['offline', { state: 'offline', pendingChanges: 1 }, 'Cambios sin sincronizar (1)'],
+    ['offline', { state: 'offline', pendingChanges: 1 }, 'Sin conexión con Drive · Cambios sin sincronizar (1)'],
     ['needs-auth', { state: 'needs-auth' }, 'Falta autorizar Drive'],
   ] as const)('shows no success text when the change failed and the status is %s', async (_name, status, label) => {
     const sync = fakeSync(idle, 'Sincronizado');

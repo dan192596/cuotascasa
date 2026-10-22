@@ -82,7 +82,7 @@ Repite en Safari de Mac o iPhone, con una sesión sin permisos previos para el s
 ### 7. Sin conexión (R12-d)
 
 - [ ] Desactiva la red en A y edita un préstamo: la app sigue funcionando y muestra **cambios sin sincronizar (n)**.
-- [ ] Pulsa **Sincronizar** sin red: estado **Sin conexión con Drive**, sin perder datos.
+- [ ] Pulsa **Sincronizar** sin red: estado **Sin conexión con Drive · Cambios sin sincronizar (n)**, sin perder datos. Para cortar la red sin desconectar el equipo, usa en Chrome las herramientas de desarrollo → **Network** → **Offline**, y no recargues la página: el acceso a Drive vive en memoria y se perdería.
 - [ ] Reactiva la red y sincroniza: queda **Sincronizado**.
 
 ### 8. Safari: uso sin conexión y aviso de almacenamiento (pendiente de W6, ADR-0017)
@@ -119,7 +119,7 @@ En un iPhone o iPad, repite lo esencial en Chrome o Firefox para iOS (usan WebKi
 
 ### 12. Aviso de exportación sin cifrar
 
-- [ ] En un navegador con sesión nueva, exporta a Excel, CSV o PDF: antes de la **primera** descarga de la sesión aparece el aviso de que el archivo no va cifrado y contiene datos financieros, con la opción **Descargar de todos modos**.
+- [ ] En un navegador con sesión nueva, exporta a Excel, CSV o PDF: antes de la **primera** descarga de la sesión aparece el aviso de que el archivo no va cifrado y contiene datos financieros, con el botón **Descargar CSV** (o el formato elegido) y **Cancelar**.
 - [ ] En la segunda exportación de la misma sesión, el aviso no vuelve a aparecer.
 - [ ] En Safari, espera un par de minutos antes de aceptar el aviso: la descarga sigue funcionando (la descarga ocurre después de una espera, fuera del gesto del usuario; hallazgo de W5).
 - [ ] **Exportar respaldo JSON** (sin cifrar) muestra su propio aviso.

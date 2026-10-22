@@ -208,7 +208,7 @@ test('after a reload the status is «Falta autorizar Drive» and the screen rout
   await expect(drive(page).getByTestId('passphrase-form')).toHaveCount(0);
 });
 
-test('offline edits show «Cambios sin sincronizar (n)»; syncing again clears them and keeps the previous copy', async ({
+test('offline edits show «Sin conexión con Drive · Cambios sin sincronizar (n)»; syncing again clears them and keeps the previous copy', async ({
   page,
   googleMock,
 }) => {
@@ -242,7 +242,9 @@ test('offline edits show «Cambios sin sincronizar (n)»; syncing again clears t
   googleMock.drive.failNext({ kind: 'network' });
   await drive(page).getByTestId('drive-sync').click();
   await expect.poll(() => googleMock.drive.requests.some((request) => request.status === 0)).toBe(true);
-  await expect(drive(page).getByTestId('drive-status')).toHaveText(/^Cambios sin sincronizar \(\d+\)$/);
+  await expect(drive(page).getByTestId('drive-status')).toHaveText(
+    /^Sin conexión con Drive · Cambios sin sincronizar \(\d+\)$/,
+  );
 
   // Back online: the next sync uploads, clears the counter and leaves the previous copy next to the current one.
   await drive(page).getByTestId('drive-sync').click();

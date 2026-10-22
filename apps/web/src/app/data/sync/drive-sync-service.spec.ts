@@ -558,7 +558,7 @@ describe('DriveSyncService', () => {
   });
 
   describe('status', () => {
-    it("offline reads 'Cambios sin sincronizar (n)' with n = pendingChanges", async () => {
+    it("offline reads 'Sin conexión con Drive · Cambios sin sincronizar (n)' with n = pendingChanges", async () => {
       const world = createWorld();
       const device = await createDevice(world, 1);
       await enroll(device);
@@ -567,7 +567,7 @@ describe('DriveSyncService', () => {
       world.drive.failNext({ kind: 'network' });
       await device.service.sync();
       expect(device.service.status()).toEqual({ state: 'offline', pendingChanges: 2 });
-      expect(device.service.statusText()).toBe('Cambios sin sincronizar (2)');
+      expect(device.service.statusText()).toBe('Sin conexión con Drive · Cambios sin sincronizar (2)');
     });
 
     it('follows local edits while idle', async () => {
@@ -1026,7 +1026,7 @@ describe('DriveSyncService: review fixes', () => {
       await first.service.sync();
 
       expect(first.service.status()).toEqual({ state: 'offline', pendingChanges: 1 });
-      expect(first.service.statusText()).toBe('Cambios sin sincronizar (1)');
+      expect(first.service.statusText()).toBe('Sin conexión con Drive · Cambios sin sincronizar (1)');
       expect(world.drive.fileByName(REMOTE_FILE_NAME)?.content).toBe(main);
       expect(world.drive.fileByName(REMOTE_PREV_FILE_NAME)?.content).toBe(main);
       expect(await first.store.pendingChanges()).toBe(1);

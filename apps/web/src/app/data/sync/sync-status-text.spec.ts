@@ -10,7 +10,7 @@ describe('syncStatusText (Spanish, es-GT; W5-08 asserts these strings literally)
     [{ state: 'idle', pendingChanges: 0, lastSyncAt: '2026-01-01T00:00:00.000Z' }, 'Sincronizado'],
     [{ state: 'idle', pendingChanges: 0, lastSyncAt: null }, 'Listo para sincronizar'],
     [{ state: 'syncing' }, 'Sincronizando…'],
-    [{ state: 'offline', pendingChanges: 2 }, 'Cambios sin sincronizar (2)'],
+    [{ state: 'offline', pendingChanges: 2 }, 'Sin conexión con Drive · Cambios sin sincronizar (2)'],
     [{ state: 'offline', pendingChanges: 0 }, 'Sin conexión con Drive'],
     [{ state: 'needs-auth' }, 'Falta autorizar Drive'],
     [{ state: 'needs-passphrase', reason: 'no-key' }, 'Falta la frase de cifrado'],
