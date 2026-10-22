@@ -1,6 +1,7 @@
 import { signal, type Signal } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router, type Routes } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
 import { readFileSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { DomainError, Money } from '@cuotascasa/domain';
@@ -13,7 +14,7 @@ import type {
   SyncService,
 } from '../../data/api.ts';
 import { BACKUP_SERVICE, LOAN_PROJECTION_SERVICE, LOANS_STORE, SYNC_SERVICE } from '../../data/tokens.ts';
-import { DashboardPageComponent } from './dashboard-page.component.ts';
+import { DashboardPageComponent, DEVICE_CLEARED_NOTICE } from './dashboard-page.component.ts';
 
 type Loan = ReturnType<LoansStore['loans']>[number];
 const money = (value: string): Money => value as Money;
@@ -70,7 +71,7 @@ interface Setup {
   readonly syncText?: string;
 }
 
-function mount(setup: Setup = {}): ComponentFixture<DashboardPageComponent> {
+function configure(setup: Setup = {}, routes: Routes = []): void {
   const loans = setup.loans ?? [];
   const store = {
     ready: signal(setup.ready ?? true).asReadonly(),
@@ -88,13 +89,17 @@ function mount(setup: Setup = {}): ComponentFixture<DashboardPageComponent> {
   const sync = { statusText: signal(setup.syncText ?? 'No configurado').asReadonly() } as unknown as SyncService;
   TestBed.configureTestingModule({
     providers: [
-      provideRouter([]),
+      provideRouter(routes),
       { provide: LOANS_STORE, useValue: store },
       { provide: LOAN_PROJECTION_SERVICE, useValue: service },
       { provide: BACKUP_SERVICE, useValue: backup },
       { provide: SYNC_SERVICE, useValue: sync },
     ],
   });
+}
+
+function mount(setup: Setup = {}): ComponentFixture<DashboardPageComponent> {
+  configure(setup);
   const fixture = TestBed.createComponent(DashboardPageComponent);
   fixture.detectChanges();
   return fixture;
@@ -314,5 +319,31 @@ describe('DashboardPageComponent: empty state', () => {
     const f = mount({ ready: false });
     expect(byId(f, 'empty-state')).toBeNull();
     expect(byId(f, 'loading')?.getAttribute('role')).toBe('status');
+  });
+});
+
+describe('DashboardPageComponent: after «Borrar datos de este dispositivo»', () => {
+  async function open(url: string) {
+    configure({}, [{ path: 'app', component: DashboardPageComponent }]);
+    const harness = await RouterTestingHarness.create(url);
+    await harness.fixture.whenStable();
+    const element = harness.fixture.nativeElement as HTMLElement;
+    const notice = () => element.querySelector<HTMLElement>('[data-testid="device-cleared"]');
+    return { harness, notice, router: TestBed.inject(Router) };
+  }
+
+  it('confirms the deletion once and drops the parameter from the URL', async () => {
+    const { harness, notice, router } = await open('/app?borrado=1');
+    expect(notice()?.getAttribute('role')).toBe('status');
+    expect(notice()?.textContent).toContain(DEVICE_CLEARED_NOTICE);
+    expect(router.url).toBe('/app');
+    notice()?.querySelector('button')?.click();
+    await harness.fixture.whenStable();
+    expect(notice()).toBeNull();
+  });
+
+  it('shows nothing on a normal visit', async () => {
+    const { notice } = await open('/app');
+    expect(notice()).toBeNull();
   });
 });
