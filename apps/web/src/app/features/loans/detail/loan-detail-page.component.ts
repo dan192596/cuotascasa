@@ -103,6 +103,13 @@ const DETAIL_STYLES = `
     flex-wrap: wrap;
     align-items: baseline;
     gap: 0.5rem 1rem;
+    padding: 1.25rem;
+    border: 1px solid var(--cc-color-rule);
+    border-radius: var(--cc-radius-block);
+    background: var(--cc-color-surface);
+  }
+  cc-loan-detail-page .cc-det-meter {
+    flex-basis: 100%;
   }
   cc-loan-detail-page h1 {
     font-weight: 800;
@@ -235,6 +242,9 @@ type Pending = 'paid' | 'delete' | null;
       </h1>
       @if (loan(); as l) {
         <span class="cc-det-status" data-testid="loan-status">{{ statusLabel() }}</span>
+        @if (projection().percentPaid(); as percent) {
+          <cc-house-meter class="cc-det-meter" [percent]="percent" label="capital pagado" />
+        }
       }
     </div>
 
@@ -260,9 +270,6 @@ type Pending = 'paid' | 'delete' | null;
           <p class="cc-wiz-issue" role="status" data-testid="projection-error">{{ projectionError(error) }}</p>
         } @else {
           <div class="cc-det-summary">
-            @if (p.percentPaid(); as percent) {
-              <cc-house-meter [percent]="percent" label="capital pagado" />
-            }
             <dl class="cc-det-grid">
               @if (p.balance(); as balance) {
                 <dt>Saldo</dt>

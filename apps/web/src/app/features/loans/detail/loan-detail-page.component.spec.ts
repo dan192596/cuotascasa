@@ -244,6 +244,16 @@ describe('LoanDetailPageComponent · shell', () => {
     expect(head.style.viewTransitionName).toBe(`cc-loan-${id}`);
   });
 
+  it('keeps alias, status and the house meter in the transition-named header, in the card order', async () => {
+    const { q, root } = await setup();
+    const head = q('.cc-det-head') as HTMLElement;
+    const h1 = head.querySelector('h1') as HTMLElement;
+    const meter = head.querySelector('cc-house-meter') as HTMLElement;
+    expect(meter).not.toBeNull();
+    expect(h1.compareDocumentPosition(meter) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(root.querySelectorAll('cc-house-meter')).toHaveLength(1);
+  });
+
   it('shows a loading note until the store is ready and a way back when the loan does not exist', async () => {
     const loading = await setup({ ready: false });
     expect(loading.q('[data-testid="loading"]')).not.toBeNull();

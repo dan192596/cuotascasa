@@ -69,6 +69,8 @@ function twoLoanDocument(): SeedDocument {
 test('two synthetic loans: per-currency totals, shared transition names and a clean axe in light and dark', async ({
   page,
 }) => {
+  // Balances depend on today's date, so the clock is pinned for exact totals.
+  await page.clock.setFixedTime(new Date('2026-10-22T12:00:00'));
   await page.goto('/app');
   await expect(page.getByTestId('empty-state')).toBeVisible();
   await seedFromBackup(page, twoLoanDocument());
@@ -76,8 +78,14 @@ test('two synthetic loans: per-currency totals, shared transition names and a cl
 
   const cards = page.getByTestId('loan-card');
   await expect(cards).toHaveCount(2);
-  await expect(page.getByTestId('total-GTQ').getByTestId('odometer').first()).toHaveAttribute('aria-label', /^Q /);
-  await expect(page.getByTestId('total-USD').getByTestId('odometer').first()).toHaveAttribute('aria-label', /^US\$ /);
+  await expect(page.getByTestId('total-GTQ').getByTestId('odometer').first()).toHaveAttribute(
+    'aria-label',
+    'Q 472,023.28',
+  );
+  await expect(page.getByTestId('total-USD').getByTestId('odometer').first()).toHaveAttribute(
+    'aria-label',
+    'US$ 96,488.76',
+  );
   const names = await cards.evaluateAll((els) => els.map((el) => getComputedStyle(el).viewTransitionName));
   expect(names).toEqual([`cc-loan-${SYNTHETIC_LOAN_ID}`, `cc-loan-${SECOND_LOAN_ID}`]);
   await page.waitForLoadState('networkidle');
