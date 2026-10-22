@@ -456,5 +456,35 @@ describe('cc-ledger-table', () => {
     const css = readFileSync('apps/web/src/app/ui/ledger-table/ledger-table.component.css', 'utf8');
     expect(css).toMatch(/@keyframes current-flash[\s\S]*var\(--cc-color-highlight\)/);
     expect(css).toMatch(/\.row\.current\s*\{[^}]*animation:\s*current-flash var\(--cc-duration-slow\)/);
+    const frames = css.match(/@keyframes (current-flash|cell-flash-highlight)\s*\{[\s\S]*?\n\}/g) ?? [];
+    expect(frames.length).toBe(2);
+    for (const frame of frames) expect(frame).toMatch(/color:\s*var\(--cc-color-on-color\)/);
+    expect(css).toMatch(/@media \(prefers-reduced-motion: no-preference\)/);
+  });
+
+  it('flashes semantically: accent for capital/balance, none for real delta, highlight for the rest', async () => {
+    const cols: readonly LedgerColumn[] = [
+      { key: 'k', header: '#' },
+      { key: 'capital', header: 'Capital' },
+      { key: 'closing', header: 'Saldo final' },
+      { key: 'delta', header: 'Real Δ' },
+      { key: 'fixed', header: 'Fijos' },
+    ];
+    const mk = (v: string): LedgerRow[] => [
+      { key: 'a', cells: { k: '1', capital: v, closing: v, delta: v, fixed: v } },
+    ];
+    const fixture = TestBed.createComponent(LedgerTableComponent);
+    fixture.componentRef.setInput('columns', cols);
+    fixture.componentRef.setInput('rows', mk('1'));
+    await fixture.whenStable();
+    fixture.componentRef.setInput('rows', mk('2'));
+    await fixture.whenStable();
+    const root = fixture.nativeElement as HTMLElement;
+    const flash = (c: number) =>
+      root.querySelector<HTMLElement>(`[data-r="0"][data-c="${c}"]`)?.getAttribute('data-flash') ?? null;
+    expect(flash(1)).toBe('accent');
+    expect(flash(2)).toBe('accent');
+    expect(root.querySelector('[data-r="0"][data-c="3"].changed')).toBeNull();
+    expect(flash(4)).toBe('highlight');
   });
 });

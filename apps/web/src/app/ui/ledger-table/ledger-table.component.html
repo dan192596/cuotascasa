@@ -37,6 +37,7 @@
           [class.end]="cell.column.align === 'end'"
           [class.sticky]="cell.left !== null"
           [class.changed]="changed().has(vm.row.key + '|' + cell.column.key)"
+          [attr.data-flash]="changed().get(vm.row.key + '|' + cell.column.key) ?? null"
           [style.left]="cell.left"
           [attr.role]="cell.role"
           [attr.aria-colindex]="cell.ci + 1"

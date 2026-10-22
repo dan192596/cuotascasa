@@ -16,6 +16,10 @@ import type { LedgerCellEdit, LedgerColumn, LedgerRow } from './ledger-table.typ
 
 const PAGE_ROWS = 12;
 const CHANGED_MS = 600;
+/** Columnas que ya son del dueño (capital y saldos): el destello usa el acento. */
+const ACCENT_FLASH = new Set(['capital', 'opening', 'closing', 'balance']);
+/** Columnas de diferencia real: ya llevan semáforo, no destellan. */
+const NO_FLASH = new Set(['delta', 'dCapital', 'dInterest', 'dInsurance', 'dFixed']);
 const DEFAULT_WIDTH = '7rem';
 const THOUSANDS = /^\d{1,3}(,\d{3})+(\.\d+)?$/;
 const DECIMAL = /^\d+(\.\d{1,2})?$/;
@@ -76,7 +80,7 @@ export class LedgerTableComponent {
   protected readonly editing = signal<Editing | null>(null);
   protected readonly status = signal('');
   /** Celdas (`fila|columna`) cuyo texto cambió entre dos entradas de filas con la misma clave; duran `CHANGED_MS`. */
-  protected readonly changed = signal<ReadonlySet<string>>(new Set());
+  protected readonly changed = signal<ReadonlyMap<string, 'accent' | 'highlight'>>(new Map());
   private previous: ReadonlyMap<string, Readonly<Record<string, string>>> | null = null;
   private changedTimer: ReturnType<typeof setTimeout> | undefined;
   private readonly editor = viewChild<ElementRef<HTMLInputElement>>('editor');
@@ -138,18 +142,20 @@ export class LedgerTableComponent {
       const previous = this.previous;
       this.previous = new Map(rows.map((row) => [row.key, row.cells]));
       if (previous === null) return;
-      const flagged = new Set<string>();
+      const flagged = new Map<string, 'accent' | 'highlight'>();
       for (const row of rows) {
         const before = previous.get(row.key);
         if (!before) continue;
         for (const column of untracked(this.columns)) {
-          if ((before[column.key] ?? '') !== (row.cells[column.key] ?? '')) flagged.add(`${row.key}|${column.key}`);
+          if (NO_FLASH.has(column.key)) continue;
+          if ((before[column.key] ?? '') !== (row.cells[column.key] ?? ''))
+            flagged.set(`${row.key}|${column.key}`, ACCENT_FLASH.has(column.key) ? 'accent' : 'highlight');
         }
       }
       if (flagged.size === 0) return;
       clearTimeout(this.changedTimer);
       this.changed.set(flagged);
-      this.changedTimer = setTimeout(() => this.changed.set(new Set()), CHANGED_MS);
+      this.changedTimer = setTimeout(() => this.changed.set(new Map()), CHANGED_MS);
     });
     effect(() => {
       const el = this.editor()?.nativeElement;

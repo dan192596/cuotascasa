@@ -20,26 +20,42 @@
 .row.band {
   background: var(--cc-color-band);
 }
-@keyframes current-flash {
-  from {
-    background: var(--cc-color-highlight);
-  }
-  to {
-    background: var(--cc-color-current-month);
-  }
-}
-@keyframes cell-flash {
-  from {
-    background: var(--cc-color-highlight);
-  }
-}
 .row.current {
   background: var(--cc-color-current-month);
   font-weight: 600;
-  animation: current-flash var(--cc-duration-slow) var(--cc-ease-out) 1;
 }
-.cell.changed {
-  animation: cell-flash 600ms var(--cc-ease-out) 1;
+@keyframes current-flash {
+  from {
+    background: var(--cc-color-highlight);
+    color: var(--cc-color-on-color);
+  }
+  to {
+    background: var(--cc-color-current-month);
+    color: var(--cc-color-ink);
+  }
+}
+@keyframes cell-flash-highlight {
+  from {
+    background: var(--cc-color-highlight);
+    color: var(--cc-color-on-color);
+  }
+}
+@keyframes cell-flash-accent {
+  from {
+    background: color-mix(in srgb, var(--cc-color-accent) 28%, var(--cc-color-surface));
+    color: var(--cc-color-ink);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .row.current {
+    animation: current-flash var(--cc-duration-slow) var(--cc-ease-out) 1;
+  }
+  .cell.changed[data-flash='highlight'] {
+    animation: cell-flash-highlight 600ms var(--cc-ease-out) 1;
+  }
+  .cell.changed[data-flash='accent'] {
+    animation: cell-flash-accent 600ms var(--cc-ease-out) 1;
+  }
 }
 .row.subtotal {
   background: var(--cc-color-band);
