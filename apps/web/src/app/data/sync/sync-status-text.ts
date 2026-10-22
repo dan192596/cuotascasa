@@ -5,6 +5,7 @@ import type { SyncStatus } from '@cuotascasa/sync';
  * they are the single definition. Texts never carry data from the remote file or the backup.
  */
 const LOCAL_UNCHANGED = 'Tus datos locales no cambiaron.';
+const OFFLINE = 'Sin conexión con Drive';
 
 function pendingText(pendingChanges: number, whenNone: string): string {
   return pendingChanges > 0 ? `Cambios sin sincronizar (${String(pendingChanges)})` : whenNone;
@@ -21,7 +22,8 @@ export function syncStatusText(status: SyncStatus): string {
     case 'syncing':
       return 'Sincronizando…';
     case 'offline':
-      return pendingText(status.pendingChanges, 'Sin conexión con Drive');
+      // The pending count alone would read like 'idle': the failed sync must say why (manual Drive check, step 7).
+      return status.pendingChanges > 0 ? `${OFFLINE} · ${pendingText(status.pendingChanges, '')}` : OFFLINE;
     case 'needs-auth':
       return 'Falta autorizar Drive';
     case 'needs-passphrase':
