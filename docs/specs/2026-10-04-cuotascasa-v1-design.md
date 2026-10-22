@@ -254,7 +254,7 @@ Un préstamo en curso se crea con `createWithAnchor`: las condiciones originales
 7. Subir, conservando la versión anterior como `cuotascasa.prev.json`.
 8. `markSynced`, solo tras una subida exitosa.
 
-Drive no confirma compare-and-set atómico, así que antes de subir se vuelve a comprobar el remoto (mejor esfuerzo). Sin conexión, la app muestra «Cambios sin sincronizar (n)». «Desconectar Drive» revoca el acceso.
+Drive no confirma compare-and-set atómico, así que antes de subir se vuelve a comprobar el remoto (mejor esfuerzo). Sin conexión, la app muestra «Cambios sin sincronizar (n)» y, si una sincronización falla por la red, «Sin conexión con Drive · Cambios sin sincronizar (n)». «Desconectar Drive» revoca el acceso.
 
 **Cifrado:**
 
