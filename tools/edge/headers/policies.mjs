@@ -13,18 +13,20 @@ const GIS = 'https://accounts.google.com/gsi/client';
 export const WORKER_PATHS = ['/ngsw-worker.js', '/safety-worker.js', '/worker-basic.min.js'];
 
 /**
- * Which policy each `_headers` rule gets (ADR-0021 section 8). `/*` carries the public policy of 404.html.
+ * Which policy each `_headers` rule gets (ADR-0021 section 8). `/` sets none: it is served by the `/*` policy.
  * @type {{ paths: string[], kind: 'public' | 'app' | 'worker', doc?: string }[]}
  */
 export const ROUTE_POLICIES = [
-  { paths: ['/'], kind: 'public', doc: 'index.html' },
   { paths: ['/privacidad'], kind: 'public', doc: 'privacidad/index.html' },
   { paths: ['/app', '/app/*', '/index.csr', '/index.csr.html'], kind: 'app', doc: 'index.csr.html' },
   { paths: WORKER_PATHS, kind: 'worker' },
 ];
 
-/** Document that provides the hashes of the policy on `/*` (the only rule the 404 page receives). */
-export const NOT_FOUND_DOC = '404.html';
+/**
+ * Documents whose hashes the public policy on `/*` carries: the 404 page (the only rule it receives) and the landing,
+ * because on the live edge "/" kept the `/*` policy next to its own despite "! Content-Security-Policy".
+ */
+export const STAR_DOC = 'index.html+404.html';
 
 /**
  * @param {string} kind

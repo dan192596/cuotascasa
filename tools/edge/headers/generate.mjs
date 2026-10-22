@@ -62,14 +62,20 @@ export function extractInlineScripts(html) {
 }
 
 /**
- * @param {string} template text with ` {{hashes:<document>}}` slots
+ * @param {string} template text with ` {{hashes:<document>}}` slots; `{{hashes:a.html+b.html}}` takes the union of
+ *   the hashes of both documents, in order and without repeats
  * @param {Map<string, string[]>} hashesByDoc
  */
 export function renderHeaders(template, hashesByDoc) {
-  return template.replace(/ ?\{\{hashes:([^}]+)\}\}/g, (_slot, doc) => {
-    const hashes = hashesByDoc.get(doc);
-    if (hashes === undefined) throw new Error(`No hashes computed for document "${doc}"`);
-    return hashes.map((hash) => ` ${hash}`).join('');
+  return template.replace(/ ?\{\{hashes:([^}]+)\}\}/g, (_slot, docs) => {
+    /** @type {string[]} */
+    const union = [];
+    for (const doc of String(docs).split('+')) {
+      const hashes = hashesByDoc.get(doc);
+      if (hashes === undefined) throw new Error(`No hashes computed for document "${doc}"`);
+      for (const hash of hashes) if (!union.includes(hash)) union.push(hash);
+    }
+    return union.map((hash) => ` ${hash}`).join('');
   });
 }
 
@@ -97,7 +103,7 @@ export function generate({ dist = DEFAULT_DIST, template = DEFAULT_TEMPLATE } = 
     ...new Set(
       readFileSync(template, 'utf8')
         .matchAll(/\{\{hashes:([^}]+)\}\}/g)
-        .map((m) => m[1] ?? ''),
+        .flatMap((m) => (m[1] ?? '').split('+')),
     ),
   ];
   /** @type {Map<string, string[]>} */

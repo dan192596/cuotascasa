@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { extractInlineScripts, generate, hashSource, parseArgs, promote404, renderHeaders } from './generate.mjs';
-import { ROUTE_POLICIES, WORKER_PATHS, cspDirectives, expectedPolicy, policyTemplate } from './policies.mjs';
+import { ROUTE_POLICIES, STAR_DOC, WORKER_PATHS, cspDirectives, expectedPolicy, policyTemplate } from './policies.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..', '..', '..');
 const TEMPLATE = resolve(ROOT, 'apps/web/public/_headers');
@@ -106,6 +106,16 @@ describe('renderHeaders', () => {
   });
   it('fails on a document it has no hashes for', () => {
     expect(() => renderHeaders('{{hashes:c.html}}', hashes)).toThrow(/c\.html/);
+    expect(() => renderHeaders('{{hashes:a.html+c.html}}', hashes)).toThrow(/c\.html/);
+  });
+  it('renders a+b as the union of both documents, in order and without repeats', () => {
+    const both = new Map([
+      ['a.html', ["'sha256-A='", "'sha256-S='"]],
+      ['b.html', ["'sha256-S='", "'sha256-B='"]],
+    ]);
+    expect(renderHeaders("x 'self' {{hashes:a.html+b.html}}; z", both)).toBe(
+      "x 'self' 'sha256-A=' 'sha256-S=' 'sha256-B='; z",
+    );
   });
 });
 
@@ -153,9 +163,9 @@ describe('generate', () => {
       return match?.[1] ?? '';
     };
     const csp = (path) => /^ {2}Content-Security-Policy: (.*)$/m.exec(block(path))?.[1];
-    expect(csp('/')).toBe(expectedPolicy('public', [hashSource('landing()')]));
+    expect(csp('/')).toBeUndefined();
     expect(csp('/privacidad')).toBe(expectedPolicy('public', [hashSource('privacy()')]));
-    expect(csp('/*')).toBe(expectedPolicy('public', [hashSource('notfound()')]));
+    expect(csp('/*')).toBe(expectedPolicy('public', [hashSource('landing()'), hashSource('notfound()')]));
     for (const path of ['/app', '/app/*', '/index.csr', '/index.csr.html']) {
       expect(csp(path)).toBe(expectedPolicy('app', [hashSource('shell()')]));
     }
@@ -200,9 +210,9 @@ describe('apps/web/public/_headers template (ADR-0021 section 8)', () => {
     expect(text).not.toContain('Report-Only');
   });
 
-  it('puts the public 404 policy on /* with the baseline headers', () => {
+  it('puts the public policy of the landing and the 404 page on /* with the baseline headers', () => {
     const star = block('/\\*'.replace('\\', ''));
-    expect(star).toContain(`  Content-Security-Policy: ${policyTemplate('public', '404.html')}\n`);
+    expect(star).toContain(`  Content-Security-Policy: ${policyTemplate('public', STAR_DOC)}\n`);
     for (const header of [
       'X-Content-Type-Options: nosniff',
       'Referrer-Policy: strict-origin-when-cross-origin',
@@ -227,5 +237,11 @@ describe('apps/web/public/_headers template (ADR-0021 section 8)', () => {
         expect(lines).toContain('  Cache-Control: no-cache');
       }
     }
+  });
+
+  it('leaves / on the /* policy: no CSP line and no drop (the live edge kept both)', () => {
+    const lines = block('/').split('\n');
+    expect(lines).toContain('  Cache-Control: no-cache');
+    expect(lines.filter((l) => /Content-Security-Policy/.test(l))).toEqual([]);
   });
 });
