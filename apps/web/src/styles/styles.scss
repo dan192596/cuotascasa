@@ -1,8 +1,10 @@
-// Global stylesheet entry (angular.json "styles"). Order: tokens, fonts, Material theme, Tailwind, base rules.
+// Global stylesheet entry (angular.json "styles"). Order: tokens, fonts, Material theme, Tailwind, view transitions,
+// base rules.
 @use './tokens';
 @use './fonts';
 @use './material-theme';
 @use './tailwind';
+@use './view-transitions';
 
 body {
   margin: 0;
@@ -69,8 +71,11 @@ button,
 }
 
 // Press feedback (ADR-0026 §6.2): a short lift on hover and a slight shrink while pressed. Never on disabled buttons.
-:where(button, [type='button'], [type='submit'], [type='reset']):not(:disabled):hover {
-  transform: translateY(-1px);
+// The lift only where hover is real, so it does not stick after a tap on a touch screen.
+@media (hover: hover) {
+  :where(button, [type='button'], [type='submit'], [type='reset']):not(:disabled):hover {
+    transform: translateY(-1px);
+  }
 }
 
 :where(button, [type='button'], [type='submit'], [type='reset']):not(:disabled):active {
