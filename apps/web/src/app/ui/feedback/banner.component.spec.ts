@@ -60,4 +60,15 @@ describe('cc-banner', () => {
     await fixture.whenStable();
     expect(root.querySelector('[data-testid="banner-dismiss"]')).toBeNull();
   });
+
+  it('draws a check mark for the success tone only, via stroke-dashoffset', async () => {
+    const fixture = TestBed.createComponent(BannerComponent);
+    fixture.componentRef.setInput('tone', 'success');
+    await fixture.whenStable();
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('[data-testid="banner-icon"] svg path.check')).not.toBeNull();
+    fixture.componentRef.setInput('tone', 'info');
+    await fixture.whenStable();
+    expect(root.querySelector('[data-testid="banner-icon"] svg')).toBeNull();
+  });
 });

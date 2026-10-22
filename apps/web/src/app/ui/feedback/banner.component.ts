@@ -5,7 +5,7 @@ export type BannerTone = 'info' | 'success' | 'warning' | 'danger';
 const TONES: Record<BannerTone, { readonly label: string; readonly icon: string; readonly role: 'status' | 'alert' }> =
   {
     info: { label: 'Información', icon: 'ℹ', role: 'status' },
-    success: { label: 'Listo', icon: '●', role: 'status' },
+    success: { label: 'Listo', icon: '✓', role: 'status' },
     warning: { label: 'Advertencia', icon: '▲', role: 'alert' },
     danger: { label: 'Error', icon: '■', role: 'alert' },
   };
@@ -16,7 +16,15 @@ const TONES: Record<BannerTone, { readonly label: string; readonly icon: string;
   template: `
     @if (visible()) {
       <div class="banner" data-testid="banner" [attr.role]="toneInfo().role" [attr.data-tone]="tone()">
-        <span class="icon" aria-hidden="true" data-testid="banner-icon">{{ toneInfo().icon }}</span>
+        <span class="icon" aria-hidden="true" data-testid="banner-icon">
+          @if (tone() === 'success') {
+            <svg viewBox="0 0 16 16" width="1em" height="1em" focusable="false">
+              <path class="check" d="M3 8.5 6.5 12 13 4.5" pathLength="1" />
+            </svg>
+          } @else {
+            {{ toneInfo().icon }}
+          }
+        </span>
         <p class="body">
           <strong data-testid="banner-tone">{{ toneInfo().label }}</strong>
           <span class="message"><ng-content /></span>
@@ -56,6 +64,25 @@ const TONES: Record<BannerTone, { readonly label: string; readonly icon: string;
     }
     [data-tone='success'] .icon {
       color: var(--cc-color-positive);
+    }
+    .check {
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 1;
+      stroke-dashoffset: 0;
+    }
+    @keyframes draw-check {
+      from {
+        stroke-dashoffset: 1;
+      }
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .check {
+        animation: draw-check var(--cc-duration-base) var(--cc-ease-out) backwards;
+      }
     }
     [data-tone='warning'] .icon {
       color: var(--cc-color-warning);

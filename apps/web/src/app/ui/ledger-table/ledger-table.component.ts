@@ -1,7 +1,9 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   type ElementRef,
+  inject,
   computed,
   effect,
   input,
@@ -13,6 +15,7 @@ import {
 import type { LedgerCellEdit, LedgerColumn, LedgerRow } from './ledger-table.types.ts';
 
 const PAGE_ROWS = 12;
+const CHANGED_MS = 600;
 const DEFAULT_WIDTH = '7rem';
 const THOUSANDS = /^\d{1,3}(,\d{3})+(\.\d+)?$/;
 const DECIMAL = /^\d+(\.\d{1,2})?$/;
@@ -72,6 +75,10 @@ export class LedgerTableComponent {
   protected readonly active = signal({ r: 0, c: 0 });
   protected readonly editing = signal<Editing | null>(null);
   protected readonly status = signal('');
+  /** Celdas (`fila|columna`) cuyo texto cambió entre dos entradas de filas con la misma clave; duran `CHANGED_MS`. */
+  protected readonly changed = signal<ReadonlySet<string>>(new Set());
+  private previous: ReadonlyMap<string, Readonly<Record<string, string>>> | null = null;
+  private changedTimer: ReturnType<typeof setTimeout> | undefined;
   private readonly editor = viewChild<ElementRef<HTMLInputElement>>('editor');
   private readonly host = viewChild.required<ElementRef<HTMLElement>>('grid');
 
@@ -125,6 +132,25 @@ export class LedgerTableComponent {
   });
 
   constructor() {
+    inject(DestroyRef).onDestroy(() => clearTimeout(this.changedTimer));
+    effect(() => {
+      const rows = this.rows();
+      const previous = this.previous;
+      this.previous = new Map(rows.map((row) => [row.key, row.cells]));
+      if (previous === null) return;
+      const flagged = new Set<string>();
+      for (const row of rows) {
+        const before = previous.get(row.key);
+        if (!before) continue;
+        for (const column of untracked(this.columns)) {
+          if ((before[column.key] ?? '') !== (row.cells[column.key] ?? '')) flagged.add(`${row.key}|${column.key}`);
+        }
+      }
+      if (flagged.size === 0) return;
+      clearTimeout(this.changedTimer);
+      this.changed.set(flagged);
+      this.changedTimer = setTimeout(() => this.changed.set(new Set()), CHANGED_MS);
+    });
     effect(() => {
       const el = this.editor()?.nativeElement;
       if (el) {

@@ -434,4 +434,27 @@ describe('cc-ledger-table', () => {
       expect(css).toMatch(/@media \(forced-colors: active\)[\s\S]*data-editable/);
     });
   });
+
+  it('flags only the cells whose text changed between rows with the same key', async () => {
+    const { fixture, root } = await mount();
+    expect(root.querySelectorAll('.cell.changed').length).toBe(0);
+    const next = sampleRows().map((row) =>
+      row.key === 'r3' ? { ...row, cells: { ...row.cells, capital: '999.00' } } : row,
+    );
+    fixture.componentRef.setInput('rows', next);
+    await fixture.whenStable();
+    const changed = Array.from(root.querySelectorAll<HTMLElement>('.cell.changed'));
+    expect(changed.length).toBe(1);
+    expect(changed[0]?.dataset['r']).toBe('2');
+    expect(changed[0]?.dataset['c']).toBe('2');
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    await fixture.whenStable();
+    expect(root.querySelectorAll('.cell.changed').length).toBe(0);
+  });
+
+  it('flashes the current row once with the highlight colour', () => {
+    const css = readFileSync('apps/web/src/app/ui/ledger-table/ledger-table.component.css', 'utf8');
+    expect(css).toMatch(/@keyframes current-flash[\s\S]*var\(--cc-color-highlight\)/);
+    expect(css).toMatch(/\.row\.current\s*\{[^}]*animation:\s*current-flash var\(--cc-duration-slow\)/);
+  });
 });
