@@ -135,6 +135,21 @@ Fix cards from the W6 findings (CI hygiene, file-size caps, device data erase), 
 | [W7-03](cards/W7-03.md) | sonnet | S | W4-08, W4-09, W5-07, W5-08 | File-size caps for backup import and Drive download |
 | [W7-04](cards/W7-04.md) | sonnet | M | W4-05, W4-09, W5-07, W5-08, W6-02 | Borrar datos de este dispositivo |
 
+## W8 · Mercado identity
+
+Take the landing and the app to the Mercado identity (light and dark palette, Bricolage Grotesque, motion) without touching calculations, data or privacy: an Opus base (tokens, fonts, Material theme, global styles, ADR-0026, route View Transitions), then Sonnet cards per area (ui components, dashboard and detail, wizard and work screens, landing, 240-installment board), and an Opus close. No animation libraries; prefers-reduced-motion switches all decorative motion off; the page is complete at rest.
+
+| Tarjeta | Ejecutor | Tamaño | Depende de | Título |
+|---|---|---|---|---|
+| [W8-01](cards/W8-01.md) | opus | L | W7-01 | Mercado identity base: palette tokens, Bricolage Grotesque, Material theme, global styles, ADR-0026 |
+| [W8-02](cards/W8-02.md) | opus | S | W8-01 | Route view transitions with reduced-motion skip |
+| [W8-03](cards/W8-03.md) | sonnet | M | W8-02 | Mercado design components: odometer, house meter, banner, empty state, ledger table highlights |
+| [W8-04](cards/W8-04.md) | sonnet | M | W8-03 | Mercado dashboard and loan detail with shared transition |
+| [W8-05](cards/W8-05.md) | sonnet | L | W8-03 | Mercado wizard, schedule, real data, scenarios, settings and export motion |
+| [W8-06](cards/W8-06.md) | sonnet | L | W8-02 | Mercado landing: mosaic, scrambled titles, custom cursor, stacked cards, counters |
+| [W8-07](cards/W8-07.md) | sonnet | L | W8-06 | 240-installment board and engine-generated example data |
+| [W8-08](cards/W8-08.md) | opus | M | W8-01, W8-02, W8-03, W8-04, W8-05, W8-06, W8-07 | Close wave W8: full sweep, budgets, visual review, changelog |
+
 ## Contratos congelados en W0
 
 W0 freezes the files below. After W0 any card may read them but none may edit them: docs/plan/frozen-files.json lists them, each entry with editableBy: [card ids], and owns-check rejects an edit by any other card even when the file sits inside a directory the card owns. Changing one takes an Opus contract-change micro-card (registered in docs/plan/plan.json, with the views, cards.json and frozen-files.json regenerated on a branch opus/register-<ID> before the card branch is created), a broadcast to in-flight cards and a rebase.
