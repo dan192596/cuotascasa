@@ -236,6 +236,14 @@ describe('LoanDetailPageComponent · shell', () => {
     expect(q('h1')?.textContent).toContain('Banco Ficticio');
   });
 
+  it('names the header like the dashboard card so the route transition can morph one into the other', async () => {
+    const { q, fixture } = await setup();
+    const id = (fixture.componentInstance as unknown as { loan(): { id: string } | undefined }).loan()?.id;
+    const head = q('.cc-det-head') as HTMLElement;
+    expect(id).toBeDefined();
+    expect(head.style.viewTransitionName).toBe(`cc-loan-${id}`);
+  });
+
   it('shows a loading note until the store is ready and a way back when the loan does not exist', async () => {
     const loading = await setup({ ready: false });
     expect(loading.q('[data-testid="loading"]')).not.toBeNull();

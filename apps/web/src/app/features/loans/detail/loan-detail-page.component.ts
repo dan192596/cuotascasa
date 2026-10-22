@@ -104,6 +104,9 @@ const DETAIL_STYLES = `
     align-items: baseline;
     gap: 0.5rem 1rem;
   }
+  cc-loan-detail-page h1 {
+    font-weight: 800;
+  }
   cc-loan-detail-page h1:focus {
     outline: 2px solid var(--cc-color-accent);
     outline-offset: 2px;
@@ -223,7 +226,7 @@ type Pending = 'paid' | 'delete' | null;
   ],
   template: `
     <p><a class="cc-det-back" routerLink="/app">← Mis préstamos</a></p>
-    <div class="cc-det-head">
+    <div class="cc-det-head" [style.view-transition-name]="transitionName()">
       <h1 #title tabindex="-1">
         {{ loan()?.name ?? 'Préstamo' }}
         @if (loan()?.bank) {
@@ -464,6 +467,8 @@ export class LoanDetailPageComponent {
   /** Route parameter :id (withComponentInputBinding). */
   readonly id = input.required<Uuid>();
 
+  /** Same name as the dashboard card of this loan, so the router's view transition morphs one into the other. */
+  protected readonly transitionName = computed(() => `cc-loan-${this.id()}`);
   protected readonly loan = computed(() => this.store.loan(this.id())());
   protected readonly projection = computed(() => this.service.forLoan(this.id()));
   protected readonly currencyLocked = computed(() => this.store.isCurrencyLocked(this.id())());

@@ -14,7 +14,12 @@ import { type DashboardLoan, errorMessage, STATUS_LABELS } from './dashboard-mod
   template: `
     @let p = projection();
     @let currency = loan().currency;
-    <article class="card" data-testid="loan-card" [attr.aria-labelledby]="titleId()">
+    <article
+      class="card"
+      data-testid="loan-card"
+      [attr.aria-labelledby]="titleId()"
+      [style.view-transition-name]="transitionName()"
+    >
       <header>
         <h2 [id]="titleId()">
           <a [routerLink]="base()">{{ loan().name }}</a>
@@ -75,11 +80,23 @@ import { type DashboardLoan, errorMessage, STATUS_LABELS } from './dashboard-mod
       display: block;
     }
     .card {
-      padding: 1rem;
+      padding: 1.25rem;
       border: 1px solid var(--cc-color-rule);
-      border-radius: 0.5rem;
+      border-radius: var(--cc-radius-block);
       background: var(--cc-color-surface);
       color: var(--cc-color-ink);
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .card {
+        animation: card-in var(--cc-duration-slow) var(--cc-ease-out) backwards;
+        animation-delay: calc(var(--i, 0) * 60ms);
+      }
+      @keyframes card-in {
+        from {
+          /* Transform only: text keeps full contrast (and stays readable for axe) while the card settles. */
+          transform: translateY(12px);
+        }
+      }
     }
     header {
       display: flex;
@@ -91,7 +108,8 @@ import { type DashboardLoan, errorMessage, STATUS_LABELS } from './dashboard-mod
     h2 {
       margin: 0;
       font-family: var(--cc-font-heading);
-      font-size: 1.125rem;
+      font-size: 1.25rem;
+      font-weight: 800;
     }
     h2 a,
     .links a {
@@ -161,6 +179,8 @@ export class LoanCardComponent {
 
   protected readonly projection = computed(() => this.service.forLoan(this.loan().id));
   protected readonly base = computed(() => `/app/prestamos/${this.loan().id}`);
+  /** Same name as the detail header, so the router's view transition morphs the card into it. */
+  protected readonly transitionName = computed(() => `cc-loan-${this.loan().id}`);
   protected readonly titleId = computed(() => `cc-loan-title-${this.loan().id}`);
   protected readonly statusLabel = computed(() => STATUS_LABELS[this.loan().status]);
   protected readonly message = errorMessage;
