@@ -232,6 +232,20 @@ describe('cc-landing-board (W8-07)', () => {
     expect(track.classList.contains('drag')).toBe(false);
   });
 
+  it('holds knob keys pressed before the behaviour loads: no page scroll, applied in order once it arrives', async () => {
+    stubMotion(true);
+    const { root, fixture } = await render();
+    const end = await key(fixture, { key: 'End' });
+    const left = await key(fixture, { key: 'ArrowLeft' });
+    const tab = await key(fixture, { key: 'Tab' });
+    expect(end.defaultPrevented).toBe(true);
+    expect(left.defaultPrevented).toBe(true);
+    expect(tab.defaultPrevented).toBe(false);
+    await vi.waitFor(() => expect(root.hasAttribute('data-ready')).toBe(true), { timeout: 10000 });
+    await fixture.whenStable();
+    expect(slider(root).getAttribute('aria-valuenow')).toBe('239');
+  });
+
   it('keeps following a drag pressed before the behaviour loaded once it arrives', async () => {
     stubMotion(true);
     const { root, fixture } = await render();

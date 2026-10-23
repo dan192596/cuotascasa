@@ -1,4 +1,16 @@
-import { ChangeDetectionStrategy, Component, computed, Directive, inject, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  Directive,
+  effect,
+  type ElementRef,
+  inject,
+  input,
+  output,
+  signal,
+  viewChild,
+} from '@angular/core';
 import type { Uuid } from '@cuotascasa/schema';
 import { LOAN_PROJECTION_SERVICE, LOANS_STORE, SCENARIOS_STORE } from '../../../data/tokens.ts';
 import { Announcer } from '../../../ui/feedback/announcer.service.ts';
@@ -47,11 +59,11 @@ export class RenderedDirective {
             Este préstamo aún no tiene escenarios. Crea uno en el editor para compararlo con tu camino real.
           </p>
         } @else {
-          <fieldset class="picker">
+          <fieldset class="picker" #picker>
             <legend>Escenarios a comparar (hasta {{ max }})</legend>
             <span
               class="indicator"
-              [hidden]="selectedIds().length === 0"
+              [hidden]="selectedIds().length === 0 || wrapped()"
               aria-hidden="true"
               data-testid="scenario-indicator"
               [style.--cc-i]="activeIndex()"
@@ -210,6 +222,7 @@ export class RenderedDirective {
     .picker {
       position: relative;
       display: flex;
+      flex-wrap: wrap;
       margin: 0 0 0.5rem;
       padding: 0.5rem 0.75rem 0.75rem;
       border: 1px solid var(--cc-color-control-border);
@@ -218,15 +231,19 @@ export class RenderedDirective {
     .picker legend {
       padding-inline: 0.25rem;
     }
+    /* Equal shares on one row; below 9rem each option wraps to a new row instead of squeezing its name (375 px). */
     .option {
       flex: 1 1 0;
       display: inline-flex;
       align-items: center;
       gap: 0.375rem;
-      min-width: 0;
+      min-width: min(100%, 9rem);
       min-height: 2rem;
     }
-    /* Slides under the first active option; the options share the width equally, so the offset is exact. */
+    /*
+     * Slides under the first active option; the options share the width equally, so the offset is exact. Hidden when
+     * the options wrap to more than one row, where a single-row offset would point at the wrong option.
+     */
     .indicator[hidden] {
       display: none;
     }
@@ -326,6 +343,24 @@ export class ScenarioCompareComponent {
     const chosen = this.chosen();
     return chosen === null ? existing.slice(0, MAX_COMPARED) : chosen.filter((id) => existing.includes(id));
   });
+  private readonly picker = viewChild<ElementRef<HTMLElement>>('picker');
+  /** True when the options wrap to more than one row (narrow screens): the sliding indicator is then hidden. */
+  protected readonly wrapped = signal(false);
+
+  constructor() {
+    effect((onCleanup) => {
+      const picker = this.picker()?.nativeElement;
+      if (picker === undefined || typeof ResizeObserver === 'undefined') return;
+      const measure = (): void => {
+        const tops = Array.from(picker.querySelectorAll<HTMLElement>('.option'), (option) => option.offsetTop);
+        this.wrapped.set(tops.some((top) => top !== tops[0]));
+      };
+      const observer = new ResizeObserver(measure);
+      observer.observe(picker);
+      onCleanup(() => observer.disconnect());
+    });
+  }
+
   /** Index of the first compared scenario: where the sliding indicator sits. */
   protected readonly activeIndex = computed(() => {
     const first = this.selectedIds()[0];

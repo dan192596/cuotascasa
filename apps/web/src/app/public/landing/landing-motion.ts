@@ -160,8 +160,9 @@ export function startLandingMotion(host: HTMLElement, win: Window): () => void {
       'z-index:60;background:var(--cc-color-on-block);mix-blend-mode:difference;transition:var(--cc-duration-fast) ' +
       'var(--cc-ease-out);transition-property:translate,scale';
     win.document.body.append(dot);
-    host.classList.add('cc-cursor');
+    // The native cursor stays until the first pointermove shows the dot, so the pointer is never invisible.
     listen(win, 'pointermove', (e) => {
+      host.classList.add('cc-cursor');
       const { clientX, clientY, target } = e as PointerEvent;
       const big = target instanceof Element && target.closest('a, button, [role="slider"], [data-stack]') !== null;
       dot.style.translate = `${String(clientX)}px ${String(clientY)}px`;

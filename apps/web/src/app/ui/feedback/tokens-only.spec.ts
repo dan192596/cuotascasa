@@ -1,14 +1,14 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-const DIRS = ['apps/web/src/app/ui/house-meter', 'apps/web/src/app/ui/feedback'];
+const DIRS = ['apps/web/src/app/ui/house-meter', 'apps/web/src/app/ui/feedback', 'apps/web/src/app/ui/motion'];
 const files = DIRS.flatMap((dir) =>
   readdirSync(dir)
     .filter((name) => name.endsWith('.ts') && !name.endsWith('.spec.ts'))
     .map((name) => `${dir}/${name}`),
 );
 
-describe('ui house-meter and feedback use design tokens only (ADR-0012 decision 5)', () => {
+describe('ui house-meter, feedback and motion use design tokens only (ADR-0012 decision 5)', () => {
   it('finds the component sources', () => {
     expect(files.length).toBeGreaterThanOrEqual(6);
   });
@@ -24,7 +24,9 @@ describe('ui house-meter and feedback use design tokens only (ADR-0012 decision 
       themed: string[];
       shared: string[];
     };
-    const allowed = new Set([...frozen.themed, ...frozen.shared]);
+    // Local custom properties the component sets itself (`[style.--cc-x]`), like the odometer's digit, are not tokens.
+    const local = [...source.matchAll(/\[style\.(--cc-[a-z0-9-]+)\]/g)].map(([, name]) => name ?? '');
+    const allowed = new Set([...frozen.themed, ...frozen.shared, ...local]);
     for (const [, name] of source.matchAll(/var\((--cc-[a-z0-9-]+)/g)) {
       expect(allowed.has(name ?? ''), `${name} in ${file}`).toBe(true);
     }

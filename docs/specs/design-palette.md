@@ -30,6 +30,8 @@
 | bloque | `--cc-color-block` | Bloque negro (en oscuro, superficie elevada con borde de renglón) | `#151515` | `#262626` |
 | sobre-bloque | `--cc-color-on-block` | Texto sobre el bloque negro | `#FFFFFF` | `#F5F5F5` |
 
+`--cc-color-positive-fill` es un token de reserva: su nombre está congelado en el contrato y ningún componente lo usa después de W8.
+
 ## Contraste verificado (WCAG 2.2)
 
 Lo recalculan `apps/web/src/testing/doc-checks/design-palette-doc.spec.ts` sobre esta tabla y `apps/web/src/styles/tokens.spec.ts` sobre `tokens.css`, en cada `pnpm test`.
@@ -42,6 +44,8 @@ Lo recalculan `apps/web/src/testing/doc-checks/design-palette-doc.spec.ts` sobre
 | papel sobre fucsia (botón primario y selección) | 4.5:1 | 5.11:1 | 6.63:1 |
 | sobre-color sobre turquesa y sobre amarillo | 4.5:1 | 5.23:1 (sobre turquesa) | 9.89:1 (sobre turquesa) |
 | sobre-bloque sobre bloque | 4.5:1 | 18.26:1 | 13.88:1 |
+| fucsia y tinta-2 como texto sobre agua | 4.5:1 | 4.55:1 (fucsia sobre agua) | 5.46:1 (fucsia sobre agua) |
+| amarillo como texto sobre bloque | 4.5:1 | 11.72:1 | 9.71:1 |
 
 El renglón es decorativo (1.25:1 sobre papel en claro y 1.36:1 en oscuro). En oscuro, el bloque negro se separa del fondo por su borde de renglón, no por el color (1.22:1).
 

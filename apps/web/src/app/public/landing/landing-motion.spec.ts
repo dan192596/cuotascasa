@@ -127,9 +127,14 @@ describe('startLandingMotion', () => {
   it('adds a decorative cursor with a fine pointer and removes it, and its class, on stop', () => {
     const el = host();
     const stop = startLandingMotion(el, fakeWindow(desktop));
-    const cursor = document.querySelector('.cursor');
+    const cursor = document.querySelector<HTMLElement>('.cursor');
     expect(cursor?.getAttribute('aria-hidden')).toBe('true');
+    // The native cursor stays (no class) until the first pointermove shows the dot.
+    expect(el.classList.contains('cc-cursor')).toBe(false);
+    expect(cursor?.style.opacity).toBe('0');
+    window.dispatchEvent(new MouseEvent('pointermove', { clientX: 10, clientY: 20 }));
     expect(el.classList.contains('cc-cursor')).toBe(true);
+    expect(cursor?.style.opacity).toBe('1');
     stop();
     expect(document.querySelector('.cursor')).toBeNull();
     expect(el.classList.contains('cc-cursor')).toBe(false);

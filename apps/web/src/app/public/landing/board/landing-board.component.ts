@@ -19,6 +19,17 @@ type Behaviour = typeof import('./landing-board-interactive.ts');
 const TILES = 240;
 const ANNOUNCE_MS = 600;
 const AUTOPLAY_MS = 900;
+/** The keys the knob answers to (keyTarget in the behaviour chunk); before it loads they are held, not lost. */
+const KNOB_KEYS: ReadonlySet<string> = new Set([
+  'ArrowRight',
+  'ArrowUp',
+  'ArrowLeft',
+  'ArrowDown',
+  'PageUp',
+  'PageDown',
+  'Home',
+  'End',
+]);
 
 /**
  * The 240-installment board of the landing (W8-07, ADR-0026 §6.1). The prerendered HTML already shows the board at
@@ -325,6 +336,8 @@ export class LandingBoardComponent implements AfterViewInit {
   private touched = false;
   /** The last pointer position aimed at before the behaviour arrived; applied once it does. */
   private pending: { readonly clientX: number; readonly left: number; readonly width: number } | null = null;
+  /** Knob keys pressed before the behaviour arrived, in order; applied once it does. */
+  private pendingKeys: { readonly key: string; readonly shift: boolean }[] = [];
   private stopAutoplay: () => void = () => undefined;
   private announceTimer: ReturnType<typeof setTimeout> | undefined;
   private destroyed = false;
@@ -366,8 +379,24 @@ export class LandingBoardComponent implements AfterViewInit {
     return this.loading;
   }
 
+  /**
+   * A knob key works even before the behaviour has loaded (like a press): it never scrolls the page, and it is applied
+   * once the behaviour arrives.
+   */
   protected key(event: KeyboardEvent): void {
     this.touched = true;
+    if (this.behaviour() === null) {
+      if (!KNOB_KEYS.has(event.key)) return;
+      event.preventDefault();
+      this.pendingKeys.push({ key: event.key, shift: event.shiftKey });
+      void this.load().then(() => {
+        const ready = this.behaviour();
+        const keys = this.pendingKeys.splice(0);
+        if (ready === null || keys.length === 0) return;
+        this.set(keys.reduce((k, { key, shift }) => ready.keyTarget(key, shift, k) ?? k, this.k()));
+      });
+      return;
+    }
     const target = this.behaviour()?.keyTarget(event.key, event.shiftKey, this.k()) ?? null;
     if (target === null) return;
     event.preventDefault();

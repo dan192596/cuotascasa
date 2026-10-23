@@ -16,9 +16,9 @@ import type { LedgerCellEdit, LedgerColumn, LedgerRow } from './ledger-table.typ
 
 const PAGE_ROWS = 12;
 const CHANGED_MS = 600;
-/** Columnas que ya son del dueño (capital y saldos): el destello usa el acento. */
+/** Columns that already belong to the owner (principal and balances): their flash uses the accent. */
 const ACCENT_FLASH = new Set(['capital', 'opening', 'closing', 'balance']);
-/** Columnas de diferencia real: ya llevan semáforo, no destellan. */
+/** Real-difference columns: they already carry the traffic light, so they never flash. */
 const NO_FLASH = new Set(['delta', 'dCapital', 'dInterest', 'dInsurance', 'dFixed']);
 const DEFAULT_WIDTH = '7rem';
 const THOUSANDS = /^\d{1,3}(,\d{3})+(\.\d+)?$/;
@@ -44,7 +44,7 @@ interface RowVm {
 interface Editing {
   readonly rowKey: string;
   readonly c: number;
-  /** El editor nació de una tecla: el cursor va al final en lugar de seleccionar todo. */
+  /** The editor was opened by a key: the caret goes to the end instead of selecting everything. */
   readonly seeded: boolean;
   readonly initial: string;
   readonly draft: string;
@@ -52,8 +52,8 @@ interface Editing {
 }
 
 /**
- * Tabla tipo libreta (ADR-0012 §11, HU-07/HU-17): renglones, cifras tabulares, encabezado fijo, fila actual resaltada,
- * filas de subtotal, rejilla ARIA con tabindex móvil y celdas editables. Es genérica: solo emite `cellEdit`.
+ * Ledger-style table (ADR-0012 §11, HU-07/HU-17): ruled rows, tabular figures, sticky header, highlighted current row,
+ * subtotal rows, ARIA grid with roving tabindex and editable cells. It is generic: it only emits `cellEdit`.
  */
 @Component({
   selector: 'cc-ledger-table',
@@ -70,16 +70,16 @@ interface Editing {
 export class LedgerTableComponent {
   readonly columns = input.required<readonly LedgerColumn[]>();
   readonly rows = input.required<readonly LedgerRow[]>();
-  /** Nombre accesible de la rejilla. */
+  /** Accessible name of the grid. */
   readonly label = input('Tabla');
-  /** Cuántas columnas iniciales quedan fijas al desplazar en horizontal (máximo 3). */
+  /** How many leading columns stay fixed while scrolling horizontally (at most 3). */
   readonly stickyColumns = input(2);
   readonly cellEdit = output<LedgerCellEdit>();
 
   protected readonly active = signal({ r: 0, c: 0 });
   protected readonly editing = signal<Editing | null>(null);
   protected readonly status = signal('');
-  /** Celdas (`fila|columna`) cuyo texto cambió entre dos entradas de filas con la misma clave; duran `CHANGED_MS`. */
+  /** Cells (`row|column`) whose text changed between two row inputs with the same key; they last `CHANGED_MS`. */
   protected readonly changed = signal<ReadonlyMap<string, 'accent' | 'highlight'>>(new Map());
   private previous: ReadonlyMap<string, Readonly<Record<string, string>>> | null = null;
   private changedTimer: ReturnType<typeof setTimeout> | undefined;
@@ -92,7 +92,7 @@ export class LedgerTableComponent {
       .join(' '),
   );
 
-  /** `left` CSS de cada columna fija (`null` si no lo es). */
+  /** CSS `left` of each fixed column (`null` when it is not fixed). */
   protected readonly offsets = computed<readonly (string | null)[]>(() => {
     const columns = this.columns();
     const sticky = Math.min(this.stickyColumns(), 3, columns.length);
@@ -184,7 +184,7 @@ export class LedgerTableComponent {
     return e !== null && e.rowKey === rowKey && e.c === c;
   }
 
-  /** Vuelve a anunciar aunque el texto sea idéntico al anterior: vacía la región y la rellena en el turno siguiente. */
+  /** Announces again even when the text equals the previous one: empties the region and refills it on the next turn. */
   private announce(message: string): void {
     this.status.set('');
     setTimeout(() => this.status.set(message), 0);
@@ -292,7 +292,7 @@ export class LedgerTableComponent {
     this.announce(`Editando ${cell.column.header} de ${this.rowName(vm.row)}. Enter confirma, Escape cancela.`);
   }
 
-  /** `leaving`: la edición termina por foco o Tab; un valor inválido se descarta en lugar de atrapar al usuario. */
+  /** `leaving`: editing ends by focus or Tab; an invalid value is dropped instead of trapping the user. */
   private commit(leaving: boolean): void {
     const state = this.editing();
     if (!state) return;

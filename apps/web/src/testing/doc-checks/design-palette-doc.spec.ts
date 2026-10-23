@@ -32,6 +32,9 @@ const MATRIX: readonly Rule[] = [
   { fg: ['paper'], bg: ['accent'], min: 4.5 },
   { fg: ['on-color'], bg: ['saving', 'highlight'], min: 4.5 },
   { fg: ['on-block'], bg: ['block'], min: 4.5 },
+  // Text on the soft surfaces (board of the landing, picker) and highlight text on the black block (W8 final review).
+  { fg: ['accent', 'ink-muted'], bg: ['soft'], min: 4.5 },
+  { fg: ['highlight'], bg: ['block'], min: 4.5 },
 ];
 
 function luminance(hex: string): number {

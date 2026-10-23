@@ -63,6 +63,12 @@ interface Glyph {
       overflow: hidden;
       clip-path: inset(50%);
       white-space: nowrap;
+      user-select: text;
+    }
+    /* Copying the figure yields the hidden final text, never the 0-9 strips of every column. */
+    .col,
+    .fixed {
+      user-select: none;
     }
     .col {
       display: inline-block;

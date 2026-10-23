@@ -47,6 +47,12 @@ describe('cc-odometer', () => {
     expect(root.querySelectorAll('.col').length).toBe(2);
   });
 
+  it('copies as the final text: columns and fixed glyphs are unselectable, the hidden text stays selectable', () => {
+    const source = readFileSync(SOURCE, 'utf8');
+    expect(source).toMatch(/\.col,\s*\.fixed \{\s*user-select: none;/);
+    expect(source).toMatch(/\.text \{[^}]*user-select: text;/);
+  });
+
   it('rolls only without a reduced-motion preference', () => {
     const source = readFileSync(SOURCE, 'utf8');
     const noPref = source.match(/@media \(prefers-reduced-motion: no-preference\)\s*\{[\s\S]*?\}\s*\}/)?.[0] ?? '';

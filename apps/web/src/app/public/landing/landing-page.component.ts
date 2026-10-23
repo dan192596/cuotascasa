@@ -364,9 +364,12 @@ const CARDS: readonly Card[] = [
       font-size: clamp(1.4rem, 3vw, 2.4rem);
       transition: var(--cc-duration-base) var(--cc-ease-out);
     }
-    .cta:hover {
-      background: var(--cc-color-accent);
-      color: var(--cc-color-paper);
+    /* Only where hover is real, so the fill does not stick after a tap on a touch screen. */
+    @media (hover: hover) {
+      .cta:hover {
+        background: var(--cc-color-accent);
+        color: var(--cc-color-paper);
+      }
     }
     h2 {
       font-size: clamp(2.25rem, 6vw, 5rem);

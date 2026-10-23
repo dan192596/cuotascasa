@@ -106,6 +106,41 @@ describe('cc-scenario-compare: selection', () => {
     expect(css).toContain('var(--cc-ease-out)');
   });
 
+  it('lets the options wrap at 375 px and hides the indicator while they span more than one row', () => {
+    let callback: () => void = () => undefined;
+    const observe = vi.fn();
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(fn: () => void) {
+          callback = fn;
+        }
+        observe = observe;
+        disconnect = vi.fn();
+      },
+    );
+    try {
+      const { fixture } = mount();
+      expect(observe).toHaveBeenCalledWith(root(fixture).querySelector('.picker'));
+      const labels = [...root(fixture).querySelectorAll<HTMLElement>('.option')];
+      const setTops = (tops: readonly number[]): void =>
+        labels.forEach((label, i) => Object.defineProperty(label, 'offsetTop', { configurable: true, value: tops[i] }));
+      setTops([0, 0, 0, 0]);
+      callback();
+      fixture.detectChanges();
+      expect(byId(fixture, 'scenario-indicator')?.hidden).toBe(false);
+      setTops([0, 0, 32, 32]);
+      callback();
+      fixture.detectChanges();
+      expect(byId(fixture, 'scenario-indicator')?.hidden).toBe(true);
+      const css = [...document.head.querySelectorAll('style')].map((c) => c.textContent).join('\n');
+      expect(css).toContain('flex-wrap: wrap');
+      expect(css).toContain('min-width: min(100%, 9rem)');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('lists the scenarios of the loan and compares the first three by default', () => {
     const { fixture, compareSpy } = mount();
     expect(options(fixture).map((o) => o.checked)).toEqual([true, true, true, false]);
