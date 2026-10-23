@@ -1,3 +1,4 @@
+import { DOCUMENT } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { LOAN_PROJECTION_SERVICE } from '../../data/tokens.ts';
@@ -14,7 +15,13 @@ import { type DashboardLoan, errorMessage, STATUS_LABELS } from './dashboard-mod
   template: `
     @let p = projection();
     @let currency = loan().currency;
-    <article class="card" data-testid="loan-card" [attr.aria-labelledby]="titleId()">
+    <article
+      class="card"
+      [class.enter]="enter"
+      data-testid="loan-card"
+      [attr.aria-labelledby]="titleId()"
+      [style.view-transition-name]="transitionName()"
+    >
       <header>
         <h2 [id]="titleId()">
           <a [routerLink]="base()">{{ loan().name }}</a>
@@ -75,11 +82,23 @@ import { type DashboardLoan, errorMessage, STATUS_LABELS } from './dashboard-mod
       display: block;
     }
     .card {
-      padding: 1rem;
+      padding: 1.25rem;
       border: 1px solid var(--cc-color-rule);
-      border-radius: 0.5rem;
+      border-radius: var(--cc-radius-block);
       background: var(--cc-color-surface);
       color: var(--cc-color-ink);
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .card.enter {
+        animation: card-in var(--cc-duration-slow) var(--cc-ease-out) backwards;
+        animation-delay: calc(var(--i, 0) * 60ms);
+      }
+      @keyframes card-in {
+        from {
+          /* Transform only: text keeps full contrast (and stays readable for axe) while the card settles. */
+          transform: translateY(12px);
+        }
+      }
     }
     header {
       display: flex;
@@ -91,7 +110,8 @@ import { type DashboardLoan, errorMessage, STATUS_LABELS } from './dashboard-mod
     h2 {
       margin: 0;
       font-family: var(--cc-font-heading);
-      font-size: 1.125rem;
+      font-size: 1.25rem;
+      font-weight: 800;
     }
     h2 a,
     .links a {
@@ -159,8 +179,17 @@ export class LoanCardComponent {
 
   readonly loan = input.required<DashboardLoan>();
 
+  /**
+   * The card is the shared view-transition target: when it is created inside a route transition (the root carries
+   * `cc-view-transition`, set in app.config.ts) its entrance would fight the morph, so it starts in place. Read once, so
+   * the entrance never replays when the class leaves the root.
+   */
+  protected readonly enter = !inject(DOCUMENT).documentElement.classList.contains('cc-view-transition');
+
   protected readonly projection = computed(() => this.service.forLoan(this.loan().id));
   protected readonly base = computed(() => `/app/prestamos/${this.loan().id}`);
+  /** Same name as the detail header, so the router's view transition morphs the card into it. */
+  protected readonly transitionName = computed(() => `cc-loan-${this.loan().id}`);
   protected readonly titleId = computed(() => `cc-loan-title-${this.loan().id}`);
   protected readonly statusLabel = computed(() => STATUS_LABELS[this.loan().status]);
   protected readonly message = errorMessage;

@@ -68,3 +68,16 @@ Medidas gzip de la unión de W5:
 | `/app` | — | ~175 kB | 172.90 kB | 200 kB |
 
 Los presupuestos no cambian. Se revisan en W7-01 con el release, como dice la decisión.
+
+## Enmienda (2026-10-22): techo de 110 kB por la identidad Mercado
+
+Tras W8-06, la landing en la identidad Mercado (ADR-0026) medía unos 103.8 kB gzip de 104. El crecimiento es código propio del diseño aprobado de la landing (mosaico, movimiento, tarjetas apiladas y, con W8-07, el cuadro de 240 cuotas). Ningún paquete vetado entró al grafo inicial: `bundle:check` sigue sin violaciones.
+
+- El dueño aprobó el 2026-10-22 subir el presupuesto de la landing a **110 kB gzip** (112 640 B) en `tools/bundle-check/config.json`.
+- Todos los vetos de los dos grafos siguen iguales. El presupuesto de `/app` inicial no cambia (200 kB).
+- Las filas del ejemplo de W8-07 (`LANDING_EXAMPLE_ROWS`) y el comportamiento del cuadro viven en un chunk diferido; el grafo inicial solo lleva el resumen generado, sin el motor, sin `decimal.js` y sin `ui/`.
+
+| Grafo inicial | Tras W8-06 | Al cerrar W8 (tras la revisión final) | Presupuesto |
+|---|---|---|---|
+| Landing | 103.78 kB | 106.80 kB | 110 kB |
+| `/app` | 175.84 kB | 176.11 kB | 200 kB |

@@ -434,4 +434,79 @@ describe('cc-ledger-table', () => {
       expect(css).toMatch(/@media \(forced-colors: active\)[\s\S]*data-editable/);
     });
   });
+
+  it('flags only the cells whose text changed between rows with the same key', async () => {
+    const { fixture, root } = await mount();
+    expect(root.querySelectorAll('.cell.changed').length).toBe(0);
+    const next = sampleRows().map((row) =>
+      row.key === 'r3' ? { ...row, cells: { ...row.cells, capital: '999.00' } } : row,
+    );
+    fixture.componentRef.setInput('flashKey', 'b');
+    fixture.componentRef.setInput('rows', next);
+    await fixture.whenStable();
+    const changed = Array.from(root.querySelectorAll<HTMLElement>('.cell.changed'));
+    expect(changed.length).toBe(1);
+    expect(changed[0]?.dataset['r']).toBe('2');
+    expect(changed[0]?.dataset['c']).toBe('2');
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    await fixture.whenStable();
+    expect(root.querySelectorAll('.cell.changed').length).toBe(0);
+  });
+
+  it('updates silently while flashKey stays the same, and flashes when it changes', async () => {
+    const { fixture, root } = await mount();
+    fixture.componentRef.setInput('flashKey', 'a');
+    await fixture.whenStable();
+    const edited = sampleRows().map((row) =>
+      row.key === 'r3' ? { ...row, cells: { ...row.cells, capital: '999.00' } } : row,
+    );
+    fixture.componentRef.setInput('rows', edited);
+    await fixture.whenStable();
+    expect(root.querySelectorAll('.cell.changed').length).toBe(0);
+    expect(root.querySelector('[data-r="2"][data-c="2"]')?.textContent).toContain('999.00');
+    const switched = edited.map((row) =>
+      row.key === 'r3' ? { ...row, cells: { ...row.cells, capital: '5.00' } } : row,
+    );
+    fixture.componentRef.setInput('flashKey', 'b');
+    fixture.componentRef.setInput('rows', switched);
+    await fixture.whenStable();
+    expect(root.querySelectorAll('.cell.changed').length).toBe(1);
+  });
+
+  it('flashes the current row once with the highlight colour', () => {
+    const css = readFileSync('apps/web/src/app/ui/ledger-table/ledger-table.component.css', 'utf8');
+    expect(css).toMatch(/@keyframes current-flash[\s\S]*var\(--cc-color-highlight\)/);
+    expect(css).toMatch(/\.row\.current\s*\{[^}]*animation:\s*current-flash var\(--cc-duration-slow\)/);
+    const frames = css.match(/@keyframes (current-flash|cell-flash-highlight)\s*\{[\s\S]*?\n\}/g) ?? [];
+    expect(frames.length).toBe(2);
+    for (const frame of frames) expect(frame).toMatch(/color:\s*var\(--cc-color-on-color\)/);
+    expect(css).toMatch(/@media \(prefers-reduced-motion: no-preference\)/);
+  });
+
+  it('flashes semantically: accent for capital/balance, none for real delta, highlight for the rest', async () => {
+    const cols: readonly LedgerColumn[] = [
+      { key: 'k', header: '#' },
+      { key: 'capital', header: 'Capital' },
+      { key: 'closing', header: 'Saldo final' },
+      { key: 'delta', header: 'Real Δ' },
+      { key: 'fixed', header: 'Fijos' },
+    ];
+    const mk = (v: string): LedgerRow[] => [
+      { key: 'a', cells: { k: '1', capital: v, closing: v, delta: v, fixed: v } },
+    ];
+    const fixture = TestBed.createComponent(LedgerTableComponent);
+    fixture.componentRef.setInput('columns', cols);
+    fixture.componentRef.setInput('rows', mk('1'));
+    await fixture.whenStable();
+    fixture.componentRef.setInput('flashKey', 'next');
+    fixture.componentRef.setInput('rows', mk('2'));
+    await fixture.whenStable();
+    const root = fixture.nativeElement as HTMLElement;
+    const flash = (c: number) =>
+      root.querySelector<HTMLElement>(`[data-r="0"][data-c="${c}"]`)?.getAttribute('data-flash') ?? null;
+    expect(flash(1)).toBe('accent');
+    expect(flash(2)).toBe('accent');
+    expect(root.querySelector('[data-r="0"][data-c="3"].changed')).toBeNull();
+    expect(flash(4)).toBe('highlight');
+  });
 });

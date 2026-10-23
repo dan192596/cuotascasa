@@ -76,8 +76,40 @@ export async function expectNoClientStorage(page: Page): Promise<void> {
   });
 }
 
-/** Fails on any axe violation with impact serious or critical. */
+/** Overall bound: a finite animation that never advances (hidden tab, frozen clock) must not hang the run. */
+const MOTION_SETTLE_TIMEOUT_MS = 5000;
+
+/**
+ * Waits (at most `timeoutMs`) until every running animation and transition with a finite end has finished (CSS animations, CSS
+ * transitions and view-transition pseudo-elements alike); infinite ones (spinners) are ignored. Two frames first, so
+ * a style change the test just made (for example `emulateMedia({ colorScheme })`) has started its transitions.
+ */
+export async function waitForMotionToSettle(page: Page, timeoutMs = MOTION_SETTLE_TIMEOUT_MS): Promise<void> {
+  await page.evaluate(async (budget) => {
+    const giveUp = new Promise<void>((resolve) => setTimeout(resolve, budget));
+    await Promise.race([giveUp, settle()]);
+    async function settle(): Promise<void> {
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+      // A finished animation can start another one (for example a staggered list), so a few passes.
+      for (let pass = 0; pass < 10; pass += 1) {
+        const finite = document.getAnimations().filter((animation) => {
+          const end = animation.effect?.getComputedTiming().endTime;
+          return animation.playState === 'running' && typeof end === 'number' && Number.isFinite(end);
+        });
+        if (finite.length === 0) return;
+        await Promise.all(finite.map((animation) => animation.finished.catch(() => undefined)));
+      }
+    }
+  }, timeoutMs);
+}
+
+/**
+ * Fails on any axe violation with impact serious or critical. Axe reads the page at rest: it first waits for motion
+ * to settle, because a colour sampled mid-transition (the active nav pill right after a theme switch, W8-08) is a
+ * blend no user reads, and would make the result depend on machine load.
+ */
 export async function expectNoA11yViolations(page: Page): Promise<void> {
+  await waitForMotionToSettle(page);
   const { violations } = await new AxeBuilder({ page }).analyze();
   const blocking = violations.filter((violation) => violation.impact === 'serious' || violation.impact === 'critical');
   expect(

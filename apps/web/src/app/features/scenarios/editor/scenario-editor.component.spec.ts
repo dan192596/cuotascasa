@@ -265,6 +265,26 @@ describe('scenario list: create, activate, rename, duplicate, delete', () => {
     expect(h.announced()).toContain('Plan A');
   });
 
+  it('shows the «Listo» banner after creating or renaming, and hides it on the next edit of the name', async () => {
+    const h = await setup();
+    await h.type('name', 'Plan A');
+    await h.submit('name-form');
+    const notice = () => h.byTestId('save-notice');
+    expect(notice()?.querySelector('[data-testid="banner-tone"]')?.textContent).toBe('Listo');
+    expect(notice()?.querySelector('.message')?.textContent?.trim()).toBe('Escenario «Plan A» creado.');
+    expect(notice()?.querySelector('[data-testid="banner"]')?.getAttribute('data-tone')).toBe('success');
+    expect(notice()?.querySelector('[data-testid="banner"]')?.hasAttribute('role')).toBe(false);
+    expect(notice()?.querySelector('.check')).not.toBeNull();
+    // A real keystroke bubbles up to the form.
+    h.element.querySelector('[id$="-name"]')?.dispatchEvent(new Event('input', { bubbles: true }));
+    await h.settle();
+    expect(notice()).toBeNull();
+    await h.click('rename');
+    await h.type('name', 'Plan Z');
+    await h.submit('name-form');
+    expect(notice()?.textContent).toContain('Escenario renombrado a «Plan Z».');
+  });
+
   it('rejects an empty name in Spanish and writes nothing', async () => {
     const h = await setup();
     await h.type('name', '   ');

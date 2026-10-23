@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { computed, type Signal, signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import {
@@ -421,6 +422,24 @@ describe('cc-real-data-timeline: add', () => {
     expect(String(h.polite.mock.calls[0]?.[0])).toContain('Se guardó');
   });
 
+  it('shows the «Listo» banner after a save (announced once) and hides it when the next form opens', async () => {
+    const h = await mount();
+    await h.click(h.button('Agregar abono a capital'));
+    await CASES[4]!.fill(h);
+    await h.submit();
+    await h.fixture.whenStable();
+    const notice = h.testid('save-notice');
+    const said = String(h.polite.mock.calls[0]?.[0]);
+    expect(notice?.querySelector('[data-testid="banner-tone"]')?.textContent).toBe('Listo');
+    expect(notice?.querySelector('.message')?.textContent?.trim()).toBe(said);
+    expect(notice?.querySelector('[data-testid="banner"]')?.getAttribute('data-tone')).toBe('success');
+    expect(notice?.querySelector('[data-testid="banner"]')?.hasAttribute('role')).toBe(false);
+    expect(notice?.querySelector('.check')).not.toBeNull();
+    expect(h.polite).toHaveBeenCalledTimes(1);
+    await h.click(h.button('Agregar pago real'));
+    expect(h.testid('save-notice')).toBeNull();
+  });
+
   it('writes the loan id and the dry-run write sees the same record that the store gets', async () => {
     const h = await mount();
     await h.click(h.button('Agregar abono a capital'));
@@ -772,6 +791,12 @@ describe('cc-real-data-timeline: payments', () => {
     h.projection.paidInstallments.set(new Set([3, 4]));
     await h.fixture.whenStable();
     expect(h.all('paid-mark').map((mark) => mark.textContent?.trim())).toEqual(['Cuota 3 pagada', 'Cuota 4 pagada']);
+  });
+
+  it('colours the paid mark with the accent (ya es tuyo), never the positive green reserved for «coincide»', () => {
+    const src = readFileSync('apps/web/src/app/features/real-data/timeline/real-data-timeline.component.ts', 'utf8');
+    expect(src).toMatch(/\.paid \{\s*color: var\(--cc-color-accent\);/);
+    expect(src).not.toContain('--cc-color-positive');
   });
 
   it('shows Real Δ per component (real - projected) for a payment with a breakdown', async () => {

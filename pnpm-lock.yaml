@@ -54,10 +54,10 @@ catalogs:
     '@eslint/js':
       specifier: 10.0.1
       version: 10.0.1
-    '@fontsource/jetbrains-mono':
+    '@fontsource-variable/bricolage-grotesque':
       specifier: 5.3.0
       version: 5.3.0
-    '@fontsource/source-serif-4':
+    '@fontsource/jetbrains-mono':
       specifier: 5.3.0
       version: 5.3.0
     '@playwright/test':
@@ -323,10 +323,10 @@ importers:
       '@cuotascasa/sync':
         specifier: workspace:*
         version: link:../../packages/sync
-      '@fontsource/jetbrains-mono':
+      '@fontsource-variable/bricolage-grotesque':
         specifier: 'catalog:'
         version: 5.3.0
-      '@fontsource/source-serif-4':
+      '@fontsource/jetbrains-mono':
         specifier: 'catalog:'
         version: 5.3.0
       chart.js:
@@ -1326,11 +1326,11 @@ packages:
       '@noble/hashes':
         optional: true
 
+  '@fontsource-variable/bricolage-grotesque@5.3.0':
+    resolution: {integrity: sha512-TLi9Q4hJjS2UvoTMRSS2nHu6c4R56lAw60NR9QYtVRCHn0XtsFpiEhNffZ8Glsoxu6wEEwLKBP8lb94J52PNBA==}
+
   '@fontsource/jetbrains-mono@5.3.0':
     resolution: {integrity: sha512-fqDfB5I9f1p1TV486aUgB9t8zP84P0O1FtQR5Ol9vjwPy+S+EIGlVYm1cvj2W5shcZMTg2nZFdVMoH5wFu8a1A==}
-
-  '@fontsource/source-serif-4@5.3.0':
-    resolution: {integrity: sha512-yQz8xmIgMzks8zQbpuca3UYtjxK798XCyQAGdDXmzBgvV7sdoK6d0YvE9F9kiYxORCEMRBgGZDZsSYcXj5KvwA==}
 
   '@harperfast/extended-iterable@1.0.3':
     resolution: {integrity: sha512-sSAYhQca3rDWtQUHSAPeO7axFIUJOI6hn1gjRC5APVE1a90tuyT8f5WIgRsFhhWA7htNkju2veB9eWL6YHi/Lw==}
@@ -5165,9 +5165,9 @@ snapshots:
 
   '@exodus/bytes@1.16.0': {}
 
-  '@fontsource/jetbrains-mono@5.3.0': {}
+  '@fontsource-variable/bricolage-grotesque@5.3.0': {}
 
-  '@fontsource/source-serif-4@5.3.0': {}
+  '@fontsource/jetbrains-mono@5.3.0': {}
 
   '@harperfast/extended-iterable@1.0.3':
     optional: true

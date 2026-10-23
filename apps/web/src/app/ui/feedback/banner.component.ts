@@ -2,21 +2,31 @@ import { ChangeDetectionStrategy, Component, computed, input, output, signal } f
 
 export type BannerTone = 'info' | 'success' | 'warning' | 'danger';
 
-const TONES: Record<BannerTone, { readonly label: string; readonly icon: string; readonly role: 'status' | 'alert' }> =
-  {
-    info: { label: 'Información', icon: 'ℹ', role: 'status' },
-    success: { label: 'Listo', icon: '●', role: 'status' },
-    warning: { label: 'Advertencia', icon: '▲', role: 'alert' },
-    danger: { label: 'Error', icon: '■', role: 'alert' },
-  };
+const TONES: Record<
+  BannerTone,
+  { readonly label: string; readonly icon: string | null; readonly role: 'status' | 'alert' }
+> = {
+  info: { label: 'Información', icon: 'ℹ', role: 'status' },
+  success: { label: 'Listo', icon: null, role: 'status' },
+  warning: { label: 'Advertencia', icon: '▲', role: 'alert' },
+  danger: { label: 'Error', icon: '■', role: 'alert' },
+};
 
 /** Inline notice with an optional close button. Tone is conveyed by a text label and an icon, never by colour alone. */
 @Component({
   selector: 'cc-banner',
   template: `
     @if (visible()) {
-      <div class="banner" data-testid="banner" [attr.role]="toneInfo().role" [attr.data-tone]="tone()">
-        <span class="icon" aria-hidden="true" data-testid="banner-icon">{{ toneInfo().icon }}</span>
+      <div class="banner" data-testid="banner" [attr.role]="live() ? toneInfo().role : null" [attr.data-tone]="tone()">
+        <span class="icon" aria-hidden="true" data-testid="banner-icon">
+          @if (tone() === 'success') {
+            <svg viewBox="0 0 16 16" width="1em" height="1em" focusable="false">
+              <path class="check" d="M3 8.5 6.5 12 13 4.5" pathLength="1" />
+            </svg>
+          } @else {
+            {{ toneInfo().icon }}
+          }
+        </span>
         <p class="body">
           <strong data-testid="banner-tone">{{ toneInfo().label }}</strong>
           <span class="message"><ng-content /></span>
@@ -56,6 +66,25 @@ const TONES: Record<BannerTone, { readonly label: string; readonly icon: string;
     }
     [data-tone='success'] .icon {
       color: var(--cc-color-positive);
+    }
+    .check {
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 1;
+      stroke-dashoffset: 0;
+    }
+    @keyframes draw-check {
+      from {
+        stroke-dashoffset: 1;
+      }
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .check {
+        animation: draw-check var(--cc-duration-base) var(--cc-ease-out) backwards;
+      }
     }
     [data-tone='warning'] .icon {
       color: var(--cc-color-warning);
@@ -102,6 +131,11 @@ export class BannerComponent {
   readonly tone = input<BannerTone>('info');
   readonly dismissible = input(true);
   readonly dismissLabel = input('Cerrar aviso');
+  /**
+   * False when the screen already announced the same news through the Announcer (a save): the banner is then shown
+   * without a live role, so it is not read twice.
+   */
+  readonly live = input(true);
   /** Emitted once when the user closes the banner; the banner then hides itself. */
   readonly dismissed = output<void>();
 

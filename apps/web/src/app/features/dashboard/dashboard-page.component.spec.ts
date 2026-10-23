@@ -322,6 +322,80 @@ describe('DashboardPageComponent: empty state', () => {
   });
 });
 
+describe('DashboardPageComponent: Mercado', () => {
+  it('names each card for the shared route transition', () => {
+    const f = mount({ loans: [loan('a'), loan('b')] });
+    const cards = all(f, 'loan-card');
+    expect(cards.map((c) => c.style.viewTransitionName)).toEqual(['cc-loan-a', 'cc-loan-b']);
+  });
+
+  it('runs the card entrance outside a route transition', () => {
+    const f = mount({ loans: [loan('a')] });
+    expect(all(f, 'loan-card')[0]?.classList.contains('enter')).toBe(true);
+  });
+
+  it('skips the card entrance when the card is created inside a route transition, so the morph does not jump', () => {
+    document.documentElement.classList.add('cc-view-transition');
+    try {
+      const f = mount({ loans: [loan('a')] });
+      expect(all(f, 'loan-card')[0]?.classList.contains('enter')).toBe(false);
+    } finally {
+      document.documentElement.classList.remove('cc-view-transition');
+    }
+  });
+
+  it('gives each card its index for the staggered entrance, capped at 8 steps', () => {
+    const ids = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'];
+    const f = mount({ loans: ids.map((id) => loan(id)) });
+    const hosts = [...root(f).querySelectorAll<HTMLElement>('cc-loan-card')];
+    expect(hosts.map((h) => h.style.getPropertyValue('--i'))).toEqual([
+      '0',
+      '1',
+      '2',
+      '3',
+      '4',
+      '5',
+      '6',
+      '7',
+      '7',
+      '7',
+    ]);
+  });
+
+  it('shows the per-currency totals through the odometer with the formatted service value', () => {
+    const f = mount({
+      loans: [loan('a')],
+      totals: [{ currency: 'GTQ', balance: money('1000.00'), nextInstallmentTotal: money('120.00') } as CurrencyTotals],
+    });
+    const labels = [...(byId(f, 'total-GTQ') as HTMLElement).querySelectorAll('cc-odometer [role="img"]')].map((o) =>
+      o.getAttribute('aria-label'),
+    );
+    expect(labels).toEqual(['Q 1,000.00', 'Q 120.00']);
+  });
+
+  it('marks «Nuevo préstamo» with the shared primary button class, like the other screens', () => {
+    const f = mount({ loans: [loan('a')] });
+    const link = byId(f, 'new-loan') as HTMLElement;
+    expect(link.textContent?.trim()).toBe('Nuevo préstamo');
+    expect(link.classList.contains('cc-button-primary')).toBe(true);
+    const src = readFileSync('apps/web/src/app/features/dashboard/dashboard-page.component.ts', 'utf8');
+    expect(src).not.toContain('.action.primary');
+  });
+
+  it('uses the mosaic layout for the first-use state', () => {
+    const f = mount({ loans: [] });
+    expect(byId(f, 'empty-actions')?.getAttribute('data-layout')).toBe('mosaic');
+  });
+
+  it('enters cards with a stagger only when the user has no reduced-motion preference', () => {
+    const src = readFileSync('apps/web/src/app/features/dashboard/loan-card.component.ts', 'utf8');
+    expect(src).toMatch(
+      /@media \(prefers-reduced-motion: no-preference\)[\s\S]*animation-delay: calc\(var\(--i, 0\) \* 60ms\)/,
+    );
+    expect(src).toContain('var(--cc-radius-block)');
+  });
+});
+
 describe('DashboardPageComponent: after «Borrar datos de este dispositivo»', () => {
   async function open(url: string) {
     configure({}, [{ path: 'app', component: DashboardPageComponent }]);

@@ -92,6 +92,55 @@ function row(f: ComponentFixture<unknown>, label: string): string[] {
 }
 
 describe('cc-scenario-compare: selection', () => {
+  it('slides an indicator under the first active option with translateX', () => {
+    const { fixture } = mount();
+    const indicator = () => byId(fixture, 'scenario-indicator');
+    expect(indicator()?.style.getPropertyValue('--cc-i')).toBe('0');
+    expect(indicator()?.style.getPropertyValue('--cc-n')).toBe('4');
+    click(fixture, options(fixture)[0] as HTMLInputElement);
+    expect(indicator()?.style.getPropertyValue('--cc-i')).toBe('1');
+    for (const option of options(fixture).filter((o) => o.checked)) click(fixture, option);
+    expect(indicator()?.hidden).toBe(true);
+    const css = [...document.head.querySelectorAll('style')].map((c) => c.textContent).join('\n');
+    expect(css).toContain('translateX(calc(var(--cc-i) * 100%))');
+    expect(css).toContain('var(--cc-ease-out)');
+  });
+
+  it('lets the options wrap at 375 px and hides the indicator while they span more than one row', () => {
+    let callback: () => void = () => undefined;
+    const observe = vi.fn();
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(fn: () => void) {
+          callback = fn;
+        }
+        observe = observe;
+        disconnect = vi.fn();
+      },
+    );
+    try {
+      const { fixture } = mount();
+      expect(observe).toHaveBeenCalledWith(root(fixture).querySelector('.picker'));
+      const labels = [...root(fixture).querySelectorAll<HTMLElement>('.option')];
+      const setTops = (tops: readonly number[]): void =>
+        labels.forEach((label, i) => Object.defineProperty(label, 'offsetTop', { configurable: true, value: tops[i] }));
+      setTops([0, 0, 0, 0]);
+      callback();
+      fixture.detectChanges();
+      expect(byId(fixture, 'scenario-indicator')?.hidden).toBe(false);
+      setTops([0, 0, 32, 32]);
+      callback();
+      fixture.detectChanges();
+      expect(byId(fixture, 'scenario-indicator')?.hidden).toBe(true);
+      const css = [...document.head.querySelectorAll('style')].map((c) => c.textContent).join('\n');
+      expect(css).toContain('flex-wrap: wrap');
+      expect(css).toContain('min-width: min(100%, 9rem)');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('lists the scenarios of the loan and compares the first three by default', () => {
     const { fixture, compareSpy } = mount();
     expect(options(fixture).map((o) => o.checked)).toEqual([true, true, true, false]);

@@ -13,7 +13,7 @@ function clampPercent(raw: string): number {
 
 /**
  * "Tu casa se va llenando" (ADR-0012 decision 2): a house outline filled in proportion to the percentage of principal
- * already paid. The text lives outside the graphic (no text on the green fill) and the SVG is decorative: the meter
+ * already paid. The text lives outside the graphic (no text on the fill) and the SVG is decorative: the meter
  * semantics are on the wrapper. The house is built with Angular SVG templates (no innerHTML, Trusted Types safe).
  */
 @Component({
@@ -81,7 +81,7 @@ function clampPercent(raw: string): number {
       stroke-linecap: round;
     }
     .fill {
-      fill: var(--cc-color-positive-fill);
+      fill: var(--cc-color-accent);
       transform-box: fill-box;
       transform-origin: bottom;
     }
@@ -95,7 +95,7 @@ function clampPercent(raw: string): number {
       font-family: var(--cc-font-numeric);
       font-variant-numeric: tabular-nums;
       font-size: 1.25rem;
-      color: var(--cc-color-positive);
+      color: var(--cc-color-accent);
     }
     .caption {
       font-family: var(--cc-font-body);

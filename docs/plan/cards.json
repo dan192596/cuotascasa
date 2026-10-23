@@ -837,5 +837,137 @@
       "e2e/specs/settings-device.spec.ts",
       "e2e/specs/sweeps/stubs-and-worker.sweep.spec.ts"
     ]
+  },
+  {
+    "id": "W8-01",
+    "wave": "W8",
+    "executor": "opus",
+    "branch": "card/W8-01-mercado-identity-base-palette-tokens-bricolage-g",
+    "owns": [
+      "docs/adr/0026-identidad-mercado.md",
+      "docs/adr/0012-sistema-de-diseno.md",
+      "docs/adr/README.md",
+      "docs/specs/design-palette.md",
+      "docs/discovery/direccion-visual.md",
+      "apps/web/src/design-contract/",
+      "apps/web/src/styles/tokens.css",
+      "apps/web/src/styles/tokens.spec.ts",
+      "apps/web/src/styles/fonts.scss",
+      "apps/web/src/styles/fonts.dist.spec.ts",
+      "apps/web/src/styles/material-theme.scss",
+      "apps/web/src/styles/styles.scss",
+      "apps/web/src/styles/tailwind.scss",
+      "apps/web/src/testing/doc-checks/design-palette-doc.spec.ts",
+      "pnpm-workspace.yaml",
+      "apps/web/package.json",
+      "pnpm-lock.yaml"
+    ]
+  },
+  {
+    "id": "W8-02",
+    "wave": "W8",
+    "executor": "opus",
+    "branch": "card/W8-02-route-view-transitions-with-reduced-motion-skip",
+    "owns": [
+      "apps/web/src/app/app.config.ts",
+      "apps/web/src/app/app.config.spec.ts",
+      "apps/web/src/styles/view-transitions.css",
+      "apps/web/src/styles/styles.scss",
+      "e2e/specs/view-transitions.spec.ts"
+    ]
+  },
+  {
+    "id": "W8-03",
+    "wave": "W8",
+    "executor": "sonnet",
+    "branch": "card/W8-03-mercado-design-components-odometer-house-meter-b",
+    "owns": [
+      "apps/web/src/app/ui/"
+    ]
+  },
+  {
+    "id": "W8-04",
+    "wave": "W8",
+    "executor": "sonnet",
+    "branch": "card/W8-04-mercado-dashboard-and-loan-detail-with-shared-tr",
+    "owns": [
+      "apps/web/src/app/features/dashboard/dashboard-page.component.ts",
+      "apps/web/src/app/features/dashboard/dashboard-page.component.spec.ts",
+      "apps/web/src/app/features/dashboard/loan-card.component.ts",
+      "apps/web/src/app/features/dashboard/loan-card.component.spec.ts",
+      "apps/web/src/app/features/loans/detail/",
+      "e2e/specs/dashboard.spec.ts",
+      "e2e/specs/loan-detail.spec.ts"
+    ]
+  },
+  {
+    "id": "W8-05",
+    "wave": "W8",
+    "executor": "sonnet",
+    "branch": "card/W8-05-mercado-wizard-schedule-real-data-scenarios-sett",
+    "owns": [
+      "apps/web/src/app/features/loans/wizard/",
+      "apps/web/src/app/features/schedule/",
+      "apps/web/src/app/features/real-data/",
+      "apps/web/src/app/features/scenarios/",
+      "apps/web/src/app/features/settings/",
+      "apps/web/src/app/features/export/",
+      "apps/web/src/app/core/errors/",
+      "apps/web/src/app/core/shell/",
+      "e2e/specs/loan-wizard.spec.ts",
+      "e2e/specs/schedule.spec.ts",
+      "e2e/specs/real-data.spec.ts",
+      "e2e/specs/scenarios.spec.ts",
+      "e2e/specs/scenario-compare.spec.ts",
+      "e2e/specs/settings-backup.spec.ts",
+      "e2e/specs/settings-device.spec.ts",
+      "e2e/specs/settings-sync.spec.ts",
+      "e2e/specs/motion.spec.ts"
+    ]
+  },
+  {
+    "id": "W8-06",
+    "wave": "W8",
+    "executor": "sonnet",
+    "branch": "card/W8-06-mercado-landing-mosaic-scrambled-titles-custom-c",
+    "owns": [
+      "apps/web/src/app/public/landing/landing-page.component.ts",
+      "apps/web/src/app/public/landing/landing-page.component.spec.ts",
+      "apps/web/src/app/public/landing/landing.dist.spec.ts",
+      "apps/web/src/app/public/landing/landing-motion.ts",
+      "apps/web/src/app/public/landing/landing-motion.spec.ts",
+      "apps/web/src/app/public/simulator/",
+      "apps/web/src/app/public/privacy/",
+      "apps/web/src/app/public/not-found/",
+      "e2e/specs/landing.spec.ts",
+      "e2e/specs/simulator.spec.ts",
+      "e2e/specs/privacy.spec.ts"
+    ]
+  },
+  {
+    "id": "W8-07",
+    "wave": "W8",
+    "executor": "sonnet",
+    "branch": "card/W8-07-240-installment-board-and-engine-generated-examp",
+    "owns": [
+      "apps/web/src/app/public/landing/board/",
+      "apps/web/src/app/public/landing/example/",
+      "apps/web/src/app/public/landing/landing-page.component.ts",
+      "apps/web/src/app/public/landing/landing-page.component.spec.ts",
+      "apps/web/src/app/public/landing/landing.dist.spec.ts",
+      "e2e/specs/landing.spec.ts"
+    ]
+  },
+  {
+    "id": "W8-08",
+    "wave": "W8",
+    "executor": "opus",
+    "branch": "card/W8-08-close-wave-w8-full-sweep-budgets-visual-review-c",
+    "owns": [
+      "e2e/specs/sweeps/known-defects.ts",
+      "CHANGELOG.md",
+      "docs/plan/implementation/w0/README.md",
+      "docs/release/"
+    ]
   }
 ]

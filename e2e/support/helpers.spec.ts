@@ -7,6 +7,7 @@ import {
   expectNoCspViolations,
   expectNoExternalRequests,
   readClientStorage,
+  waitForMotionToSettle,
 } from './expectations.ts';
 import { readStore, seedFromBackup } from './seed.ts';
 import { syntheticBackupDocument } from './synthetic.ts';
@@ -173,6 +174,48 @@ test.describe('expectNoA11yViolations', () => {
       document.body.append(button);
     });
     await expect(expectNoA11yViolations(page)).rejects.toThrow();
+  });
+
+  test('reads final colours: it waits for a running colour transition, and ignores infinite animations', async ({
+    page,
+  }) => {
+    await openHarness(page);
+    await page.evaluate(() => {
+      const style = document.createElement('style');
+      style.textContent =
+        'p { color: #ffffff; background: #ffffff; transition: color 800ms linear; } p.ready { color: #000000; }' +
+        ' @keyframes spin { to { rotate: 1turn; } } i { display: block; animation: spin 1s linear infinite; }';
+      document.head.append(style);
+      const text = document.createElement('p');
+      text.textContent = 'Texto de prueba';
+      const spinner = document.createElement('i');
+      document.querySelector('main')?.append(text, spinner);
+    });
+    // Starts an 800 ms fade from invisible to black text: any sample before it ends fails contrast.
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => {
+            document.querySelector('p')?.classList.add('ready');
+            resolve();
+          }),
+        ),
+    );
+    expect(await page.evaluate(() => document.getAnimations().length)).toBe(2);
+    await expectNoA11yViolations(page);
+  });
+
+  test('gives up after its timeout when a finite animation never advances', async ({ page }) => {
+    await openHarness(page);
+    await page.evaluate(() => {
+      const box = document.createElement('div');
+      document.querySelector('main')?.append(box);
+      // A finite animation far longer than the budget.
+      box.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 60_000 });
+    });
+    const started = Date.now();
+    await waitForMotionToSettle(page, 300);
+    expect(Date.now() - started).toBeLessThan(3000);
   });
 });
 

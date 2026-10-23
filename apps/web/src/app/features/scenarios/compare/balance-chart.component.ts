@@ -22,6 +22,7 @@ import {
 import { BaseChartDirective, provideCharts } from 'ng2-charts';
 import type { ScenarioComparison } from '../../../data/api.ts';
 import { formatMoney } from '../../../ui/format/format.ts';
+import { chartAnimation } from './chart-motion.ts';
 import { isCompletePalette, type Palette, samePalette } from './chart-palette.ts';
 import {
   buildChartSeries,
@@ -56,6 +57,7 @@ function isChartPoint(value: unknown): value is ChartPoint {
     <span class="swatch ink" aria-hidden="true"></span>
     <span class="swatch ink-muted" aria-hidden="true"></span>
     <span class="swatch accent" aria-hidden="true"></span>
+    <span class="swatch saving" aria-hidden="true"></span>
     <span class="swatch rule" aria-hidden="true"></span>
     <div class="frame" data-testid="balance-chart">
       @if (config(); as chart) {
@@ -85,6 +87,9 @@ function isChartPoint(value: unknown): value is ChartPoint {
     }
     .accent {
       color: var(--cc-color-accent);
+    }
+    .saving {
+      color: var(--cc-color-saving);
     }
     .rule {
       color: var(--cc-color-rule);
@@ -127,6 +132,7 @@ export class BalanceChartComponent {
           ink: colorOf('ink'),
           'ink-muted': colorOf('ink-muted'),
           accent: colorOf('accent'),
+          saving: colorOf('saving'),
           rule: colorOf('rule'),
         };
         const current = this.palette();
@@ -172,7 +178,7 @@ export class BalanceChartComponent {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        animation: false,
+        animation: chartAnimation(document.defaultView),
         interaction: { mode: 'nearest', axis: 'x', intersect: false },
         scales: {
           x: {

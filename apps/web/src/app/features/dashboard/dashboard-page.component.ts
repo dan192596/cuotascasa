@@ -3,6 +3,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import type { Currency } from '@cuotascasa/domain';
 import type { CurrencyTotals } from '../../data/api.ts';
 import { BACKUP_SERVICE, LOAN_PROJECTION_SERVICE, LOANS_STORE, SYNC_SERVICE } from '../../data/tokens.ts';
+import { OdometerComponent } from '../../ui/motion/odometer.component.ts';
 import { EmptyStateComponent } from '../../ui/feedback/empty-state.component.ts';
 import { MoneyPipe } from '../../ui/format/money.pipe.ts';
 import {
@@ -24,10 +25,12 @@ const CURRENCY_ROWS: readonly { readonly currency: Currency; readonly label: str
   { currency: 'USD', label: 'En dólares' },
 ];
 
+const MAX_STAGGER_STEP = 7;
+
 /** /app (HU-06, R13, R27, R28): loan cards, per-currency totals, status filter, sync/backup status, first-use state. */
 @Component({
   selector: 'cc-dashboard-page',
-  imports: [RouterLink, EmptyStateComponent, LoanCardComponent, MoneyPipe],
+  imports: [RouterLink, EmptyStateComponent, LoanCardComponent, MoneyPipe, OdometerComponent],
   template: `
     <h1>Mis préstamos</h1>
 
@@ -51,9 +54,9 @@ const CURRENCY_ROWS: readonly { readonly currency: Currency; readonly label: str
     @if (!store.ready()) {
       <p role="status" data-testid="loading">Cargando tus préstamos…</p>
     } @else if (store.loans().length === 0) {
-      <cc-empty-state heading="Aún no tienes préstamos">
+      <cc-empty-state heading="Aún no tienes préstamos" layout="mosaic">
         Empieza creando uno, restaura un respaldo o conecta tu Google Drive.
-        <a ccEmptyActions class="action primary" routerLink="/app/prestamos/nuevo">Crear un préstamo</a>
+        <a ccEmptyActions class="action" routerLink="/app/prestamos/nuevo">Crear un préstamo</a>
         <a ccEmptyActions class="action" routerLink="/app/ajustes">Restaurar un respaldo</a>
         <a ccEmptyActions class="action" routerLink="/app/ajustes">Conectar Drive</a>
       </cc-empty-state>
@@ -63,9 +66,10 @@ const CURRENCY_ROWS: readonly { readonly currency: Currency; readonly label: str
           <div class="total" [attr.data-testid]="'total-' + row.currency">
             <h2>Saldo total {{ row.label.toLowerCase() }}</h2>
             @if (row.totals; as totals) {
-              <p class="num">{{ totals.balance | money: row.currency }}</p>
+              <p class="num"><cc-odometer [value]="totals.balance | money: row.currency" /></p>
               <p class="muted">
-                Próximas cuotas: <span class="num">{{ totals.nextInstallmentTotal | money: row.currency }}</span>
+                Próximas cuotas:
+                <span class="num"><cc-odometer [value]="totals.nextInstallmentTotal | money: row.currency" /></span>
               </p>
             } @else {
               <p class="num">—</p>
@@ -81,7 +85,9 @@ const CURRENCY_ROWS: readonly { readonly currency: Currency; readonly label: str
             <option [value]="option" [selected]="option === filter()">{{ labels[option] }}</option>
           }
         </select>
-        <a class="action primary" routerLink="/app/prestamos/nuevo">Nuevo préstamo</a>
+        <a class="new-loan cc-button-primary" data-testid="new-loan" routerLink="/app/prestamos/nuevo"
+          >Nuevo préstamo</a
+        >
       </div>
 
       @if (visible().length === 0) {
@@ -89,7 +95,7 @@ const CURRENCY_ROWS: readonly { readonly currency: Currency; readonly label: str
       } @else {
         <ul class="cards">
           @for (loan of visible(); track loan.id) {
-            <li><cc-loan-card [loan]="loan" /></li>
+            <li><cc-loan-card [loan]="loan" [style.--i]="staggerStep($index)" /></li>
           }
         </ul>
       }
@@ -103,6 +109,7 @@ const CURRENCY_ROWS: readonly { readonly currency: Currency; readonly label: str
     }
     h1 {
       font-family: var(--cc-font-heading);
+      font-weight: 800;
     }
     .status,
     .toolbar {
@@ -125,12 +132,26 @@ const CURRENCY_ROWS: readonly { readonly currency: Currency; readonly label: str
       align-items: center;
       gap: 0.5rem 1rem;
       margin-block: 1rem;
-      padding: 0.5rem 0.75rem;
-      border-left: 4px solid var(--cc-color-accent);
-      background: var(--cc-color-surface);
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--cc-color-accent);
+      border-radius: var(--cc-radius-block);
+      background: var(--cc-color-soft);
     }
     .cleared p {
       margin: 0;
+    }
+    .cleared button {
+      padding: 0.375rem 0.875rem;
+      border: 1px solid var(--cc-color-control-border);
+      border-radius: var(--cc-radius-pill);
+      color: var(--cc-color-ink);
+      background: var(--cc-color-surface);
+      font: inherit;
+      cursor: pointer;
+    }
+    .cleared button:focus-visible {
+      outline: 2px solid var(--cc-color-ink);
+      outline-offset: 2px;
     }
     .totals {
       display: flex;
@@ -138,10 +159,16 @@ const CURRENCY_ROWS: readonly { readonly currency: Currency; readonly label: str
       gap: 1rem 3rem;
       margin: 1rem 0;
     }
+    .total {
+      padding: 1rem 1.25rem;
+      border-radius: var(--cc-radius-block);
+      border: 1px solid var(--cc-color-rule);
+      background: var(--cc-color-surface);
+    }
     .total h2 {
       margin: 0;
       font-size: 1rem;
-      font-weight: normal;
+      font-weight: 800;
       color: var(--cc-color-ink-muted);
     }
     .total p {
@@ -184,9 +211,14 @@ const CURRENCY_ROWS: readonly { readonly currency: Currency; readonly label: str
       background: var(--cc-color-surface);
       text-decoration: none;
     }
-    .action.primary {
-      border-color: var(--cc-color-ink);
-      font-weight: bold;
+    /* Colours come from the global .cc-button-primary (styles.scss); only the link's box is set here. */
+    .new-loan {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      border-width: 1px;
+      border-style: solid;
+      border-radius: var(--cc-radius-pill);
+      text-decoration: none;
     }
     a:focus-visible,
     select:focus-visible {
@@ -242,6 +274,11 @@ export class DashboardPageComponent {
       totals: totals.find((entry): entry is CurrencyTotals => entry.currency === row.currency) ?? null,
     }));
   });
+
+  /** Entrance step of a card: 60 ms each in CSS, at most 8 steps. */
+  protected staggerStep(index: number): number {
+    return Math.min(index, MAX_STAGGER_STEP);
+  }
 
   protected setFilter(event: Event): void {
     const value = (event.target as HTMLSelectElement).value;

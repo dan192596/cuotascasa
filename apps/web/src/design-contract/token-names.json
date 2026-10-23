@@ -1,5 +1,5 @@
 {
-  "$comment": "Frozen CSS custom property names (W0-05, ADR-0012 decision 5). W3-05 owns the values in apps/web/src/styles/tokens.css. Each themed token is declared once as light-dark(<light>, <dark>); shared tokens do not depend on the theme. Roles: docs/specs/design-palette.md.",
+  "$comment": "Frozen CSS custom property names (W0-05, ADR-0012 decision 5; extended by W8-01, ADR-0026). W8-01 owns the values in apps/web/src/styles/tokens.css. Each themed token is declared once as light-dark(<light>, <dark>); shared tokens do not depend on the theme. Roles: docs/specs/design-palette.md.",
   "themed": [
     "--cc-color-paper",
     "--cc-color-surface",
@@ -13,7 +13,23 @@
     "--cc-color-positive",
     "--cc-color-positive-fill",
     "--cc-color-warning",
-    "--cc-color-danger"
+    "--cc-color-danger",
+    "--cc-color-saving",
+    "--cc-color-highlight",
+    "--cc-color-on-color",
+    "--cc-color-soft",
+    "--cc-color-block",
+    "--cc-color-on-block"
   ],
-  "shared": ["--cc-font-heading", "--cc-font-body", "--cc-font-numeric"]
+  "shared": [
+    "--cc-font-heading",
+    "--cc-font-body",
+    "--cc-font-numeric",
+    "--cc-radius-block",
+    "--cc-radius-pill",
+    "--cc-ease-out",
+    "--cc-duration-fast",
+    "--cc-duration-base",
+    "--cc-duration-slow"
+  ]
 }

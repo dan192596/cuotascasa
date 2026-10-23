@@ -209,4 +209,20 @@ Además:
     - restauración desde `cuotascasa.prev.json` en la UI, como fase 2;
     - restos de stubs de W0-05 sin uso en producción (`packages/domain/src/stub.ts`, los dos `NotImplementedError` de domain y schema, el código `NOT_IMPLEMENTED`): conservarlos como infraestructura de pruebas o borrarlos;
     - el `TODO` de `material-theme.scss`.
-
+- **Hallazgos de W8 (2026-10-22), identidad «Mercado»:**
+  - **Pendientes menores (diferidos):**
+    - W8-01: los extras de Tailwind (`--ease-out` pisa `ease-out` de Tailwind; extras de `on-color`, `on-block` y radios) se conservan porque las tarjetas siguientes los usan. La lista de selectores de botón se repite 4 veces en `styles.scss`.
+    - W8-02: la primera prueba de `app.config.spec` depende del orden (está documentado). El e2e del doble clic podría afirmar que no hay una entrada duplicada en el historial.
+    - W8-03: tiempos literales de 600 ms y 25 ms. `ui/motion` entró al escaneo de solo tokens y el ✓ animado ya se muestra al guardar (revisión final). La prueba de movimiento reducido del odómetro es un escaneo de código fuente. La clave del odómetro puede chocar con `|`. Hay un `::ng-deep` en el mosaico.
+    - W8-03: los conjuntos de claves de columnas del libro genérico están fijos en el código. (Resuelto: `paid` es la columna sí/no «Pagada», así que su destello amarillo es correcto; el destello ahora solo ocurre al cambiar de escenario o de vista, con `flashKey`.)
+    - W8-04: la prueba del escalonado es una regex sobre el código. `font-weight: 800` está fijo 4 veces. Orden de imports. Bloques `.total` que nadie pidió.
+    - W8-04: la prueba no afirma la posición del estado en el encabezado. (Resuelto: con un error de proyección `percentPaid` es nulo, así que el medidor no se pinta.)
+    - W8-05: el selector ya parte líneas a 375 px y oculta el indicador si ocupa más de una fila (revisión final). `.cc-wiz-step` sin prefijo. La prueba axe con movimiento lento tarda 90 s.
+    - W8-05: la prueba del toast corta el CSS compartido del `head` hasta el final (frágil).
+    - W8-06: el camino de «asentado» no tiene prueba propia. Se editó una línea de `simulator.spec.ts` fuera de los `owns` (declarada en el PR). (Resuelto: los contadores empiezan a moverse apenas asoman y el movimiento se detiene si se activa «reducir movimiento» con la página abierta.)
+    - W8-07: el `aria-label` de las fichas del cuadro es fijo. (Resuelto: `example-data.spec` ya no depende del directorio de trabajo.)
+    - W8-08: la prueba axe de la tabla de 240 filas tarda unos 38 s. (Resuelto: `waitForMotionToSettle` tiene un tope de 5 s y las transiciones superpuestas ya no quitan antes de tiempo la clase raíz.)
+  - **Presupuestos al cerrar:** el dueño subió el de la landing a 112 640 B (110 kB) el 2026-10-22 (enmienda de ADR-0025). Medida al cerrar W8, tras las correcciones de la revisión final: landing 106.83 kB gzip, `/app` inicial 176.55 kB gzip (tope 204 800 B), ya con el PR #105 integrado.
+  - **Dependencia de tipografía:** `@fontsource-variable/*` se permite con la misma regla que `@fontsource/*` (CLAUDE.md y ADR-0010 §5). El lint no cambió: ese bullet no se lintea (`NOT_LINTABLE_THIRD_PARTY`).
+  - **Abierto 1 (resuelto en la rama):** el PR #105 (navegación «Mis préstamos» y aviso de dispositivo borrado) se integró en `opus/w8-mercado` (merge `f22740e`); al entrar #105 a `main`, traer `main` debería ser trivial.
+  - **Abierto 2:** revisión visual con el dueño en el sitio desplegado, en claro y oscuro, en escritorio y teléfono, incluidas las páginas de privacidad y 404.

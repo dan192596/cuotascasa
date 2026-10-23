@@ -15,7 +15,9 @@ import { Router, RouterLink } from '@angular/router';
 import type { LoanStatus, Uuid } from '@cuotascasa/schema';
 import { LOAN_PROJECTION_SERVICE, LOANS_STORE } from '../../../data/tokens.ts';
 import { Announcer } from '../../../ui/feedback/announcer.service.ts';
+import { BannerComponent } from '../../../ui/feedback/banner.component.ts';
 import { ConfirmDialogComponent } from '../../../ui/feedback/confirm-dialog.component.ts';
+import { createSaveNotice } from '../../../ui/feedback/save-notice.ts';
 import { StatusChipComponent } from '../../../ui/feedback/status-chip.component.ts';
 import { LocalDatePipe } from '../../../ui/format/local-date.pipe.ts';
 import { MoneyPipe } from '../../../ui/format/money.pipe.ts';
@@ -103,6 +105,16 @@ const DETAIL_STYLES = `
     flex-wrap: wrap;
     align-items: baseline;
     gap: 0.5rem 1rem;
+    padding: 1.25rem;
+    border: 1px solid var(--cc-color-rule);
+    border-radius: var(--cc-radius-block);
+    background: var(--cc-color-surface);
+  }
+  cc-loan-detail-page .cc-det-meter {
+    flex-basis: 100%;
+  }
+  cc-loan-detail-page h1 {
+    font-weight: 800;
   }
   cc-loan-detail-page h1:focus {
     outline: 2px solid var(--cc-color-accent);
@@ -212,6 +224,7 @@ type Pending = 'paid' | 'delete' | null;
   selector: 'cc-loan-detail-page',
   imports: [
     RouterLink,
+    BannerComponent,
     ConfirmDialogComponent,
     DeleteLoanDialogComponent,
     HouseMeterComponent,
@@ -223,7 +236,7 @@ type Pending = 'paid' | 'delete' | null;
   ],
   template: `
     <p><a class="cc-det-back" routerLink="/app">← Mis préstamos</a></p>
-    <div class="cc-det-head">
+    <div class="cc-det-head" [style.view-transition-name]="transitionName()">
       <h1 #title tabindex="-1">
         {{ loan()?.name ?? 'Préstamo' }}
         @if (loan()?.bank) {
@@ -232,6 +245,9 @@ type Pending = 'paid' | 'delete' | null;
       </h1>
       @if (loan(); as l) {
         <span class="cc-det-status" data-testid="loan-status">{{ statusLabel() }}</span>
+        @if (projection().percentPaid(); as percent) {
+          <cc-house-meter class="cc-det-meter" [percent]="percent" label="capital pagado" />
+        }
       }
     </div>
 
@@ -257,9 +273,6 @@ type Pending = 'paid' | 'delete' | null;
           <p class="cc-wiz-issue" role="status" data-testid="projection-error">{{ projectionError(error) }}</p>
         } @else {
           <div class="cc-det-summary">
-            @if (p.percentPaid(); as percent) {
-              <cc-house-meter [percent]="percent" label="capital pagado" />
-            }
             <dl class="cc-det-grid">
               @if (p.balance(); as balance) {
                 <dt>Saldo</dt>
@@ -330,11 +343,16 @@ type Pending = 'paid' | 'delete' | null;
         </section>
       }
 
+      @if (saveNotice.message(); as text) {
+        <cc-banner tone="success" [live]="false" data-testid="save-notice" (dismissed)="saveNotice.hide()">{{
+          text
+        }}</cc-banner>
+      }
       @if (editing()) {
         <cc-loan-edit-form
           [loan]="l"
           [currencyLocked]="currencyLocked()"
-          (saved)="closeEdit()"
+          (saved)="onSaved()"
           (cancelled)="closeEdit()"
         />
       } @else {
@@ -464,12 +482,16 @@ export class LoanDetailPageComponent {
   /** Route parameter :id (withComponentInputBinding). */
   readonly id = input.required<Uuid>();
 
+  /** Same name as the dashboard card of this loan, so the router's view transition morphs one into the other. */
+  protected readonly transitionName = computed(() => `cc-loan-${this.id()}`);
   protected readonly loan = computed(() => this.store.loan(this.id())());
   protected readonly projection = computed(() => this.service.forLoan(this.id()));
   protected readonly currencyLocked = computed(() => this.store.isCurrencyLocked(this.id())());
   protected readonly base = computed(() => `/app/prestamos/${this.id()}`);
 
   protected readonly editing = signal(false);
+  /** «Listo» banner after saving the conditions; the edit form already announced the save. */
+  protected readonly saveNotice = createSaveNotice();
   protected readonly pending = signal<Pending>(null);
   protected readonly busy = signal(false);
   protected readonly leaving = signal(false);
@@ -506,6 +528,7 @@ export class LoanDetailPageComponent {
   }
 
   protected openEdit(): void {
+    this.saveNotice.hide();
     this.actionError.set(null);
     this.editing.set(true);
   }
@@ -513,6 +536,11 @@ export class LoanDetailPageComponent {
   protected closeEdit(): void {
     this.editing.set(false);
     this.focusTitle();
+  }
+
+  protected onSaved(): void {
+    this.closeEdit();
+    this.saveNotice.show('Se guardaron los cambios.');
   }
 
   protected markPaid(): void {

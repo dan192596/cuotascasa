@@ -91,51 +91,53 @@ const NO_BREAKDOWN: Breakdown = { state: 'none', total: '0.00' as Money, lines: 
     </ol>
     <h2 #stepHeading id="wizard-step-title" tabindex="-1">Paso {{ step() }} de 4 · {{ titleOf(step()) }}</h2>
 
-    @switch (step()) {
-      @case (1) {
-        <form novalidate aria-labelledby="wizard-step-title" (submit)="next($event)">
-          <cc-wizard-step-template [form]="form" />
-          <div class="cc-wiz-actions">
-            <button type="submit" class="cc-wiz-primary">Siguiente →</button>
-          </div>
-        </form>
+    <div class="cc-wiz-step" data-testid="wizard-step" [attr.data-direction]="direction()">
+      @switch (step()) {
+        @case (1) {
+          <form novalidate aria-labelledby="wizard-step-title" (submit)="next($event)">
+            <cc-wizard-step-template [form]="form" />
+            <div class="cc-wiz-actions">
+              <button type="submit" class="cc-wiz-primary">Siguiente →</button>
+            </div>
+          </form>
+        }
+        @case (2) {
+          <form novalidate aria-labelledby="wizard-step-title" (submit)="next($event)">
+            <cc-wizard-step-conditions [form]="form" [engineError]="engine().error" />
+            <div class="cc-wiz-actions">
+              <button type="button" (click)="back()">← Atrás</button>
+              <button type="submit" class="cc-wiz-primary">Siguiente →</button>
+            </div>
+          </form>
+        }
+        @case (3) {
+          <form novalidate aria-labelledby="wizard-step-title" (submit)="next($event)">
+            <cc-wizard-step-fixed-charges
+              [form]="form"
+              [level]="engine().level"
+              [breakdown]="breakdown()"
+              [currency]="model().currency"
+            />
+            <div class="cc-wiz-actions">
+              <button type="button" (click)="back()">← Atrás</button>
+              <button type="submit" class="cc-wiz-primary">Siguiente →</button>
+            </div>
+          </form>
+        }
+        @case (4) {
+          <form [formRoot]="form" aria-labelledby="wizard-step-title">
+            <cc-wizard-step-anchor [form]="form" [anchor]="anchor()" [currency]="model().currency" />
+            @if (saveError(); as message) {
+              <p class="cc-wiz-issue" role="alert" data-testid="save-error">{{ message }}</p>
+            }
+            <div class="cc-wiz-actions">
+              <button type="button" (click)="back()">← Atrás</button>
+              <button type="submit" class="cc-wiz-primary" [disabled]="saving()">Guardar préstamo</button>
+            </div>
+          </form>
+        }
       }
-      @case (2) {
-        <form novalidate aria-labelledby="wizard-step-title" (submit)="next($event)">
-          <cc-wizard-step-conditions [form]="form" [engineError]="engine().error" />
-          <div class="cc-wiz-actions">
-            <button type="button" (click)="back()">← Atrás</button>
-            <button type="submit" class="cc-wiz-primary">Siguiente →</button>
-          </div>
-        </form>
-      }
-      @case (3) {
-        <form novalidate aria-labelledby="wizard-step-title" (submit)="next($event)">
-          <cc-wizard-step-fixed-charges
-            [form]="form"
-            [level]="engine().level"
-            [breakdown]="breakdown()"
-            [currency]="model().currency"
-          />
-          <div class="cc-wiz-actions">
-            <button type="button" (click)="back()">← Atrás</button>
-            <button type="submit" class="cc-wiz-primary">Siguiente →</button>
-          </div>
-        </form>
-      }
-      @case (4) {
-        <form [formRoot]="form" aria-labelledby="wizard-step-title">
-          <cc-wizard-step-anchor [form]="form" [anchor]="anchor()" [currency]="model().currency" />
-          @if (saveError(); as message) {
-            <p class="cc-wiz-issue" role="alert" data-testid="save-error">{{ message }}</p>
-          }
-          <div class="cc-wiz-actions">
-            <button type="button" (click)="back()">← Atrás</button>
-            <button type="submit" class="cc-wiz-primary" [disabled]="saving()">Guardar préstamo</button>
-          </div>
-        </form>
-      }
-    }
+    </div>
   `,
   styles: WIZARD_STYLES,
   encapsulation: ViewEncapsulation.None,
@@ -150,6 +152,7 @@ export class LoanWizardPageComponent {
 
   protected readonly steps = WIZARD_STEPS;
   protected readonly step = signal<WizardStep>(1);
+  protected readonly direction = signal<'forward' | 'back'>('forward');
   protected readonly saving = signal(false);
   protected readonly saveError = signal<string | null>(null);
   protected readonly model = signal<WizardModel>(initialModel());
@@ -336,6 +339,7 @@ export class LoanWizardPageComponent {
   }
 
   private goTo(step: WizardStep): void {
+    this.direction.set(step < this.step() ? 'back' : 'forward');
     this.step.set(step);
     this.afterRender(() => this.stepHeading().nativeElement.focus());
   }

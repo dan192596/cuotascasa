@@ -57,13 +57,15 @@
   {
     "path": "pnpm-lock.yaml",
     "editableBy": [
-      "W0-01"
+      "W0-01",
+      "W8-01"
     ]
   },
   {
     "path": "pnpm-workspace.yaml",
     "editableBy": [
-      "W0-01"
+      "W0-01",
+      "W8-01"
     ]
   },
   {
@@ -87,7 +89,8 @@
   {
     "path": "apps/web/package.json",
     "editableBy": [
-      "W0-01"
+      "W0-01",
+      "W8-01"
     ]
   },
   {
@@ -411,7 +414,8 @@
     "path": "apps/web/src/app/app.config.ts",
     "editableBy": [
       "W0-05",
-      "W2-02"
+      "W2-02",
+      "W8-02"
     ]
   },
   {
@@ -605,7 +609,8 @@
   {
     "path": "apps/web/src/design-contract/",
     "editableBy": [
-      "W0-05"
+      "W0-05",
+      "W8-01"
     ]
   },
   {
@@ -644,7 +649,8 @@
   {
     "path": "apps/web/src/testing/doc-checks/",
     "editableBy": [
-      "W0-05"
+      "W0-05",
+      "W8-01"
     ]
   },
   {
@@ -680,7 +686,8 @@
   {
     "path": "docs/specs/design-palette.md",
     "editableBy": [
-      "W0-05"
+      "W0-05",
+      "W8-01"
     ]
   },
   {
@@ -708,7 +715,8 @@
   {
     "path": "docs/plan/",
     "editableBy": [
-      "W0-06"
+      "W0-06",
+      "W8-08"
     ]
   },
   {

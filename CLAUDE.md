@@ -84,7 +84,7 @@ navegador (IndexedDB) y, opcionalmente, en una copia **cifrada** en el Google Dr
 - `dexie`: solo `packages/persistence/src/dexie`.
 - `write-excel-file`, `jspdf` y `jspdf-autotable`: solo `packages/export`, en los directorios de su fila.
 - `decimal.js`: solo `packages/domain/src/money/**` y las pruebas de `packages/domain` (`*.spec.ts`, `*.test-d.ts` y `test/`). `zod`: solo `packages/schema`.
-- `@fontsource/*` y Tailwind: solo hojas de estilo bajo `apps/web/src/styles/`.
+- `@fontsource/*` y Tailwind: solo hojas de estilo bajo `apps/web/src/styles/`; la misma regla vale para `@fontsource-variable/*`.
 - Solo en pruebas (`*.spec.ts`, `*.test-d.ts`, `testing/`, `contract/`, `packages/*/test/` y `e2e/`): Vitest, Playwright, `@axe-core/playwright`, `fast-check`, `fake-indexeddb`, `fflate` y `pdfjs-dist`. Las pruebas de un paquete pueden importar cualquier directorio de su propio paquete, y las pruebas de tipos y `packages/domain/test/` pueden nombrar el tipo `Date`.
 
 **Prohibiciones que conviene tener a la vista** (ya se deducen de la matriz):

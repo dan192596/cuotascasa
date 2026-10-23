@@ -150,3 +150,9 @@ test('deleting needs the typed alias, tombstones the loan and redirects to /app'
   expect(loans).toHaveLength(1);
   expect(loans[0]?.deletedAt).not.toBeNull();
 });
+
+test('the detail header carries the shared transition name of its dashboard card', async ({ page }) => {
+  const id = await createLoan(page, 'Casa nombre');
+  const name = await page.locator('.cc-det-head').evaluate((el) => getComputedStyle(el).viewTransitionName);
+  expect(name).toBe(`cc-loan-${id}`);
+});

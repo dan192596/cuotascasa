@@ -72,6 +72,15 @@ describe('AppShellComponent', () => {
     expect(link(root, 'Ajustes').getAttribute('aria-current')).toBeNull();
   });
 
+  it('styles the top bar links as pills with a filled active state', async () => {
+    const { harness, root } = await mount();
+    await harness.fixture.whenStable();
+    const css = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
+    expect(css).toContain('var(--cc-radius-pill)');
+    expect(css).not.toContain('border-bottom: 3px solid');
+    expect(link(root, 'Mis préstamos').classList.contains('active')).toBe(true);
+  });
+
   it('reflects the active route with aria-current', async () => {
     const { harness, root } = await mount();
     await harness.fixture.whenStable();

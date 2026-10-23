@@ -24,8 +24,10 @@ describe('buildChartSeries', () => {
     }
   });
 
-  it('uses only ink, ink-muted and accent, and tells every series apart by dash or marker', () => {
-    expect(new Set(series.map((s) => s.role))).toEqual(new Set(['ink', 'ink-muted', 'accent']));
+  it('uses only ink, ink-muted, accent and saving, and tells every series apart by dash or marker', () => {
+    expect(new Set(series.map((s) => s.role))).toEqual(new Set(['ink', 'ink-muted', 'accent', 'saving']));
+    const many = buildChartSeries(comparison([entry('a', 'A'), entry('b', 'B'), entry('c', 'C')]));
+    expect(many.slice(2).map((s) => s.role)).toEqual(['accent', 'saving', 'ink']);
     const signatures = series.map((s) => `${s.dash.join(',')}|${s.marker}`);
     expect(new Set(signatures).size).toBe(series.length);
   });

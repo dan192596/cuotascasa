@@ -29,7 +29,22 @@ import { AppToastService } from './app-toast.service.ts';
       color: var(--cc-color-ink);
       background: var(--cc-color-surface);
       border: 2px solid var(--cc-color-danger);
+      border-radius: var(--cc-radius-block);
       font-family: var(--cc-font-body);
+    }
+    /* Enters from below; reduced motion keeps it in place (the global kill switch also zeroes it). */
+    @media (prefers-reduced-motion: no-preference) {
+      .toast {
+        animation: cc-toast-in var(--cc-duration-base) var(--cc-ease-out) backwards;
+      }
+    }
+    @keyframes cc-toast-in {
+      from {
+        transform: translateY(1.5rem);
+      }
+      to {
+        transform: translateY(0);
+      }
     }
     p {
       margin: 0;

@@ -16,7 +16,9 @@ test('the quick simulator on / computes with zero external requests, zero storag
   });
 
   await page.goto('/');
-  // The interactive form is a lazy chunk that loads when the placeholder nears the viewport.
+  // The interactive form is a lazy chunk that loads when the placeholder nears the viewport. Since the Mercado landing
+  // (W8-06) the simulator sits below the mosaic, the board and the cards, so scroll down to it first.
+  await page.getByTestId('sim-placeholder').scrollIntoViewIfNeeded();
   await expect(page.locator('cc-quick-simulator-form')).toBeVisible();
   await expect(page.getByTestId('sim-results')).toHaveCount(0);
 
