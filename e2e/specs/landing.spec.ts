@@ -5,9 +5,22 @@ import {
   expectNoCspViolations,
   expectNoExternalRequests,
 } from '../support/expectations.ts';
+import type { Locator, Page } from '@playwright/test';
 import { expect, test } from '../support/test.ts';
 
 /** HU-01 / R1: the landing is prerendered, works without JS, and never touches network or storage. */
+
+/** The example figures generated from the engine (example-summary.generated.ts). */
+const COUNTERS = ['240', 'Q 50,000.00', '35', 'Q 102,206.82'];
+const PREPAID_COUNT = 205;
+
+/** Scrolls the board into view and waits for its lazy behaviour. */
+async function board(page: Page): Promise<Locator> {
+  const host = page.locator('cc-landing-board');
+  await host.scrollIntoViewIfNeeded();
+  await expect(host).toHaveAttribute('data-ready', '');
+  return host;
+}
 
 test.describe('landing /', () => {
   test('hydrates, makes no external requests, keeps no storage and is axe clean', async ({ page }) => {
@@ -45,6 +58,61 @@ test.describe('landing /', () => {
     await expect(page.locator('#como')).toBeFocused();
     await expect(page.locator('#como h2')).toBeInViewport();
     expect(new URL(page.url()).pathname).toBe('/');
+  });
+
+  test('«Calcular mi cuota» scrolls to the simulator and moves focus there', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await page.getByRole('link', { name: 'Calcular mi cuota' }).click();
+    await expect(page.locator('#simulador')).toBeFocused();
+    expect(new URL(page.url()).pathname).toBe('/');
+  });
+
+  test('the board moves with the keyboard: End shows «Cuota 240 de 240», Home goes back to 1', async ({ page }) => {
+    await page.goto('/');
+    const host = await board(page);
+    const slider = host.getByRole('slider', { name: 'Cuota' });
+    await slider.focus();
+    await page.keyboard.press('End');
+    await expect(slider).toHaveAttribute('aria-valuenow', '240');
+    await expect(host.locator('.readout')).toContainText('Cuota 240 de 240');
+    await expect(host.locator('.readout')).toContainText('Q 0.00');
+    await page.keyboard.press('Home');
+    await expect(slider).toHaveAttribute('aria-valuenow', '1');
+    await page.keyboard.press('Shift+ArrowRight');
+    await expect(slider).toHaveAttribute('aria-valuenow', '13');
+    await expect(host.locator('[aria-live="polite"]')).toContainText('Cuota 13 de 240');
+    expectNoConsoleErrors(page);
+    expectNoExternalRequests(page);
+    await expectNoClientStorage(page);
+  });
+
+  test('the scenario switch shows the installments the prepayment saves', async ({ page }) => {
+    await page.goto('/');
+    const host = await board(page);
+    const prepaid = host.getByRole('button', { name: '+ Q 50,000.00 en la cuota 60' });
+    await prepaid.click();
+    await expect(prepaid).toHaveAttribute('aria-pressed', 'true');
+    await expect(host.getByRole('button', { name: 'Sin abono' })).toHaveAttribute('aria-pressed', 'false');
+    await expect(host.locator('.tiles i.gone')).toHaveCount(240 - PREPAID_COUNT);
+    await expect(host.locator('.saved')).toContainText('35 cuotas');
+    await host.getByRole('slider', { name: 'Cuota' }).focus();
+    await page.keyboard.press('End');
+    await expect(host.locator('.readout')).toContainText(`Pagado en la cuota ${String(PREPAID_COUNT)}`);
+  });
+
+  test('a mouse drag on the track moves the knob', async ({ page }) => {
+    await page.goto('/');
+    const host = await board(page);
+    const box = await host.locator('.track').boundingBox();
+    if (box === null) throw new Error('no track');
+    const y = box.y + box.height / 2;
+    await page.mouse.move(box.x + 2, y);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2, y, { steps: 5 });
+    await page.mouse.move(box.x + box.width - 1, y, { steps: 5 });
+    await page.mouse.up();
+    await expect(host.getByRole('slider', { name: 'Cuota' })).toHaveAttribute('aria-valuenow', '240');
   });
 
   test('the footer carries the disclaimer', async ({ page }) => {
@@ -102,10 +170,15 @@ test.describe('landing / with reduced motion', () => {
     const counters = page.locator('[data-odometer]');
     for (let i = 0; i < 5; i++) {
       expect(await page.getByRole('heading', { level: 1 }).textContent()).toBe('Calcula tus cuotas, mes a mes.');
-      expect(await counters.allTextContents()).toEqual(['240', 'Q 50,000', '35', 'Q 102,207']);
+      expect(await counters.allTextContents()).toEqual(COUNTERS);
       await page.waitForTimeout(60);
     }
     await expect(page.locator('.cursor')).toHaveCount(0);
+    const slider = (await board(page)).getByRole('slider', { name: 'Cuota' });
+    for (let i = 0; i < 5; i++) {
+      await expect(slider).toHaveAttribute('aria-valuenow', '60');
+      await page.waitForTimeout(100);
+    }
     const running = await page.evaluate(
       () => document.getAnimations().filter((animation) => animation.playState === 'running').length,
     );
@@ -121,6 +194,33 @@ test.describe('landing / with reduced motion', () => {
 
 test.describe('landing / on a touch screen', () => {
   test.use({ hasTouch: true });
+
+  test('a tap on the track moves the knob there', async ({ page }) => {
+    await page.goto('/');
+    const host = await board(page);
+    const box = await host.locator('.track').boundingBox();
+    if (box === null) throw new Error('no track');
+    expect(await host.locator('.track').evaluate((el) => getComputedStyle(el).touchAction)).toBe('none');
+    await page.touchscreen.tap(box.x + box.width - 1, box.y + box.height / 2);
+    await expect(host.getByRole('slider', { name: 'Cuota' })).toHaveAttribute('aria-valuenow', '240');
+  });
+
+  test('a finger drag on the track moves the knob (Chromium touch events)', async ({ page, browserName }) => {
+    test.skip(browserName !== 'chromium', 'Playwright drives multi-step touch only through the Chromium protocol');
+    await page.goto('/');
+    const host = await board(page);
+    const box = await host.locator('.track').boundingBox();
+    if (box === null) throw new Error('no track');
+    const y = box.y + box.height / 2;
+    const cdp = await page.context().newCDPSession(page);
+    const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', x: number) =>
+      cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y }] });
+    await touch('touchStart', box.x + 2);
+    for (const f of [0.25, 0.5, 0.75]) await touch('touchMove', box.x + box.width * f);
+    await expect(host.getByRole('slider', { name: 'Cuota' })).toHaveAttribute('aria-valuenow', '180');
+    await touch('touchEnd', 0);
+    expect(await page.evaluate(() => window.scrollX)).toBe(0);
+  });
 
   test('has no custom cursor', async ({ page }) => {
     await page.goto('/');
@@ -140,8 +240,11 @@ test.describe('landing / without JavaScript', () => {
     await page.goto('/');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Calcula tus cuotas, mes a mes.');
     await expect(page.getByText('Sin cuenta. Tus números se quedan en tu navegador.')).toBeVisible();
-    await expect(page.locator('[data-odometer]')).toHaveText(['240', 'Q 50,000', '35', 'Q 102,207']);
+    await expect(page.locator('[data-odometer]')).toHaveText(COUNTERS);
     await expect(page.getByRole('link', { name: 'Abrir la app' })).toHaveAttribute('href', '/app');
     await expect(page.getByRole('contentinfo')).toContainText('No es asesoría financiera.');
+    await expect(page.locator('cc-landing-board .tiles i')).toHaveCount(240);
+    await expect(page.locator('cc-landing-board .readout')).toContainText('Cuota 60 de 240');
+    await expect(page.getByRole('slider', { name: 'Cuota' })).toHaveAttribute('aria-valuenow', '60');
   });
 });

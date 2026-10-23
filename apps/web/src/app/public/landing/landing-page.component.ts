@@ -11,26 +11,25 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { QuickSimulatorComponent } from '../simulator/quick-simulator.component.ts';
+import { LandingBoardComponent } from './board/landing-board.component.ts';
+import { LANDING_EXAMPLE_SUMMARY as S } from './example/example-summary.generated.ts';
 import { startLandingMotion } from './landing-motion.ts';
 
-/**
- * Example figures, already formatted (never computed here: no money arithmetic in the landing).
- * replaced by W8-07: these come from LANDING_EXAMPLE_SUMMARY, generated from the engine at build time.
- */
+/** Example figures, already formatted by the engine at generation time (no money arithmetic in the landing). */
 const EXAMPLE = {
-  level: 'Q 4,263.47', // replaced by W8-07
-  terms: 'Q 500,000 · 20 años · 7.00 % + 1.26 %', // replaced by W8-07
+  level: S.level,
+  terms: 'Q 500,000 · 20 años · 7.00 % + 1.26 %',
   stats: [
-    { value: '240', label: 'cuotas del ejemplo' }, // replaced by W8-07
-    { value: 'Q 50,000', label: 'de abono en la cuota 60' }, // replaced by W8-07
-    { value: '35', label: 'meses menos' }, // replaced by W8-07
-    { value: 'Q 102,207', label: 'de intereses ahorrados' }, // replaced by W8-07
+    { value: String(S.baseCount), label: 'cuotas del ejemplo' },
+    { value: S.prepayment.amount, label: `de abono en la cuota ${String(S.prepayment.installment)}` },
+    { value: String(S.monthsSaved), label: 'meses menos' },
+    { value: S.costSaved, label: 'de intereses ahorrados' },
   ],
   firstInstallment: [
-    ['Interés', 'Q 2,916.67'], // replaced by W8-07
-    ['Seguros', 'Q 525.00'], // replaced by W8-07
-    ['Capital', 'Q 821.80'], // replaced by W8-07
-    ['Cuota 1', 'Q 4,263.47'], // replaced by W8-07
+    ['Interés', S.first.interest],
+    ['Seguros', S.first.insurance],
+    ['Capital', S.first.capital],
+    ['Cuota 1', S.first.total],
   ],
 } as const;
 
@@ -100,14 +99,6 @@ const CARDS: readonly Card[] = [
   },
 ];
 
-/** Static slot for the 240-installment board; W8-07 replaces it with the real `cc-landing-board`. */
-@Component({
-  selector: 'cc-landing-board',
-  template: '',
-  changeDetection: ChangeDetectionStrategy.OnPush,
-})
-class LandingBoardSlotComponent {}
-
 /**
  * Landing `/` in the Mercado identity (ADR-0026 §6.1; HU-01, R1): the mosaic of colour blocks, the 240-installment
  * section, the stacking cards, the example in figures, the quick simulator and the footer. Everything is complete in
@@ -116,7 +107,7 @@ class LandingBoardSlotComponent {}
  */
 @Component({
   selector: 'cc-landing-page',
-  imports: [RouterLink, QuickSimulatorComponent, LandingBoardSlotComponent],
+  imports: [RouterLink, QuickSimulatorComponent, LandingBoardComponent],
   template: `
     <header class="bar wrap">
       <a class="brand" routerLink="/">CuotasCasa</a>
@@ -203,7 +194,7 @@ class LandingBoardSlotComponent {}
         }
       </section>
 
-      <section id="simulador">
+      <section id="simulador" tabindex="-1">
         <cc-quick-simulator />
       </section>
     </main>
@@ -389,11 +380,8 @@ class LandingBoardSlotComponent {}
       max-width: 40ch;
       color: var(--cc-color-ink-muted);
     }
-    cc-landing-board {
-      display: block;
-      min-height: 18rem;
-      border-radius: var(--cc-radius-block);
-      background: var(--cc-color-soft);
+    :host(.cc-cursor) cc-landing-board {
+      --cc-board-cursor: none;
     }
     .note,
     .stat span,
@@ -464,7 +452,8 @@ class LandingBoardSlotComponent {}
       border: 2px solid;
     }
     .stat b {
-      font-size: clamp(1.75rem, 3.5vw, 2.75rem);
+      /* Fits 'Q 102,206.82' (12 monospaced glyphs) in a quarter of the row at every width. */
+      font-size: clamp(1.5rem, 2.6vw, 2.5rem);
       white-space: nowrap;
     }
     footer {

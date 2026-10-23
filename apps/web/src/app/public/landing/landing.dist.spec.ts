@@ -24,7 +24,21 @@ describe('prerendered landing in dist (HU-01, R1)', () => {
   it('shows the final value of the four counters in the prerendered markup', () => {
     const html = readFileSync(INDEX, 'utf8');
     const counters = [...html.matchAll(/<b[^>]*data-odometer[^>]*>([^<]*)<\/b>/g)].map((m) => m[1]?.trim());
-    expect(counters).toEqual(['240', 'Q 50,000', '35', 'Q 102,207']);
+    expect(counters).toEqual(['240', 'Q 50,000.00', '35', 'Q 102,206.82']);
+  });
+
+  it('shows the board at installment 60 with its reading and slider (complete without JS)', () => {
+    const html = readFileSync(INDEX, 'utf8');
+    const board = /<cc-landing-board[\s\S]*<\/cc-landing-board>/.exec(html)?.[0] ?? '';
+    expect(board.match(/<i\b[^>]*class="paid"/g)).toHaveLength(59);
+    expect(board.match(/<i\b[^>]*class="now"/g)).toHaveLength(1);
+    expect(board.match(/<i\b/g)).toHaveLength(240);
+    expect(board).toContain('Cuota 60 de 240');
+    expect(board).toContain('Q 439,205.48');
+    expect(board).toContain('12.2 %');
+    expect(board).toContain('15/12/2030');
+    expect(board).toMatch(/role="slider"[^>]*aria-valuenow="60"|aria-valuenow="60"[^>]*role="slider"/);
+    expect(board).toContain('aria-valuetext="Cuota 60, saldo Q 439,205.48"');
   });
 
   it('contains the disclaimer in the landing footer', () => {

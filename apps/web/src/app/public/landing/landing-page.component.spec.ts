@@ -5,6 +5,7 @@ import { provideRouter } from '@angular/router';
 import { TestBed } from '@angular/core/testing';
 
 import { describe, expect, it } from 'vitest';
+import { LANDING_EXAMPLE_SUMMARY as S } from './example/example-summary.generated.ts';
 import { LandingPageComponent } from './landing-page.component.ts';
 
 function render(issuesUrl?: string | undefined): HTMLElement {
@@ -42,12 +43,37 @@ describe('LandingPageComponent (HU-01, R1)', () => {
     expect(text).toContain('Calcular mi cuota');
   });
 
-  it('has the «240 cuotas. Muévelas.» section with the board slot for W8-07', () => {
+  it('has the «240 cuotas. Muévelas.» section with the board at installment 60', () => {
     const root = render();
     const section = root.querySelector('#juego');
     expect(section?.querySelector('h2')?.textContent).toContain('240 cuotas. Muévelas.');
     expect(section?.textContent).toContain('Arrastra el círculo amarillo por los 20 años del préstamo.');
-    expect(section?.querySelector('cc-landing-board')).not.toBeNull();
+    const board = section?.querySelector('cc-landing-board');
+    expect(board?.querySelectorAll('.tiles i')).toHaveLength(240);
+    expect(board?.querySelector('[role="slider"]')?.getAttribute('aria-valuenow')).toBe('60');
+    expect(board?.textContent).toContain('Cuota 60 de 240');
+    expect(board?.textContent).toContain(S.at60.balance);
+  });
+
+  it('shows every example figure from the engine-generated summary', () => {
+    const root = render();
+    expect(root.querySelector('.mosaic .big')?.textContent?.trim()).toBe(S.level);
+    const rows = Array.from(root.querySelectorAll('.c0 .row')).map((row) =>
+      Array.from(row.querySelectorAll('span')).map((span) => span.textContent?.trim()),
+    );
+    expect(rows).toEqual([
+      ['Interés', S.first.interest],
+      ['Seguros', S.first.insurance],
+      ['Capital', S.first.capital],
+      ['Cuota 1', S.first.total],
+    ]);
+  });
+
+  it('lets «Calcular mi cuota» move focus to the simulator (focusable wrapper, no extra landmark name)', () => {
+    const root = render();
+    const target = root.querySelector('#simulador');
+    expect(target?.getAttribute('tabindex')).toBe('-1');
+    expect(target?.hasAttribute('aria-labelledby')).toBe(false);
   });
 
   it('has the four stacking cards with the prototype titles', () => {
@@ -62,7 +88,12 @@ describe('LandingPageComponent (HU-01, R1)', () => {
 
   it('renders the four counters with their final values (complete at rest)', () => {
     const stats = Array.from(render().querySelectorAll('[data-testid="stat"]'));
-    expect(stats.map((s) => s.querySelector('b')?.textContent?.trim())).toEqual(['240', 'Q 50,000', '35', 'Q 102,207']);
+    expect(stats.map((s) => s.querySelector('b')?.textContent?.trim())).toEqual([
+      '240',
+      S.prepayment.amount,
+      String(S.monthsSaved),
+      S.costSaved,
+    ]);
     expect(stats.map((s) => s.querySelector('span')?.textContent?.trim())).toEqual([
       'cuotas del ejemplo',
       'de abono en la cuota 60',
