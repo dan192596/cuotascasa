@@ -516,6 +516,24 @@ describe('edit', () => {
     expect(document.activeElement).toBe(q('h1'));
   });
 
+  it('shows the «Listo» banner with the animated check after saving, without a second announcement', async () => {
+    const { click, type, q, settle, announce } = await setup();
+    expect(q('[data-testid="save-notice"]')).toBeNull();
+    await click('Editar condiciones');
+    await type('#principal', '600000');
+    await click('Guardar cambios');
+    await settle();
+    expect(q('[data-testid="save-notice"] [data-testid="banner-tone"]')?.textContent).toBe('Listo');
+    expect(q('[data-testid="save-notice"] .message')?.textContent?.trim()).toBe('Se guardaron los cambios.');
+    const banner = q('[data-testid="save-notice"] [data-testid="banner"]');
+    expect(banner?.getAttribute('data-tone')).toBe('success');
+    expect(banner?.hasAttribute('role')).toBe(false);
+    expect(banner?.querySelector('.check')).not.toBeNull();
+    expect(announce).toHaveBeenCalledTimes(1);
+    await click('Editar condiciones');
+    expect(q('[data-testid="save-notice"]')).toBeNull();
+  });
+
   it('locks the currency of a loan with child records', async () => {
     const { click, store, q, settle } = await setup();
     store.locked.set(true);

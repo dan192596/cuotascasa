@@ -6,7 +6,7 @@ import { BannerComponent, type BannerTone } from './banner.component.ts';
 @Component({
   imports: [BannerComponent],
   template: `
-    <cc-banner [tone]="tone()" [dismissible]="dismissible()" (dismissed)="count.set(count() + 1)">
+    <cc-banner [tone]="tone()" [dismissible]="dismissible()" [live]="live()" (dismissed)="count.set(count() + 1)">
       Este archivo no va cifrado.
     </cc-banner>
   `,
@@ -14,6 +14,7 @@ import { BannerComponent, type BannerTone } from './banner.component.ts';
 class HostComponent {
   readonly tone = signal<BannerTone>('warning');
   readonly dismissible = signal(true);
+  readonly live = signal(true);
   readonly count = signal(0);
 }
 
@@ -52,6 +53,16 @@ describe('cc-banner', () => {
     await fixture.whenStable();
     expect(host.count()).toBe(1);
     expect(root.querySelector('[data-testid="banner"]')).toBeNull();
+  });
+
+  it('drops the live role when the news was already announced elsewhere ([live]="false")', async () => {
+    const { fixture, host, root } = await mount();
+    host.tone.set('success');
+    host.live.set(false);
+    await fixture.whenStable();
+    const banner = root.querySelector('[data-testid="banner"]');
+    expect(banner?.hasAttribute('role')).toBe(false);
+    expect(banner?.querySelector('.check')).not.toBeNull();
   });
 
   it('has no close button when it is not dismissible', async () => {

@@ -15,6 +15,7 @@ import { type Scenario, type ScenarioEvent, scenarioEventSchema, type Uuid } fro
 import { DataError } from '../../../data/api.ts';
 import { LOAN_PROJECTION_SERVICE, LOANS_STORE, SCENARIOS_STORE } from '../../../data/tokens.ts';
 import { BannerComponent } from '../../../ui/feedback/banner.component.ts';
+import { createSaveNotice } from '../../../ui/feedback/save-notice.ts';
 import { formatMoney } from '../../../ui/format/format.ts';
 import { LocalDatePipe } from '../../../ui/format/local-date.pipe.ts';
 import { MoneyPipe } from '../../../ui/format/money.pipe.ts';
@@ -234,6 +235,8 @@ export class ScenarioEditorComponent {
   protected readonly pendingDelete = signal<Scenario | null>(null);
   /** Text of the single polite live region: results are announced there, never in several regions at once. */
   protected readonly status = signal('');
+  /** «Listo» banner after creating or renaming a scenario; the polite region already read the same message. */
+  protected readonly saveNotice = createSaveNotice();
   private announcements = 0;
   protected readonly goalBusy = signal(false);
   /** The last goal-seek result; it is dropped as soon as the active scenario changes. */
@@ -359,6 +362,7 @@ export class ScenarioEditorComponent {
   /** Runs a store write: a DataError becomes a Spanish message in its section; anything else keeps propagating. */
   private async guard(scope: Scope, write: () => Promise<void>): Promise<boolean> {
     this.failure.set(null);
+    this.saveNotice.hide();
     try {
       await write();
       return true;
@@ -422,11 +426,15 @@ export class ScenarioEditorComponent {
     if (ok) {
       this.renamingId.set(null);
       this.nameForm().reset({ name: '' });
+      if (this.failure() === null) {
+        this.saveNotice.show(renaming === null ? `Escenario «${name}» creado.` : `Escenario renombrado a «${name}».`);
+      }
     }
     return undefined;
   }
 
   protected startRename(scenario: Scenario): void {
+    this.saveNotice.hide();
     this.renamingId.set(scenario.id);
     this.nameForm().reset({ name: scenario.name });
     this.focusControl('name');

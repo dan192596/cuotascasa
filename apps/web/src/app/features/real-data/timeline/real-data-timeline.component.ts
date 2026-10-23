@@ -22,6 +22,7 @@ import {
 import { Announcer } from '../../../ui/feedback/announcer.service.ts';
 import { BannerComponent } from '../../../ui/feedback/banner.component.ts';
 import { ConfirmDialogComponent } from '../../../ui/feedback/confirm-dialog.component.ts';
+import { createSaveNotice } from '../../../ui/feedback/save-notice.ts';
 import { StatusChipComponent, type ValidationStatus } from '../../../ui/feedback/status-chip.component.ts';
 import { formatLocalDate, formatMoney } from '../../../ui/format/format.ts';
 import {
@@ -126,6 +127,11 @@ interface Row {
 
           @if (writeError(); as text) {
             <cc-banner tone="danger" [dismissible]="false" data-testid="write-error">{{ text }}</cc-banner>
+          }
+          @if (saveNotice.message(); as text) {
+            <cc-banner tone="success" [live]="false" data-testid="save-notice" (dismissed)="saveNotice.hide()">{{
+              text
+            }}</cc-banner>
           }
 
           @if (editor(); as current) {
@@ -342,8 +348,9 @@ interface Row {
     .empty {
       color: var(--cc-color-ink-muted);
     }
+    /* Paid is «ya es tuyo»: accent, like the rest of what the user already owns; green is only for «coincide». */
     .paid {
-      color: var(--cc-color-positive);
+      color: var(--cc-color-accent);
     }
     .components ul {
       padding-inline-start: 1.25rem;
@@ -422,6 +429,8 @@ export class RealDataTimelineComponent {
 
   protected readonly editor = linkedSignal<Uuid, Editor | null>({ source: this.loanId, computation: () => null });
   protected readonly writeError = signal<string | null>(null);
+  /** «Listo» banner after a save; the Announcer already read the same message. */
+  protected readonly saveNotice = createSaveNotice();
   protected readonly pendingDelete = signal<TimelineEntry | null>(null);
   private readonly saving = signal(false);
   private deleteOpener: HTMLElement | null = null;
@@ -490,6 +499,7 @@ export class RealDataTimelineComponent {
   }
 
   protected open(kind: EventFormKind, entry: TimelineEntry | null, trigger: Event): void {
+    this.saveNotice.hide();
     this.writeError.set(null);
     this.editor.set({
       kind,
@@ -528,7 +538,9 @@ export class RealDataTimelineComponent {
       this.editor.set(null);
       const when = formatLocalDate(value.entity === 'ActualPayment' ? value.draft.paidDate : value.draft.date);
       const noun = KIND_NOUNS[current.kind];
-      void this.announcer.polite(`Se guardó el ${noun} del ${when}.`);
+      const message = `Se guardó el ${noun} del ${when}.`;
+      void this.announcer.polite(message);
+      this.saveNotice.show(message);
       this.afterRender(() =>
         this.host.nativeElement.querySelector<HTMLElement>(`[data-edit-id="${savedId}"]`)?.focus(),
       );
@@ -563,6 +575,7 @@ export class RealDataTimelineComponent {
   }
 
   protected askDelete(entry: TimelineEntry, trigger: Event): void {
+    this.saveNotice.hide();
     this.writeError.set(null);
     this.deleteOpener = trigger.currentTarget instanceof HTMLElement ? trigger.currentTarget : null;
     this.pendingDelete.set(entry);

@@ -15,7 +15,7 @@ const TONES: Record<BannerTone, { readonly label: string; readonly icon: string;
   selector: 'cc-banner',
   template: `
     @if (visible()) {
-      <div class="banner" data-testid="banner" [attr.role]="toneInfo().role" [attr.data-tone]="tone()">
+      <div class="banner" data-testid="banner" [attr.role]="live() ? toneInfo().role : null" [attr.data-tone]="tone()">
         <span class="icon" aria-hidden="true" data-testid="banner-icon">
           @if (tone() === 'success') {
             <svg viewBox="0 0 16 16" width="1em" height="1em" focusable="false">
@@ -129,6 +129,11 @@ export class BannerComponent {
   readonly tone = input<BannerTone>('info');
   readonly dismissible = input(true);
   readonly dismissLabel = input('Cerrar aviso');
+  /**
+   * False when the screen already announced the same news through the Announcer (a save): the banner is then shown
+   * without a live role, so it is not read twice.
+   */
+  readonly live = input(true);
   /** Emitted once when the user closes the banner; the banner then hides itself. */
   readonly dismissed = output<void>();
 
