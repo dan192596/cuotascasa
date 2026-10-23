@@ -43,6 +43,7 @@ const AUTOPLAY_MS = 900;
         (pointermove)="move($event)"
         (pointerup)="up()"
         (pointercancel)="up()"
+        (lostpointercapture)="up()"
       >
         <span class="rail"></span><span class="done"></span>
         <span
@@ -391,7 +392,14 @@ export class LandingBoardComponent implements AfterViewInit {
     this.dragging.set(false);
   }
 
+  /** Before the rows arrive, the choice waits for them, so the reading never mixes the two paths. */
   protected choose(prepaid: boolean): void {
+    if (this.behaviour() === null) {
+      void this.load().then(() => {
+        if (this.behaviour() !== null) this.choose(prepaid);
+      });
+      return;
+    }
     this.prepaid.set(prepaid);
     this.set(this.k());
   }

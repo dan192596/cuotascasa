@@ -182,6 +182,39 @@ describe('cc-landing-board (W8-07)', () => {
     expect(root.querySelectorAll('.tiles i.gone')).toHaveLength(0);
   });
 
+  it('applies a scenario chosen before the rows load only once they arrive, never mixing the paths', async () => {
+    stubMotion(true);
+    const { root, fixture } = await render();
+    const prepaid = root.querySelectorAll<HTMLButtonElement>('.switch button')[1];
+    prepaid?.click();
+    // Synchronously after the click: the chunk cannot have arrived yet, so nothing changed.
+    fixture.detectChanges();
+    expect(root.hasAttribute('data-ready')).toBe(false);
+    expect(prepaid?.getAttribute('aria-pressed')).toBe('false');
+    expect(readout(root)).toContain('Cuota 60 de 240');
+    await vi.waitFor(() => expect(root.hasAttribute('data-ready')).toBe(true), { timeout: 10000 });
+    await fixture.whenStable();
+    expect(prepaid?.getAttribute('aria-pressed')).toBe('true');
+    expect(readout(root)).toContain(`Cuota 60 de ${String(S.prepaidCount)}`);
+    expect(readout(root)).toContain(LANDING_EXAMPLE_ROWS.prepaid[59]?.balance);
+  });
+
+  it('ends the drag when the pointer capture is lost', async () => {
+    stubMotion(true);
+    const { root, fixture } = await interactive();
+    const track = root.querySelector<HTMLElement>('.track') as HTMLElement;
+    vi.spyOn(track, 'getBoundingClientRect').mockReturnValue({ left: 0, width: 239 } as DOMRect);
+    track.dispatchEvent(new MouseEvent('pointerdown', { clientX: 9, bubbles: true }));
+    await fixture.whenStable();
+    expect(track.classList.contains('drag')).toBe(true);
+    track.dispatchEvent(new MouseEvent('lostpointercapture', { bubbles: true }));
+    await fixture.whenStable();
+    expect(track.classList.contains('drag')).toBe(false);
+    track.dispatchEvent(new MouseEvent('pointermove', { clientX: 200, bubbles: true }));
+    await fixture.whenStable();
+    expect(slider(root).getAttribute('aria-valuenow')).toBe('10');
+  });
+
   it('announces the reading politely after a pause', async () => {
     stubMotion(true);
     const { root, fixture } = await interactive();

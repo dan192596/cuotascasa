@@ -23,7 +23,7 @@ const EXAMPLE = {
     { value: String(S.baseCount), label: 'cuotas del ejemplo' },
     { value: S.prepayment.amount, label: `de abono en la cuota ${String(S.prepayment.installment)}` },
     { value: String(S.monthsSaved), label: 'meses menos' },
-    { value: S.costSaved, label: 'de intereses ahorrados' },
+    { value: S.costSaved, label: 'de intereses y seguros ahorrados' },
   ],
   firstInstallment: [
     ['Interés', S.first.interest],

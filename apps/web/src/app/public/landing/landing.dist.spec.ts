@@ -25,6 +25,7 @@ describe('prerendered landing in dist (HU-01, R1)', () => {
     const html = readFileSync(INDEX, 'utf8');
     const counters = [...html.matchAll(/<b[^>]*data-odometer[^>]*>([^<]*)<\/b>/g)].map((m) => m[1]?.trim());
     expect(counters).toEqual(['240', 'Q 50,000.00', '35', 'Q 102,206.82']);
+    expect(html).toContain('de intereses y seguros ahorrados');
   });
 
   it('shows the board at installment 60 with its reading and slider (complete without JS)', () => {

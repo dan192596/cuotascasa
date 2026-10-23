@@ -79,5 +79,5 @@ Tras W8-06, la landing en la identidad Mercado (ADR-0026) medía unos 103.8 kB g
 
 | Grafo inicial | Tras W8-06 | Tras W8-07 | Presupuesto |
 |---|---|---|---|
-| Landing | 103.78 kB | 106.26 kB | 110 kB |
+| Landing | 103.78 kB | 106.30 kB | 110 kB |
 | `/app` | 175.84 kB | 175.79 kB | 200 kB |

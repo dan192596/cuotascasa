@@ -98,7 +98,7 @@ describe('LandingPageComponent (HU-01, R1)', () => {
       'cuotas del ejemplo',
       'de abono en la cuota 60',
       'meses menos',
-      'de intereses ahorrados',
+      'de intereses y seguros ahorrados',
     ]);
   });
 
