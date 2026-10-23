@@ -77,7 +77,7 @@ Tras W8-06, la landing en la identidad Mercado (ADR-0026) medía unos 103.8 kB g
 - Todos los vetos de los dos grafos siguen iguales. El presupuesto de `/app` inicial no cambia (200 kB).
 - Las filas del ejemplo de W8-07 (`LANDING_EXAMPLE_ROWS`) y el comportamiento del cuadro viven en un chunk diferido; el grafo inicial solo lleva el resumen generado, sin el motor, sin `decimal.js` y sin `ui/`.
 
-| Grafo inicial | Tras W8-06 | Tras W8-07 | Presupuesto |
+| Grafo inicial | Tras W8-06 | Al cerrar W8 (tras la revisión final) | Presupuesto |
 |---|---|---|---|
-| Landing | 103.78 kB | 106.30 kB | 110 kB |
-| `/app` | 175.84 kB | 175.79 kB | 200 kB |
+| Landing | 103.78 kB | 106.80 kB | 110 kB |
+| `/app` | 175.84 kB | 176.11 kB | 200 kB |
