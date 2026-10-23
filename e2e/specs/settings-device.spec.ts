@@ -174,9 +174,11 @@ test('erases both databases, revokes the Drive token, leaves the Drive copy unto
   await device(page).getByTestId('device-confirm-input').fill('BORRAR');
   await device(page).getByTestId('device-confirm').click();
 
-  // Full load of /app, which shows the empty dashboard.
+  // Full load of /app, which shows the empty dashboard and confirms the deletion once; the parameter leaves the URL.
   await page.waitForURL((url) => url.pathname === '/app');
   await expect(page.getByTestId('empty-state')).toBeVisible();
+  await expect(page.getByTestId('device-cleared')).toContainText('Se borraron los datos de este dispositivo');
+  await expect(page).toHaveURL((url) => url.pathname === '/app' && url.search === '');
 
   // The Google side: only the revocation; the Drive copy is byte for byte the same and was not requested again.
   expect(googleMock.gis.revokedTokens).toContain(token);

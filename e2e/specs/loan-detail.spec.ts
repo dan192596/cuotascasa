@@ -91,7 +91,10 @@ test('an archived loan is hidden from the default dashboard filter and visible u
   expect((await storedLoans(page))[0]?.status).toBe('archived');
   await expectNoA11yViolations(page);
 
-  await page.getByRole('link', { name: /Mis préstamos/ }).click();
+  await page
+    .getByRole('main')
+    .getByRole('link', { name: /Mis préstamos/ })
+    .click();
   await expect(page.getByTestId('page-dashboard')).toBeVisible();
   await expect(page.getByTestId('loan-card')).toHaveCount(0);
   await page.getByTestId('status-filter').selectOption('archived');
@@ -104,7 +107,10 @@ test('an archived loan is hidden from the default dashboard filter and visible u
     .click();
   await page.getByRole('button', { name: 'Desarchivar' }).click();
   await expect(page.getByTestId('loan-status')).toHaveText('Activo');
-  await page.getByRole('link', { name: /Mis préstamos/ }).click();
+  await page
+    .getByRole('main')
+    .getByRole('link', { name: /Mis préstamos/ })
+    .click();
   await expect(page.getByTestId('loan-card')).toContainText('Casa archivable');
 });
 
