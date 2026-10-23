@@ -6,6 +6,7 @@ import {
   ElementRef,
   inject,
   Injector,
+  signal,
   viewChild,
 } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
@@ -13,6 +14,9 @@ import { ErrorToastComponent } from '../errors/error-toast.component.ts';
 import { UpdatePromptComponent } from '../pwa/update-prompt.component.ts';
 import { SafariBannerComponent } from '../storage-health/safari-banner.component.ts';
 import { ThemeToggleComponent } from '../theme/theme-toggle.component.ts';
+
+/** The loan list (/app) and everything under one loan (/app/prestamos/…) belong to «Mis préstamos». */
+const isLoansPath = (path: string) => path === '/app' || path === '/app/' || path.startsWith('/app/prestamos');
 
 /**
  * Shell of /app: top bar, skip link, slots (cc-safari-banner is hosted only here), outlet and disclaimer footer.
@@ -34,14 +38,9 @@ import { ThemeToggleComponent } from '../theme/theme-toggle.component.ts';
     <header class="bar">
       <a class="brand" routerLink="/app">CuotasCasa</a>
       <nav aria-label="Principal">
-        <a
-          routerLink="/app"
-          routerLinkActive="active"
-          ariaCurrentWhenActive="page"
-          [routerLinkActiveOptions]="{ exact: true }"
-          >Panel</a
+        <a routerLink="/app" [class.active]="inLoans()" [attr.aria-current]="inLoans() ? 'page' : null"
+          >Mis préstamos</a
         >
-        <a routerLink="/app/prestamos" routerLinkActive="active" ariaCurrentWhenActive="page">Préstamos</a>
         <a routerLink="/app/ajustes" routerLinkActive="active" ariaCurrentWhenActive="page">Ajustes</a>
       </nav>
       <cc-theme-toggle />
@@ -151,6 +150,7 @@ import { ThemeToggleComponent } from '../theme/theme-toggle.component.ts';
 export class AppShellComponent {
   private readonly main = viewChild.required<ElementRef<HTMLElement>>('main');
   private readonly injector = inject(Injector);
+  protected readonly inLoans = signal(false);
 
   constructor() {
     const router = inject(Router);
@@ -163,6 +163,7 @@ export class AppShellComponent {
         return;
       }
       const path = pathOf(event.urlAfterRedirects);
+      this.inLoans.set(isLoansPath(path));
       const previous = lastPath;
       lastPath = path;
       if (isFirst) {

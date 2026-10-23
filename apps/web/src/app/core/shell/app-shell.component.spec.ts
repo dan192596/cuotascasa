@@ -32,6 +32,7 @@ async function mount() {
           children: [
             { path: '', component: WithHeadingComponent },
             { path: 'prestamos', component: WithHeadingComponent },
+            { path: 'prestamos/:id/tabla', component: WithHeadingComponent },
             { path: 'ajustes', component: WithoutHeadingComponent },
           ],
         },
@@ -56,33 +57,40 @@ describe('AppShellComponent', () => {
     }
   });
 
-  it('lists Panel, Préstamos and Ajustes in the top bar', async () => {
+  it('lists Mis préstamos and Ajustes in the top bar', async () => {
     const { root } = await mount();
-    expect([...root.querySelectorAll('nav a')].map((a) => a.textContent?.trim())).toEqual([
-      'Panel',
-      'Préstamos',
-      'Ajustes',
-    ]);
-    expect(link(root, 'Préstamos').getAttribute('href')).toBe('/app/prestamos');
+    expect([...root.querySelectorAll('nav a')].map((a) => a.textContent?.trim())).toEqual(['Mis préstamos', 'Ajustes']);
+    expect(link(root, 'Mis préstamos').getAttribute('href')).toBe('/app');
+  });
+
+  it('keeps Mis préstamos active inside a loan', async () => {
+    const { harness, root } = await mount();
+    await harness.navigateByUrl('/app/prestamos/abc/tabla');
+    await harness.fixture.whenStable();
+    expect(link(root, 'Mis préstamos').getAttribute('aria-current')).toBe('page');
+    expect(link(root, 'Mis préstamos').classList).toContain('active');
+    expect(link(root, 'Ajustes').getAttribute('aria-current')).toBeNull();
   });
 
   it('styles the top bar links as pills with a filled active state', async () => {
-    const { root } = await mount();
+    const { harness, root } = await mount();
+    await harness.fixture.whenStable();
     const css = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
     expect(css).toContain('var(--cc-radius-pill)');
     expect(css).not.toContain('border-bottom: 3px solid');
-    expect(link(root, 'Panel').classList.contains('active')).toBe(true);
+    expect(link(root, 'Mis préstamos').classList.contains('active')).toBe(true);
   });
 
   it('reflects the active route with aria-current', async () => {
     const { harness, root } = await mount();
     await harness.fixture.whenStable();
-    expect(link(root, 'Panel').getAttribute('aria-current')).toBe('page');
+    expect(link(root, 'Mis préstamos').getAttribute('aria-current')).toBe('page');
     expect(link(root, 'Ajustes').getAttribute('aria-current')).toBeNull();
     await harness.navigateByUrl('/app/ajustes');
     await harness.fixture.whenStable();
     expect(link(root, 'Ajustes').getAttribute('aria-current')).toBe('page');
-    expect(link(root, 'Panel').getAttribute('aria-current')).toBeNull();
+    expect(link(root, 'Mis préstamos').getAttribute('aria-current')).toBeNull();
+    expect(link(root, 'Mis préstamos').classList).not.toContain('active');
   });
 
   it('skip link moves focus to main without changing the URL', async () => {

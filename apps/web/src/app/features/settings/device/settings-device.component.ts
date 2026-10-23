@@ -32,12 +32,15 @@ const NOTHING_CHANGED = 'DEVICE_NOTHING_CHANGED';
 /** Time the confirmation stays on screen before the page loads again, so it can be read. */
 export const LEAVE_DELAY_MS = new InjectionToken<number>('LeaveDelayMs', { providedIn: 'root', factory: () => 1500 });
 
-/** Full page load of /app: the in-memory stores are stale after the deletion. Replaced in tests. */
-export const LEAVE_TO_APP = new InjectionToken<() => void>('LeaveToApp', {
+/**
+ * Full page load of /app: the in-memory stores are stale after the deletion. After a complete deletion it loads
+ * /app?borrado=1, so the dashboard confirms it. Replaced in tests.
+ */
+export const LEAVE_TO_APP = new InjectionToken<(cleared: boolean) => void>('LeaveToApp', {
   providedIn: 'root',
   factory: () => {
     const document = inject(DOCUMENT);
-    return () => document.defaultView?.location.replace('/app');
+    return (cleared) => document.defaultView?.location.replace(cleared ? '/app?borrado=1' : '/app');
   },
 });
 
@@ -272,12 +275,12 @@ export class SettingsDeviceComponent {
       }
       // The data layer of this tab is closed and its state is dead: load /app again after the text could be read.
       await this.pause();
-      this.leave();
+      this.leave(false);
       return;
     }
     this.status.set(DEVICE_CLEARED_STATUS);
     await this.pause();
-    this.leave();
+    this.leave(true);
   }
 
   private pause(): Promise<void> {

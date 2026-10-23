@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { afterNextRender, ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import type { Currency } from '@cuotascasa/domain';
 import type { CurrencyTotals } from '../../data/api.ts';
 import { BACKUP_SERVICE, LOAN_PROJECTION_SERVICE, LOANS_STORE, SYNC_SERVICE } from '../../data/tokens.ts';
@@ -15,6 +15,11 @@ import {
 } from './dashboard-model.ts';
 import { LoanCardComponent } from './loan-card.component.ts';
 
+/** Query parameter of /app that «Borrar datos de este dispositivo» (Ajustes) sets after a complete deletion. */
+export const DEVICE_CLEARED_PARAM = 'borrado';
+export const DEVICE_CLEARED_NOTICE =
+  'Se borraron los datos de este dispositivo. La copia de Google Drive, si la tenías, no se tocó.';
+
 const CURRENCY_ROWS: readonly { readonly currency: Currency; readonly label: string }[] = [
   { currency: 'GTQ', label: 'En quetzales' },
   { currency: 'USD', label: 'En dólares' },
@@ -28,6 +33,13 @@ const MAX_STAGGER_STEP = 7;
   imports: [RouterLink, EmptyStateComponent, LoanCardComponent, MoneyPipe, OdometerComponent],
   template: `
     <h1>Mis préstamos</h1>
+
+    @if (cleared()) {
+      <div class="cleared" role="status" data-testid="device-cleared">
+        <p>{{ clearedNotice }}</p>
+        <button type="button" (click)="cleared.set(false)">Cerrar aviso</button>
+      </div>
+    }
 
     <section class="status" aria-label="Estado de sincronización y respaldo" data-testid="status-widget">
       <p role="status" data-testid="sync-status">Drive: {{ sync.statusText() }}</p>
@@ -113,6 +125,33 @@ const MAX_STAGGER_STEP = 7;
       padding: 0.25rem 0.75rem;
       border-left: 4px solid var(--cc-color-warning);
       background: var(--cc-color-surface);
+    }
+    .cleared {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem 1rem;
+      margin-block: 1rem;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--cc-color-accent);
+      border-radius: var(--cc-radius-block);
+      background: var(--cc-color-soft);
+    }
+    .cleared p {
+      margin: 0;
+    }
+    .cleared button {
+      padding: 0.375rem 0.875rem;
+      border: 1px solid var(--cc-color-control-border);
+      border-radius: var(--cc-radius-pill);
+      color: var(--cc-color-ink);
+      background: var(--cc-color-surface);
+      font: inherit;
+      cursor: pointer;
+    }
+    .cleared button:focus-visible {
+      outline: 2px solid var(--cc-color-ink);
+      outline-offset: 2px;
     }
     .totals {
       display: flex;
@@ -200,6 +239,25 @@ export class DashboardPageComponent {
   protected readonly backup = inject(BACKUP_SERVICE);
   protected readonly sync = inject(SYNC_SERVICE);
   private readonly projections = inject(LOAN_PROJECTION_SERVICE);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+
+  protected readonly clearedNotice = DEVICE_CLEARED_NOTICE;
+  /** Shown once after the deletion; the parameter leaves the URL so a reload or a bookmark does not repeat it. */
+  protected readonly cleared = signal(this.route.snapshot.queryParamMap.get(DEVICE_CLEARED_PARAM) === '1');
+
+  constructor() {
+    if (this.cleared()) {
+      afterNextRender(() => {
+        void this.router.navigate([], {
+          relativeTo: this.route,
+          queryParams: { [DEVICE_CLEARED_PARAM]: null },
+          queryParamsHandling: 'merge',
+          replaceUrl: true,
+        });
+      });
+    }
+  }
 
   protected readonly filters = DASHBOARD_FILTERS;
   protected readonly labels = FILTER_LABELS;
