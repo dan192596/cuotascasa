@@ -67,6 +67,7 @@ test.describe('reduced motion', () => {
   test('leaves no running animation in the wizard, the table or the comparison', async ({ page }) => {
     await seed(page);
     await toNextWizardStep(page);
+    await expect(page.getByTestId('wizard-step').locator('> form')).toHaveCSS('animation-name', 'none');
     await expect.poll(() => running(page)).toEqual([]);
 
     await page.goto(`/app/prestamos/${SYNTHETIC_LOAN_ID}/tabla`);
@@ -88,13 +89,18 @@ test.describe('with motion', () => {
     await page.goto('/app/prestamos/nuevo');
     await page.getByLabel('Alias', { exact: true }).fill('Casa de prueba');
     const step = page.getByTestId('wizard-step');
+    const heading = page.getByRole('heading', { level: 2 });
     await page.getByRole('button', { name: /Siguiente/ }).click();
+    // data-direction starts as 'forward', so only the new heading proves step 2's form replaced step 1's. Reading the
+    // form before that can resolve step 1's form just as Angular detaches it, whose computed style is empty (W8-08).
+    await expect(heading).toContainText('Paso 2 de 4');
     await expect(step).toHaveAttribute('data-direction', 'forward');
-    // animation-name stays computed after the run (fill is backwards), so this does not race the 320 ms.
-    const name = await step.locator('> form').evaluate((form) => getComputedStyle(form).animationName);
-    expect(name).toBe('cc-wiz-in-forward');
+    // toHaveCSS re-resolves the form on every try; animation-name stays computed after the run (fill is backwards).
+    await expect(step.locator('> form')).toHaveCSS('animation-name', 'cc-wiz-in-forward');
     await page.getByRole('button', { name: /Atrás/ }).click();
+    await expect(heading).toContainText('Paso 1 de 4');
     await expect(step).toHaveAttribute('data-direction', 'back');
+    await expect(step.locator('> form')).toHaveCSS('animation-name', 'cc-wiz-in-back');
   });
 });
 
