@@ -117,3 +117,13 @@ Cualquiera de estos reabre la fase:
 - ADR-0001, ADR-0005, ADR-0007, ADR-0008, ADR-0013, ADR-0016, ADR-0019.
 - `docs/discovery/` (comparativa de backends).
 - Tarjeta W7-01.
+
+## Enmiendas
+
+**Enmienda (2026-10-21, W7-01): vigencia antes de v1.0.0.** Sigue **Diferido**. A la fecha no se cumple ningún disparador: la app la usa una sola persona, nadie pidió compartir en vivo y la sincronización por Drive con «último en escribir gana» por registro alcanza. Disparadores vigentes, sin cambios:
+
+1. un segundo usuario real y recurrente;
+2. necesidad de compartir en vivo;
+3. uso simultáneo en varios dispositivos donde la combinación por registro ya no alcance.
+
+Los hechos archivados (precios, límites y APIs de Supabase y de las alternativas) no se revalidaron: se revalidan al retomar, como dice «Cómo retomarla».

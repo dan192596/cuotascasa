@@ -82,3 +82,11 @@ El repositorio es **público** porque forma parte del portafolio del dueño, per
 - ADR-0007, ADR-0009, ADR-0014, ADR-0016, ADR-0019.
 - `CLAUDE.md`, reglas absolutas 1 y 2.
 - Tarjetas W0-01, W0-06, W1-03, W1-10, W2-01, W3-17, W5-07 y W7-01.
+
+## Enmiendas
+
+**Enmienda (2026-10-21, W7, decisiones del dueño).**
+
+- **Higiene en CI (W7-02, PR #97).** La marca `synthetic: true` y el correo noreply ya no dependen solo de los hooks locales. La marca corre en CI en cada PR y en cada push a `main`; el correo corre solo en los PR, sobre cada commit del rango del PR, y acepta las dos formas noreply de GitHub. La salida nombra solo el SHA corto y la identidad que falla, nunca el correo. La **lista local de términos prohibidos no corre en CI y no correrá**: es privada y vive solo en el equipo del dueño, fuera del repositorio (decisión 6). No hay lista de reemplazo ni variante con secretos.
+- **Firma sin nombres (D27).** El checklist del release lo firma el dueño con su aprobación del PR de release. Ningún archivo del repositorio escribe su usuario de GitHub, su nombre ni su correo; el checklist registra solo ítem, resultado y fecha.
+- **Estado de la decisión 10.** La validación privada nunca se autorizó y el dueño no tiene tabla real del banco (ADR-0014, enmienda de W7-01). No existe `~/.cuotascasa-private/`.
