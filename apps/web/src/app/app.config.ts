@@ -25,15 +25,35 @@ import { provideAppTheme } from './core/theme/provide-app-theme.ts';
 registerLocaleData(localeEsGt);
 
 /**
+ * Root class present while a route view transition runs. The dashboard card (features/dashboard/loan-card) reads the
+ * same literal to skip its entrance, so the shared-element morph does not jump (W8-04).
+ */
+const VIEW_TRANSITION_ACTIVE_CLASS = 'cc-view-transition';
+
+/**
  * W8-02: the router only calls this in a browser that has `document.startViewTransition` (never during prerender).
  * The CSS in view-transitions.css already keeps the root still under reduced motion, but the browser would still swap
  * snapshots; skipping the transition shows the new page at once, in its final state.
+ *
+ * While a transition runs, the browser hit-tests the snapshot overlay, so a press lands on <html> instead of its
+ * target (ADR-0026 §5.4). A capture-phase pointerdown skips the transition so the page is live again at once; the
+ * residual is that this one press finishes the transition instead of activating what was under it.
  */
-function skipTransitionOnReducedMotion({ transition }: ViewTransitionInfo): void {
-  const view = inject(DOCUMENT).defaultView;
-  if (view?.matchMedia('(prefers-reduced-motion: reduce)').matches === true) {
+function onViewTransitionCreated({ transition }: ViewTransitionInfo): void {
+  const document = inject(DOCUMENT);
+  if (document.defaultView?.matchMedia('(prefers-reduced-motion: reduce)').matches === true) {
     transition.skipTransition();
+    return;
   }
+  const root = document.documentElement;
+  const skipOnPress = (): void => transition.skipTransition();
+  root.classList.add(VIEW_TRANSITION_ACTIVE_CLASS);
+  document.addEventListener('pointerdown', skipOnPress, { capture: true });
+  const settle = (): void => {
+    document.removeEventListener('pointerdown', skipOnPress, { capture: true });
+    root.classList.remove(VIEW_TRANSITION_ACTIVE_CLASS);
+  };
+  transition.finished.then(settle, settle);
 }
 
 export const appConfig: ApplicationConfig = {
@@ -46,7 +66,7 @@ export const appConfig: ApplicationConfig = {
       withRouterConfig({ paramsInheritanceStrategy: 'always' }),
       withInMemoryScrolling({ scrollPositionRestoration: 'enabled' }),
       // W8-02: the first navigation (hydration of the prerendered page) never animates.
-      withViewTransitions({ skipInitialTransition: true, onViewTransitionCreated: skipTransitionOnReducedMotion }),
+      withViewTransitions({ skipInitialTransition: true, onViewTransitionCreated }),
     ),
     // Event replay stays: its inline scripts are covered by the post-build hashes of ADR-0021.
     provideClientHydration(withEventReplay()),

@@ -26,7 +26,7 @@ describe('route view transitions (W8-02)', () => {
   const transitions: FakeTransition[] = [];
   let startViewTransition: ReturnType<typeof vi.fn>;
 
-  function stubBrowser(reducedMotion: boolean): void {
+  function stubBrowser(reducedMotion: boolean, finished?: Promise<void>): void {
     transitions.length = 0;
     startViewTransition = vi.fn((update: () => Promise<void>) => {
       const done = update();
@@ -34,7 +34,7 @@ describe('route view transitions (W8-02)', () => {
         skipTransition: vi.fn(),
         updateCallbackDone: done,
         ready: Promise.resolve(),
-        finished: done,
+        finished: finished ?? done,
       };
       transitions.push(transition);
       return transition;
@@ -78,5 +78,42 @@ describe('route view transitions (W8-02)', () => {
     await navigateTwice();
     expect(transitions.length).toBeGreaterThan(0);
     for (const transition of transitions) expect(transition.skipTransition).toHaveBeenCalledTimes(1);
+  });
+
+  it('skips an active transition on the first pointerdown, then stops listening when it settles (ADR-0026 §5.4)', async () => {
+    let settle!: () => void;
+    const finished = new Promise<void>((resolve) => (settle = resolve));
+    stubBrowser(false, finished);
+    const add = vi.spyOn(document, 'addEventListener');
+    const remove = vi.spyOn(document, 'removeEventListener');
+    await navigateTwice();
+    const transition = transitions.at(-1);
+    expect(transition?.skipTransition).not.toHaveBeenCalled();
+    const added = add.mock.calls.find(([type]) => type === 'pointerdown');
+    expect(added?.[2]).toEqual({ capture: true });
+    expect(document.documentElement.classList.contains('cc-view-transition')).toBe(true);
+
+    document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    expect(transition?.skipTransition).toHaveBeenCalledTimes(1);
+    expect(remove.mock.calls.some(([type]) => type === 'pointerdown')).toBe(false);
+
+    settle();
+    await finished;
+    await Promise.resolve();
+    expect(remove.mock.calls.find(([type]) => type === 'pointerdown')?.[1]).toBe(added?.[1]);
+    expect(document.documentElement.classList.contains('cc-view-transition')).toBe(false);
+    document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    expect(transition?.skipTransition).toHaveBeenCalledTimes(1);
+    add.mockRestore();
+    remove.mockRestore();
+  });
+
+  it('never listens for presses when reduced motion already skipped the transition', async () => {
+    stubBrowser(true);
+    const add = vi.spyOn(document, 'addEventListener');
+    await navigateTwice();
+    expect(add.mock.calls.some(([type]) => type === 'pointerdown')).toBe(false);
+    expect(document.documentElement.classList.contains('cc-view-transition')).toBe(false);
+    add.mockRestore();
   });
 });

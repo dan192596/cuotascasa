@@ -2,7 +2,9 @@
  * Route View Transitions (W8-02, ADR-0026). The router wraps each navigation in document.startViewTransition
  * (withViewTransitions in app.config.ts); the initial navigation and reduced motion skip it there.
  *
- * Root: the old page leaves 24px to the left while fading out and the new one enters from 24px to the right.
+ * Root: the old page leaves 24px to the left while fading out and the new one enters from 24px to the right, in
+ * --cc-duration-fast: while a transition runs the browser hit-tests the snapshot overlay, so the slide is kept short and
+ * a press during it skips the transition (app.config.ts, ADR-0026 §5.4). Shared elements keep the browser's own morph.
  *
  * Convention for shared elements (W8-04): give the same element on both pages
  * `view-transition-name: cc-loan-<loanId>` (the dashboard card and the loan detail header) and the browser morphs one
@@ -13,11 +15,11 @@
  */
 @media (prefers-reduced-motion: no-preference) {
   ::view-transition-old(root) {
-    animation: cc-vt-root-out var(--cc-duration-base) var(--cc-ease-out) both;
+    animation: cc-vt-root-out var(--cc-duration-fast) var(--cc-ease-out) both;
   }
 
   ::view-transition-new(root) {
-    animation: cc-vt-root-in var(--cc-duration-base) var(--cc-ease-out) both;
+    animation: cc-vt-root-in var(--cc-duration-fast) var(--cc-ease-out) both;
   }
 
   @keyframes cc-vt-root-out {

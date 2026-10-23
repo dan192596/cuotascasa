@@ -44,7 +44,7 @@ const MAX_STAGGER_STEP = 7;
     } @else if (store.loans().length === 0) {
       <cc-empty-state heading="Aún no tienes préstamos" layout="mosaic">
         Empieza creando uno, restaura un respaldo o conecta tu Google Drive.
-        <a ccEmptyActions class="action primary" routerLink="/app/prestamos/nuevo">Crear un préstamo</a>
+        <a ccEmptyActions class="action" routerLink="/app/prestamos/nuevo">Crear un préstamo</a>
         <a ccEmptyActions class="action" routerLink="/app/ajustes">Restaurar un respaldo</a>
         <a ccEmptyActions class="action" routerLink="/app/ajustes">Conectar Drive</a>
       </cc-empty-state>
@@ -73,7 +73,9 @@ const MAX_STAGGER_STEP = 7;
             <option [value]="option" [selected]="option === filter()">{{ labels[option] }}</option>
           }
         </select>
-        <a class="action primary" routerLink="/app/prestamos/nuevo">Nuevo préstamo</a>
+        <a class="new-loan cc-button-primary" data-testid="new-loan" routerLink="/app/prestamos/nuevo"
+          >Nuevo préstamo</a
+        >
       </div>
 
       @if (visible().length === 0) {
@@ -170,9 +172,14 @@ const MAX_STAGGER_STEP = 7;
       background: var(--cc-color-surface);
       text-decoration: none;
     }
-    .action.primary {
-      border-color: var(--cc-color-ink);
-      font-weight: bold;
+    /* Colours come from the global .cc-button-primary (styles.scss); only the link's box is set here. */
+    .new-loan {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      border-width: 1px;
+      border-style: solid;
+      border-radius: var(--cc-radius-pill);
+      text-decoration: none;
     }
     a:focus-visible,
     select:focus-visible {

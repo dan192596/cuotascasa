@@ -324,6 +324,21 @@ describe('DashboardPageComponent: Mercado', () => {
     expect(cards.map((c) => c.style.viewTransitionName)).toEqual(['cc-loan-a', 'cc-loan-b']);
   });
 
+  it('runs the card entrance outside a route transition', () => {
+    const f = mount({ loans: [loan('a')] });
+    expect(all(f, 'loan-card')[0]?.classList.contains('enter')).toBe(true);
+  });
+
+  it('skips the card entrance when the card is created inside a route transition, so the morph does not jump', () => {
+    document.documentElement.classList.add('cc-view-transition');
+    try {
+      const f = mount({ loans: [loan('a')] });
+      expect(all(f, 'loan-card')[0]?.classList.contains('enter')).toBe(false);
+    } finally {
+      document.documentElement.classList.remove('cc-view-transition');
+    }
+  });
+
   it('gives each card its index for the staggered entrance, capped at 8 steps', () => {
     const ids = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'];
     const f = mount({ loans: ids.map((id) => loan(id)) });
@@ -351,6 +366,15 @@ describe('DashboardPageComponent: Mercado', () => {
       o.getAttribute('aria-label'),
     );
     expect(labels).toEqual(['Q 1,000.00', 'Q 120.00']);
+  });
+
+  it('marks «Nuevo préstamo» with the shared primary button class, like the other screens', () => {
+    const f = mount({ loans: [loan('a')] });
+    const link = byId(f, 'new-loan') as HTMLElement;
+    expect(link.textContent?.trim()).toBe('Nuevo préstamo');
+    expect(link.classList.contains('cc-button-primary')).toBe(true);
+    const src = readFileSync('apps/web/src/app/features/dashboard/dashboard-page.component.ts', 'utf8');
+    expect(src).not.toContain('.action.primary');
   });
 
   it('uses the mosaic layout for the first-use state', () => {

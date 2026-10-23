@@ -1,3 +1,4 @@
+import { DOCUMENT } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { LOAN_PROJECTION_SERVICE } from '../../data/tokens.ts';
@@ -16,6 +17,7 @@ import { type DashboardLoan, errorMessage, STATUS_LABELS } from './dashboard-mod
     @let currency = loan().currency;
     <article
       class="card"
+      [class.enter]="enter"
       data-testid="loan-card"
       [attr.aria-labelledby]="titleId()"
       [style.view-transition-name]="transitionName()"
@@ -87,7 +89,7 @@ import { type DashboardLoan, errorMessage, STATUS_LABELS } from './dashboard-mod
       color: var(--cc-color-ink);
     }
     @media (prefers-reduced-motion: no-preference) {
-      .card {
+      .card.enter {
         animation: card-in var(--cc-duration-slow) var(--cc-ease-out) backwards;
         animation-delay: calc(var(--i, 0) * 60ms);
       }
@@ -176,6 +178,13 @@ export class LoanCardComponent {
   private readonly service = inject(LOAN_PROJECTION_SERVICE);
 
   readonly loan = input.required<DashboardLoan>();
+
+  /**
+   * The card is the shared view-transition target: when it is created inside a route transition (the root carries
+   * `cc-view-transition`, set in app.config.ts) its entrance would fight the morph, so it starts in place. Read once, so
+   * the entrance never replays when the class leaves the root.
+   */
+  protected readonly enter = !inject(DOCUMENT).documentElement.classList.contains('cc-view-transition');
 
   protected readonly projection = computed(() => this.service.forLoan(this.loan().id));
   protected readonly base = computed(() => `/app/prestamos/${this.loan().id}`);
