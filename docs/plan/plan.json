@@ -2792,6 +2792,306 @@
           "notes": "Owner decision 2026-10-21: v1 includes this button. Opus registered the contract (DeviceDataService in data/api.ts, DEVICE_DATA_SERVICE in data/tokens.ts, provideDeviceData() wired in data/provide-app-data.ts) and an inert stub that rejects with NOT_IMPLEMENTED; until this card merges the stub sweep allows its marker through PENDING_STUBS. The service worker cache holds only the app shell, never user data, so it is left alone. If closing the DataStore or the key store cannot release every IndexedDB connection of the tab (deleteDatabase stays blocked), stop and ask Opus; do not edit packages/ or data/sync/."
         }
       ]
+    },
+    {
+      "id": "W8",
+      "name": "Mercado identity",
+      "goal": "Take the landing and the app to the Mercado identity (light and dark palette, Bricolage Grotesque, motion) without touching calculations, data or privacy: an Opus base (tokens, fonts, Material theme, global styles, ADR-0026, route View Transitions), then Sonnet cards per area (ui components, dashboard and detail, wizard and work screens, landing, 240-installment board), and an Opus close. No animation libraries; prefers-reduced-motion switches all decorative motion off; the page is complete at rest.",
+      "cards": [
+        {
+          "id": "W8-01",
+          "title": "Mercado identity base: palette tokens, Bricolage Grotesque, Material theme, global styles, ADR-0026",
+          "executor": "opus",
+          "owns": [
+            "docs/adr/0026-identidad-mercado.md",
+            "docs/adr/0012-sistema-de-diseno.md",
+            "docs/adr/README.md",
+            "docs/specs/design-palette.md",
+            "docs/discovery/direccion-visual.md",
+            "apps/web/src/design-contract/",
+            "apps/web/src/styles/tokens.css",
+            "apps/web/src/styles/tokens.spec.ts",
+            "apps/web/src/styles/fonts.scss",
+            "apps/web/src/styles/fonts.dist.spec.ts",
+            "apps/web/src/styles/material-theme.scss",
+            "apps/web/src/styles/styles.scss",
+            "apps/web/src/styles/tailwind.scss",
+            "apps/web/src/testing/doc-checks/design-palette-doc.spec.ts",
+            "pnpm-workspace.yaml",
+            "apps/web/package.json",
+            "pnpm-lock.yaml"
+          ],
+          "depends_on": [
+            "W7-01"
+          ],
+          "contracts_used": [
+            "docs/specs/2026-10-22-identidad-mercado-design.md",
+            "docs/specs/mercado/prototipo-landing.html",
+            "docs/plan/implementation/w8/README.md"
+          ],
+          "deliverables": "ADR-0026 (Mercado identity) with amendments to ADR-0012 decisions 1, 2, 4 and 8; docs/specs/design-palette.md rewritten with the new themed tokens (paper, surface, band, current-month, rule, control-border, ink, ink-muted, accent fucsia, positive, warning, danger, saving turquesa, highlight, on-color, soft, block, on-block) in light and dark and the extended WCAG matrix; shared tokens --cc-radius-block, --cc-radius-pill, --cc-ease-out and --cc-duration-fast/base/slow; Bricolage Grotesque Variable as heading and body font (dependency @fontsource-variable/bricolage-grotesque pinned exactly in the pnpm catalog, @fontsource/source-serif-4 removed; the only new dependency, approved by the owner 2026-10-22); Material theme mapped to accent/saving; Tailwind theme extended; pill buttons, .cc-button-primary and heading rules in styles.scss. Dark mockup published for the owner, whose approval gates W8-06. Details: docs/plan/implementation/w8/README.md (Task W8-01).",
+          "acceptance_criteria": [
+            "tokens.spec.ts counts the themed names of token-names.json and the WCAG matrix passes in light and dark: on-color on saving and highlight >= 4.5, on-block on block >= 4.5, paper on accent >= 4.5, accent and saving as graphics >= 3 on paper, surface, band and soft, accent as text >= 4.5 on paper, surface, band and current-month",
+            "design-palette-doc.spec.ts reads the rewritten table and the line «Aprobada por el dueño: 2026-10-22»",
+            "fonts.dist.spec.ts: one woff2 with bricolage-grotesque, one with jetbrains-mono, none with source-serif-4, exactly 3 woff2, and font-family with Bricolage Grotesque",
+            "pnpm lint && pnpm typecheck && pnpm test and pnpm build with the dist tests pass; the axe violations left by components not yet migrated are recorded for W8-03..W8-06",
+            "The dark mockup was approved by the owner before W8-06 starts"
+          ],
+          "requirements": [
+            "R21"
+          ],
+          "size": "L",
+          "notes": "Opus card. The only step that runs pnpm install without --frozen-lockfile (it changes the lockfile). Colour pairs that fail the matrix: adjust lightness, never hue; if still failing, stop and escalate to the owner. Depends on W7-01 only because both own docs/adr/."
+        },
+        {
+          "id": "W8-02",
+          "title": "Route view transitions with reduced-motion skip",
+          "executor": "opus",
+          "owns": [
+            "apps/web/src/app/app.config.ts",
+            "apps/web/src/app/app.config.spec.ts",
+            "apps/web/src/styles/view-transitions.css",
+            "apps/web/src/styles/styles.scss",
+            "e2e/specs/view-transitions.spec.ts"
+          ],
+          "depends_on": [
+            "W8-01"
+          ],
+          "contracts_used": [
+            "docs/specs/2026-10-22-identidad-mercado-design.md",
+            "docs/plan/implementation/w8/README.md"
+          ],
+          "deliverables": "withViewTransitions({ skipInitialTransition: true, onViewTransitionCreated }) in provideRouter; onViewTransitionCreated calls transition.skipTransition() under prefers-reduced-motion: reduce. view-transitions.css (imported from styles.scss) slides the root old/new by -24/+24 px with --cc-duration-base and --cc-ease-out inside prefers-reduced-motion: no-preference. Convention for W8-04: view-transition-name cc-loan-<loanId> on the dashboard card and on the detail header; if missing on one side the general slide applies without errors. Details: docs/plan/implementation/w8/README.md (Task W8-02).",
+          "acceptance_criteria": [
+            "Unit spec: the router config includes the View Transitions feature and, with a fake matchMedia in reduce, onViewTransitionCreated calls skipTransition",
+            "e2e view-transitions.spec.ts: click a card, goBack immediately, click again: final URL is the detail, the h1 is the loan, no console errors; the same with reducedMotion reduce in Chromium and WebKit",
+            "pnpm lint && pnpm typecheck && pnpm test && pnpm e2e specs/view-transitions.spec.ts pass"
+          ],
+          "requirements": [
+            "R21"
+          ],
+          "size": "S",
+          "notes": "Opus card. app.config.ts is a frozen file (editableBy W0-05, W2-02) and gains W8-02. styles.scss is also owned by W8-01; the dependency W8-01 -> W8-02 serialises them."
+        },
+        {
+          "id": "W8-03",
+          "title": "Mercado design components: odometer, house meter, banner, empty state, ledger table highlights",
+          "executor": "sonnet",
+          "owns": [
+            "apps/web/src/app/ui/"
+          ],
+          "depends_on": [
+            "W8-02"
+          ],
+          "contracts_used": [
+            "docs/specs/2026-10-22-identidad-mercado-design.md",
+            "docs/plan/implementation/w8/README.md"
+          ],
+          "deliverables": "cc-odometer (ui/motion/odometer.component.ts): value = input.required<string>(), digit columns 0-9 that roll to their digit, fixed non-digit characters, aria-label = value with columns aria-hidden, final value already in the DOM, rolls once at first render, no roll under reduced motion, never converts the text to a number. cc-house-meter fills with --cc-color-accent and keeps fill-in. Success banner with a check drawn by stroke-dashoffset in --cc-duration-base. cc-empty-state input layout (plain | mosaic): mosaic arranges actions as colour blocks (primary accent, secondary soft and highlight, --cc-radius-block). cc-ledger-table: .current row flashes once (highlight to current-month in --cc-duration-slow) and cells whose text changes between two entries of the same row key get .changed for 600 ms. Details: docs/plan/implementation/w8/README.md (Task W8-03).",
+          "acceptance_criteria": [
+            "Odometer spec: the final DOM holds the exact text, the source has no Number( or parseFloat (source-text search like no-number-on-money.spec.ts), and under reduced motion there is no animation",
+            "House meter fill uses var(--cc-color-accent); empty-state layout=\"mosaic\" puts data-layout=\"mosaic\" on the actions; after changing rows with a different balance in row 3 only that cell has .changed",
+            "Styles use only tokens (tokens-only and no-hardcoded-colors specs) and --cc-duration-* timings",
+            "pnpm lint && pnpm typecheck && pnpm test pass"
+          ],
+          "requirements": [
+            "R21"
+          ],
+          "size": "M",
+          "notes": "Sonnet card. Money is never a number: the odometer animates characters of an already formatted string."
+        },
+        {
+          "id": "W8-04",
+          "title": "Mercado dashboard and loan detail with shared transition",
+          "executor": "sonnet",
+          "owns": [
+            "apps/web/src/app/features/dashboard/dashboard-page.component.ts",
+            "apps/web/src/app/features/dashboard/dashboard-page.component.spec.ts",
+            "apps/web/src/app/features/dashboard/loan-card.component.ts",
+            "apps/web/src/app/features/dashboard/loan-card.component.spec.ts",
+            "apps/web/src/app/features/loans/detail/",
+            "e2e/specs/dashboard.spec.ts",
+            "e2e/specs/loan-detail.spec.ts"
+          ],
+          "depends_on": [
+            "W8-03"
+          ],
+          "contracts_used": [
+            "docs/specs/2026-10-22-identidad-mercado-design.md",
+            "docs/plan/implementation/w8/README.md"
+          ],
+          "deliverables": "Loan card as a block with --cc-radius-block, weight-800 title and the meter in fucsia; every card and the detail header carry style.viewTransitionName cc-loan-<id> (convention of W8-02); staggered entrance via --i (60 ms per card, max 8 steps) in CSS inside no-preference; per-currency totals shown with cc-odometer with the service value; empty state with layout=\"mosaic\". Details: docs/plan/implementation/w8/README.md (Task W8-04).",
+          "acceptance_criteria": [
+            "Specs: viewTransitionName equals cc-loan-<id> on the card and on the detail header; cards carry --i with their index; totals use cc-odometer with the service value; empty state uses layout=\"mosaic\"",
+            "e2e: with two synthetic loans the dashboard shows the right totals and axe passes in light and dark; with reducedMotion reduce no card has an animationName other than none",
+            "pnpm lint && pnpm typecheck && pnpm test && pnpm e2e specs/dashboard.spec.ts specs/loan-detail.spec.ts pass"
+          ],
+          "requirements": [
+            "R13",
+            "R14",
+            "R27"
+          ],
+          "size": "M",
+          "notes": "Sonnet card. Consumes cc-odometer, cc-empty-state[layout=mosaic] and cc-house-meter from W8-03."
+        },
+        {
+          "id": "W8-05",
+          "title": "Mercado wizard, schedule, real data, scenarios, settings and export motion",
+          "executor": "sonnet",
+          "owns": [
+            "apps/web/src/app/features/loans/wizard/",
+            "apps/web/src/app/features/schedule/",
+            "apps/web/src/app/features/real-data/",
+            "apps/web/src/app/features/scenarios/",
+            "apps/web/src/app/features/settings/",
+            "apps/web/src/app/features/export/",
+            "apps/web/src/app/core/errors/",
+            "apps/web/src/app/core/shell/",
+            "e2e/specs/loan-wizard.spec.ts",
+            "e2e/specs/schedule.spec.ts",
+            "e2e/specs/real-data.spec.ts",
+            "e2e/specs/scenarios.spec.ts",
+            "e2e/specs/scenario-compare.spec.ts",
+            "e2e/specs/settings-backup.spec.ts",
+            "e2e/specs/settings-device.spec.ts",
+            "e2e/specs/settings-sync.spec.ts",
+            "e2e/specs/motion.spec.ts"
+          ],
+          "depends_on": [
+            "W8-03"
+          ],
+          "contracts_used": [
+            "docs/specs/2026-10-22-identidad-mercado-design.md",
+            "docs/plan/implementation/w8/README.md"
+          ],
+          "deliverables": "Wizard step container with data-direction forward|back (CSS slides +-24 px); balance-chart with animation duration 600 (false under reduced motion) and chart-palette.ts using accent, saving and ink per scenario with no fixed hex; sliding indicator under the active scenario option (transform translateX); error toast entering from below; shell bar in the pill style of the prototype; Mercado styles for schedule, real data, settings and export using only tokens and --cc-duration-*. Table rows are not animated. Details: docs/plan/implementation/w8/README.md (Task W8-05).",
+          "acceptance_criteria": [
+            "Specs for data-direction, the chart animation option under reduced motion, tokens in chart-palette.ts, the sliding indicator, the toast entrance and the shell pill style",
+            "e2e motion.spec.ts: with reducedMotion reduce, wizard, table and compare have no running animations after navigating (getAnimations); without it the wizard step has an entrance animation; axe passes in light and dark on the touched screens",
+            "pnpm lint && pnpm typecheck && pnpm test && pnpm e2e pass"
+          ],
+          "requirements": [
+            "R14",
+            "R15",
+            "R16",
+            "R17",
+            "R18",
+            "R19"
+          ],
+          "size": "L",
+          "notes": "Sonnet card. Consumes tokens from W8-01 and components from W8-03."
+        },
+        {
+          "id": "W8-06",
+          "title": "Mercado landing: mosaic, scrambled titles, custom cursor, stacked cards, counters",
+          "executor": "sonnet",
+          "owns": [
+            "apps/web/src/app/public/landing/landing-page.component.ts",
+            "apps/web/src/app/public/landing/landing-page.component.spec.ts",
+            "apps/web/src/app/public/landing/landing.dist.spec.ts",
+            "apps/web/src/app/public/landing/landing-motion.ts",
+            "apps/web/src/app/public/landing/landing-motion.spec.ts",
+            "apps/web/src/app/public/simulator/",
+            "apps/web/src/app/public/privacy/",
+            "apps/web/src/app/public/not-found/",
+            "e2e/specs/landing.spec.ts",
+            "e2e/specs/simulator.spec.ts",
+            "e2e/specs/privacy.spec.ts"
+          ],
+          "depends_on": [
+            "W8-02"
+          ],
+          "contracts_used": [
+            "docs/specs/2026-10-22-identidad-mercado-design.md",
+            "docs/specs/mercado/prototipo-landing.html",
+            "docs/plan/implementation/w8/README.md"
+          ],
+          "deliverables": "Landing composed after docs/specs/mercado/prototipo-landing.html with the approved texts and the headline «Calcula tus cuotas, mes a mes.»: six-block mosaic (data-testid mosaic-block), four stacked cards, four counters with their final value in the HTML, links to /app and /privacidad, cc-quick-simulator, legal notice in the footer, and a <cc-landing-board /> slot in the section «240 cuotas. Muévelas.» (static placeholder until W8-07). landing-motion.ts: pure DOM-API functions for scramble, cursor, stacked cards and magnet button, started in afterNextRender in the browser only and inert under reduced motion or pointer: coarse. Simulator, privacy and not-found: styles only. Figures marked // replaced by W8-07. Details: docs/plan/implementation/w8/README.md (Task W8-06).",
+          "acceptance_criteria": [
+            "Specs: one h1 «Calcula tus cuotas, mes a mes.», six mosaic blocks, four cards with the prototype titles, four counters with final value, links to /app and /privacidad, cc-quick-simulator and the legal notice; the repository-link tests stay intact",
+            "landing.dist.spec.ts: h1, «Sin cuenta», the four counter values and the call to action are in the prerendered HTML",
+            "e2e: reducedMotion reduce shows the final h1 at once and no .cursor exists; hasTouch has no custom cursor; axe passes in light and dark; zero network, zero storage, CSP and JS-off tests kept",
+            "pnpm build && pnpm bundle:check: landing <= 106496 B gzip with no vetoes; if exceeded commit wip(W8-06) and escalate with the metafile diff, never raise the budget",
+            "The initial graph imports nothing from ui/, the domain, @angular/forms or @angular/cdk"
+          ],
+          "requirements": [
+            "R1",
+            "R2"
+          ],
+          "size": "L",
+          "notes": "Sonnet card. Starts only after the owner approves the dark mockup of W8-01. No animation libraries."
+        },
+        {
+          "id": "W8-07",
+          "title": "240-installment board and engine-generated example data",
+          "executor": "sonnet",
+          "owns": [
+            "apps/web/src/app/public/landing/board/",
+            "apps/web/src/app/public/landing/example/",
+            "apps/web/src/app/public/landing/landing-page.component.ts",
+            "apps/web/src/app/public/landing/landing-page.component.spec.ts",
+            "apps/web/src/app/public/landing/landing.dist.spec.ts",
+            "e2e/specs/landing.spec.ts"
+          ],
+          "depends_on": [
+            "W8-06"
+          ],
+          "contracts_used": [
+            "docs/specs/2026-10-22-identidad-mercado-design.md",
+            "docs/discovery/direccion-visual.md",
+            "docs/plan/implementation/w8/README.md"
+          ],
+          "deliverables": "build-example.ts (pure, uses @cuotascasa/domain and ui/format/format.ts; imported only by tests), example-summary.generated.ts (initial graph, small) and example-rows.generated.ts (deferred chunk only) with LandingExampleSummary, LANDING_EXAMPLE_SUMMARY, LANDING_EXAMPLE_ROWS and buildLandingExample(); synthetic loan: FHA Guatemala v1 template (1.00 % FHA insurance, 0.26 % desgravamen), FHA_GT_V1, Q 500,000.00, 240 months, 7.00 % fixed, GTQ, payment day 15, first installment 2026-01-15, REDUCE_TERM prepayment of Q 50,000.00 at installment 60. landing-board.component.ts (prerendered static markup: 240 i, 59 .paid, one .now, reading of installment 60, role=slider with aria-valuemin 1, max 240, now 60 and aria-valuetext) and landing-board-interactive.ts (deferred via import() on entering the viewport): arrows, Shift+arrows (12), Home/End, pointer drag, aria-pressed toggle marking .gone, one-time auto run 1 to 60 (not under reduced motion), aria-live polite reading. Replaces the W8-06 placeholder and the figures marked // replaced by W8-07. Details: docs/plan/implementation/w8/README.md (Task W8-07).",
+          "acceptance_criteria": [
+            "example-data.spec.ts: buildLandingExample() equals the generated constants, summary.level is «Q 4,263.47», rows.base has 240 rows, rows.prepaid has prepaidCount rows and monthsSaved = baseCount - prepaidCount; UPDATE_LANDING_EXAMPLE=1 rewrites the generated files",
+            "Board specs: static HTML with 240 i, 59 .paid, one .now, the at60 reading and the slider attributes; keyboard, drag, toggle and the single auto run (none under reduced motion)",
+            "e2e: End shows «Cuota 240 de 240»; the toggle shows the saved installments of the summary; hasTouch drag moves the control; zero network and zero storage kept; landing.dist.spec.ts has the installment-60 reading in the prerendered HTML",
+            "pnpm build && pnpm bundle:check stay within budget and LANDING_EXAMPLE_ROWS is only in a deferred chunk (metafile); if it does not fit, escalate",
+            "pnpm lint && pnpm typecheck && pnpm test && pnpm e2e specs/landing.spec.ts pass"
+          ],
+          "requirements": [
+            "R1",
+            "R5"
+          ],
+          "size": "L",
+          "notes": "Sonnet card. Money never as number; the example comes from the engine and is stored as generated data so the engine stays out of the landing bundle. Owns landing-page.component.ts, its specs and e2e/specs/landing.spec.ts jointly with W8-06 through the dependency W8-06 -> W8-07."
+        },
+        {
+          "id": "W8-08",
+          "title": "Close wave W8: full sweep, budgets, visual review, changelog",
+          "executor": "opus",
+          "owns": [
+            "e2e/specs/sweeps/known-defects.ts",
+            "CHANGELOG.md",
+            "docs/plan/implementation/w0/README.md",
+            "docs/release/"
+          ],
+          "depends_on": [
+            "W8-01",
+            "W8-02",
+            "W8-03",
+            "W8-04",
+            "W8-05",
+            "W8-06",
+            "W8-07"
+          ],
+          "contracts_used": [
+            "docs/plan/implementation/w8/README.md"
+          ],
+          "deliverables": "Run pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm bundle:check && pnpm e2e on main with every card merged; axe without violations in light and dark; budgets measured and noted in the PR; known-defects.ts emptied of what W8 resolved; CHANGELOG entry; «Hallazgos de W8» in docs/plan/implementation/w0/README.md; visual review with the owner on the deployed site (light and dark, desktop and phone) with findings as micro-cards; project memory updated. Details: docs/plan/implementation/w8/README.md (Task W8-08).",
+          "acceptance_criteria": [
+            "All commands pass on main and axe finds no violations in light and dark",
+            "Landing <= 106496 B and /app initial <= 204800 B gzip, measured and written in the PR",
+            "known-defects.ts holds only defects W8 did not resolve; CHANGELOG and «Hallazgos de W8» written",
+            "Visual review with the owner done and findings registered"
+          ],
+          "requirements": [
+            "R21"
+          ],
+          "size": "M",
+          "notes": "Opus card. Commit «docs: close wave W8»."
+        }
+      ]
     }
   ],
   "wave0_contracts": "W0 freezes the files below. After W0 any card may read them but none may edit them: docs/plan/frozen-files.json lists them, each entry with editableBy: [card ids], and owns-check rejects an edit by any other card even when the file sits inside a directory the card owns. Changing one takes an Opus contract-change micro-card (registered in docs/plan/plan.json, with the views, cards.json and frozen-files.json regenerated on a branch opus/register-<ID> before the card branch is created), a broadcast to in-flight cards and a rebase.\n\nW0-01, toolchain:\n(1) pnpm-workspace.yaml catalogs pinning every planned dependency, including the test-only readers fflate and pdfjs-dist and @types/google.accounts; pnpm-lock.yaml; .npmrc (lifecycle scripts blocked except an allowlist).\n(2) Every package.json (root, packages/domain, schema, persistence, sync, export, apps/web, e2e, tools/conformance) with catalog: references, the root scripts and the final subpath exports (@cuotascasa/persistence/memory|dexie|contract, @cuotascasa/sync/crypto|session|google-drive|testing, @cuotascasa/export/model|csv|excel|pdf, @cuotascasa/schema/testing).\n(3) tsconfig.base.json path aliases, eslint.config.mjs (boundaries exactly as the ADR-0010 §5 matrix, Date ban in domain, ban on number arithmetic for money), lefthook.yml, .gitleaks.toml, .gitignore.\n\nW0-02, spec:\n(4) docs/algorithm.md with stable section ids. It fixes the decimal context [ALG.CONV] (precision 34, ROUND_HALF_EVEN, cents only via HALF_UP_2; r unrounded) and every event semantic, including the derived term [ALG.TERM], anchor re-base and the total order [ALG.EVENTS.ORDER]. It gives closed definitions of Real delta, interestSaved, monthsSaved, netSaving, endDate, totalPaid and yearly subtotals (calendar year of dueDate), plus goal-seek outcomes, the numeric traffic-light thresholds, the closed causes enum and the 'Hipotecario simple' values. Also docs/glossary.md.\n(5) docs/specs/algorithm-examples/*.json + INDEX.md: one synthetic worked example for every item of [ALG.PENDING] in docs/algorithm.md, all mapped by INDEX.md; examples with events go in separate JSON files from event-free ones. These are the shared ground truth for both the engine lineage and the oracle lineage.\n\nW0-03, domain and export:\n(6) packages/domain/src/types/primitives.ts: branded Money and Rate (decimal strings), LocalDate ('YYYY-MM-DD'), Currency 'GTQ'|'USD', DomainError hierarchy.\n(7) types/loan.ts: LoanTerms (principal, termMonths, disbursementDate, firstDueDate, paymentDay number|'END_OF_MONTH', currency, percentage components, fixed charges with effectiveFrom, RoundingProfile 'FHA_GT_V1'|'SIMPLE') and Template {id, version, values}.\n(8) types/events.ts: the DomainEvent union (RateChange with its 3 policies, FixedChargeChange, Prepayment with mode and commission, AdvanceInstallments, ReportedBalance, ActualPayment) and the frozen total order key [ALG.EVENTS.ORDER] (k, phase, date, typeRank, id).\n(9) types/schedule.ts: ScheduleRow (with a 'paid' flag), Schedule, PathKind, Paths (with cutoffK and realDelta per anchor and per component), ComparisonMetrics (incl. netSaving), YearlySubtotal, GoalSeekRequest, GoalSeekResult (ALREADY_MET | FOUND{amount, metrics, isPayoff} | INFEASIBLE{payoffAmount, reason}, [ALG.GOAL]), TemplateValidationResult.\n(10) types/engine.ts: PeriodState per [ALG.TERM] (state after paying installment k including phase 3: balance, i, insuranceRates[], level, roundingProfile, k, term mode and term), EventHandler<T>, EngineContext with an injectable registry and the shared helper signatures levelPayment(B, r, m), remainingTerm(state: PeriodState) and projectCapital(state, n).\n(11) events/registry.ts, mapping each event type to its card-owned dir; types not yet implemented map to stubs that throw NotImplementedError('<card id>').\n(12) index.ts, the public API: buildSchedule, buildPaths, compareSchedules, yearlySubtotals, goalSeek, listTemplates, instantiateTemplate, deriveFixedCharges, validateAgainstReportedBalance, levelPayment, percentToRate/rateToPercent, money/date helpers.\n(13) money/ (incl. decimal-config.ts) and dates/, implemented and tested by Opus.\n(14) packages/export/src/report-model.ts (ReportModel, ReportWriter, ExportFormat) and index.ts.\n\nW0-04, schema, persistence, sync and oracle format:\n(15) packages/schema/src/:\n- common.ts: BaseRecord with id, createdAt, updatedAt, updatedByDevice, deletedAt.\n- entities/{loan, loan-event, reported-balance, actual-payment, scenario, settings}.ts: the single source of field names (e.g. Loan.name, Loan.bank; LoanEvent.date, ReportedBalance.date, ActualPayment.paidDate; optional note on ReportedBalance, ActualPayment and LoanEvent), status active|paid|archived, required rateType 'FIXED'|'VARIABLE', templateRef plus copied values, currency locked while any non-deleted LoanEvent, ReportedBalance, ActualPayment or Scenario exists, synced vs device-local settings.\n- backup/v1.ts and backup/types.ts: BackupDocument v1 (root accepts synthetic: z.literal(true).optional()), LATEST_VERSION, ImportPreview, BackupError codes.\n- oracle/fixture.ts: fixture and manifest schema (synthetic: true literal, profile, seed, generatorVersion, feature tags vs trait tags, incl. lastRow, latePayment, explicitKAnchor, sameKAnchors, zeroRate and zeroInsurance).\n- index.ts.\n(16) packages/persistence/src/:\n- ports.ts: Repository<T>; DataStore with transaction, exportAll incl. tombstones, replaceAll, snapshots, async post-commit subscribe, pendingChanges/markSynced, changesSinceBackup/markBackedUp and meta; Clock with today(): LocalDate (device local time); IdGenerator.\n- contract/: the Opus-written runDataStoreContract suite, with list order (createdAt, id).\n(17) packages/sync/src/:\n- ports.ts: SyncProvider, RemoteFile, LocalDataset, KeyStore, EncryptedEnvelopeV1, SyncStatus, SyncError codes, MergeStats, RecordOrderKey (a tombstone wins a full tie), separate mergeDatasets and purgeTombstones signatures, typed Drive v3 subset.\n- testing/drive-fake.ts and testing/gis-fake.ts.\n(18) docs/specs/drive-api-subset.md and docs/adr/0024-sync-merge-order.md.\n(19) tools/oracle/FORMAT.md (incl. profile composition, trait tags, fixture file naming, the generate/regenerate CLI, the three-line compare output, the --log-line format and the private schema for compare and private-compare), pyproject.toml, .python-version, requirements-dev.txt.\n\nW0-05, Angular:\n(20) angular.json, apps/web/src/main*.ts, index.html, app.config.ts, app.config.server.ts, app.routes.ts, app.routes.server.ts and app-area.routes.ts. Of these, angular.json, app.config.ts, app.routes.server.ts and app-area.routes.ts are edited only by the Opus card W2-02.\n(21) Every features/*/*.routes.ts, plus the page shells of the split routes: scenarios-page, settings-page and real-data-page. loans.routes.ts maps nuevo to wizard/ and :id to detail/.\n(22) data/api.ts, data/tokens.ts, data/provide-app-data.ts. They define LoansStore with create (no anchor) and createWithAnchor, LoanEventsStore, ReportedBalancesStore, PaymentsStore, ScenariosStore with activeScenarioId, SettingsStore, LoanProjectionService with the spec §9 derived values plus cutoffK, per-row paid flags and realDelta per anchor and per component, BackupService with reminderDue, SyncService and StorageHealth with requestPersist. data/api.ts and data/tokens.ts use only import type from packages.\n(23) docs/specs/component-contracts.md and one *.contract.spec.ts per cc-* component: cc-quick-simulator, cc-theme-toggle, cc-safari-banner, cc-update-prompt, cc-export-menu, cc-scenario-editor, cc-scenario-compare, cc-settings-backup, cc-settings-sync, cc-real-data-timeline, cc-event-form. Also the rule that every page root keeps data-testid='page-<route-id>'.\n(24) apps/web/src/design-contract/: token-names.json and tokens.contract.spec.ts. The token values belong to W3-05.\n(25) apps/web/src/app/_patterns/ with docs/specs/angular-patterns.md, plus docs/specs/design-palette.md (frozen after the owner approves the docs/discovery/direccion-visual.md proposal; approval date recorded) and docs/specs/privacy-requirements.md.\n(26) apps/web/src/environments/build-constants.ts: the GOOGLE_CLIENT_ID define, changed only by W3-17.\n\nW0-06, process:\n(27) docs/plan/cards.json and docs/plan/frozen-files.json (each entry with editableBy: [card ids]), both generated by tools/plan/render_plan.py from docs/plan/plan.json (frozen-files.json from its structured top-level 'frozen_files' section).\n(28) tools/owns-check/ rules: frozen files, append-only files, exempt prefixes.\n(29) tools/conformance/src/: the harness, the fixture-id grep check and the private-compare CLI.\n(30) The initial .github/ workflows. After W0 they are edited only by the Opus cards W2-01, W3-16 and W3-17.\n\nStub semantics:\n- Package stubs throw NotImplementedError('<card id>'). Each stub dir holds a stub.spec.ts, which its owning card deletes when it implements the dir.\n- App-level provide* functions and cc-* components are inert: they return safe defaults, keep the page testid and export a CC_STUB marker. W6-02 proves no marker remains in the production build.",
@@ -2855,13 +3155,15 @@
     {
       "path": "pnpm-lock.yaml",
       "editableBy": [
-        "W0-01"
+        "W0-01",
+        "W8-01"
       ]
     },
     {
       "path": "pnpm-workspace.yaml",
       "editableBy": [
-        "W0-01"
+        "W0-01",
+        "W8-01"
       ]
     },
     {
@@ -2885,7 +3187,8 @@
     {
       "path": "apps/web/package.json",
       "editableBy": [
-        "W0-01"
+        "W0-01",
+        "W8-01"
       ]
     },
     {
@@ -3209,7 +3512,8 @@
       "path": "apps/web/src/app/app.config.ts",
       "editableBy": [
         "W0-05",
-        "W2-02"
+        "W2-02",
+        "W8-02"
       ]
     },
     {
@@ -3403,7 +3707,8 @@
     {
       "path": "apps/web/src/design-contract/",
       "editableBy": [
-        "W0-05"
+        "W0-05",
+        "W8-01"
       ]
     },
     {
@@ -3442,7 +3747,8 @@
     {
       "path": "apps/web/src/testing/doc-checks/",
       "editableBy": [
-        "W0-05"
+        "W0-05",
+        "W8-01"
       ]
     },
     {
@@ -3478,7 +3784,8 @@
     {
       "path": "docs/specs/design-palette.md",
       "editableBy": [
-        "W0-05"
+        "W0-05",
+        "W8-01"
       ]
     },
     {
@@ -3506,7 +3813,8 @@
     {
       "path": "docs/plan/",
       "editableBy": [
-        "W0-06"
+        "W0-06",
+        "W8-08"
       ]
     },
     {

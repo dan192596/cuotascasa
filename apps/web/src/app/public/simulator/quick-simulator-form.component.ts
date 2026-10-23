@@ -229,7 +229,7 @@ const MAX_YEARS = 30;
     .sim {
       background: var(--cc-color-surface);
       border: 1px solid var(--cc-color-rule);
-      border-radius: 0.5rem;
+      border-radius: var(--cc-radius-block);
       padding: 1.25rem;
       color: var(--cc-color-ink);
       font-family: var(--cc-font-body);

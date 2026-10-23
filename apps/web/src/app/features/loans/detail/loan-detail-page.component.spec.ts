@@ -236,6 +236,24 @@ describe('LoanDetailPageComponent · shell', () => {
     expect(q('h1')?.textContent).toContain('Banco Ficticio');
   });
 
+  it('names the header like the dashboard card so the route transition can morph one into the other', async () => {
+    const { q, fixture } = await setup();
+    const id = (fixture.componentInstance as unknown as { loan(): { id: string } | undefined }).loan()?.id;
+    const head = q('.cc-det-head') as HTMLElement;
+    expect(id).toBeDefined();
+    expect(head.style.viewTransitionName).toBe(`cc-loan-${id}`);
+  });
+
+  it('keeps alias, status and the house meter in the transition-named header, in the card order', async () => {
+    const { q, root } = await setup();
+    const head = q('.cc-det-head') as HTMLElement;
+    const h1 = head.querySelector('h1') as HTMLElement;
+    const meter = head.querySelector('cc-house-meter') as HTMLElement;
+    expect(meter).not.toBeNull();
+    expect(h1.compareDocumentPosition(meter) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(root.querySelectorAll('cc-house-meter')).toHaveLength(1);
+  });
+
   it('shows a loading note until the store is ready and a way back when the loan does not exist', async () => {
     const loading = await setup({ ready: false });
     expect(loading.q('[data-testid="loading"]')).not.toBeNull();
@@ -496,6 +514,24 @@ describe('edit', () => {
     expect(events.stored().map((event) => event.id)).toEqual(eventIdsBefore);
     for (const write of events.writes) expect(write).not.toHaveBeenCalled();
     expect(document.activeElement).toBe(q('h1'));
+  });
+
+  it('shows the «Listo» banner with the animated check after saving, without a second announcement', async () => {
+    const { click, type, q, settle, announce } = await setup();
+    expect(q('[data-testid="save-notice"]')).toBeNull();
+    await click('Editar condiciones');
+    await type('#principal', '600000');
+    await click('Guardar cambios');
+    await settle();
+    expect(q('[data-testid="save-notice"] [data-testid="banner-tone"]')?.textContent).toBe('Listo');
+    expect(q('[data-testid="save-notice"] .message')?.textContent?.trim()).toBe('Se guardaron los cambios.');
+    const banner = q('[data-testid="save-notice"] [data-testid="banner"]');
+    expect(banner?.getAttribute('data-tone')).toBe('success');
+    expect(banner?.hasAttribute('role')).toBe(false);
+    expect(banner?.querySelector('.check')).not.toBeNull();
+    expect(announce).toHaveBeenCalledTimes(1);
+    await click('Editar condiciones');
+    expect(q('[data-testid="save-notice"]')).toBeNull();
   });
 
   it('locks the currency of a loan with child records', async () => {

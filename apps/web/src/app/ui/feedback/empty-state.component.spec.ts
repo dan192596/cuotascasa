@@ -14,6 +14,17 @@ import { EmptyStateComponent } from './empty-state.component.ts';
 })
 class HostComponent {}
 
+@Component({
+  imports: [EmptyStateComponent],
+  template: `
+    <cc-empty-state heading="Aún no tienes préstamos" layout="mosaic">
+      Crea uno.
+      <button ccEmptyActions type="button">Crear préstamo</button>
+    </cc-empty-state>
+  `,
+})
+class MosaicHostComponent {}
+
 describe('cc-empty-state', () => {
   it('shows the heading, the projected description and the projected actions', async () => {
     const fixture = TestBed.createComponent(HostComponent);
@@ -22,5 +33,17 @@ describe('cc-empty-state', () => {
     expect(root.querySelector('h2')?.textContent?.trim()).toBe('Aún no tienes préstamos');
     expect(root.textContent).toContain('Crea uno, restaura un respaldo');
     expect(root.querySelector('[data-testid="empty-actions"] button')?.textContent).toContain('Crear préstamo');
+  });
+
+  it('marks the actions with data-layout="mosaic" when layout is mosaic', async () => {
+    const fixture = TestBed.createComponent(MosaicHostComponent);
+    await fixture.whenStable();
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('[data-testid="empty-actions"]')?.getAttribute('data-layout')).toBe('mosaic');
+    const plain = TestBed.createComponent(HostComponent);
+    await plain.whenStable();
+    expect(
+      (plain.nativeElement as HTMLElement).querySelector('[data-testid="empty-actions"]')?.getAttribute('data-layout'),
+    ).toBe('plain');
   });
 });

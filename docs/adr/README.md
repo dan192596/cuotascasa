@@ -19,7 +19,7 @@ Cada ADR documenta una decisión importante: su contexto, la decisión, las alte
 | [0009](0009-cifrado-con-frase.md) | Cifrado con frase (AES-256-GCM + PBKDF2) y clave no exportable por dispositivo | Aceptado | 2026-10-04 |
 | [0010](0010-monorepo-pnpm-reglas-de-dependencia.md) | Monorepo pnpm, paquetes y reglas de dependencia | Aceptado | 2026-10-04 |
 | [0011](0011-angular-renderizado-hibrido.md) | Angular 22 y renderizado híbrido estático | Aceptado | 2026-10-04 |
-| [0012](0012-sistema-de-diseno.md) | Sistema de diseño y dirección visual | Aceptado | 2026-10-04 |
+| [0012](0012-sistema-de-diseno.md) | Sistema de diseño y dirección visual | Aceptado, con enmiendas (ADR-0026) | 2026-10-04 |
 | [0013](0013-exportacion-en-el-cliente.md) | Exportación en el cliente (Excel, CSV, PDF) | Aceptado | 2026-10-04 |
 | [0014](0014-estrategia-de-pruebas.md) | Estrategia de pruebas y cadena de confianza del cálculo | Aceptado | 2026-10-04 |
 | [0015](0015-higiene-repo-publico.md) | Higiene de repositorio público y datos sintéticos | Aceptado | 2026-10-04 |
@@ -33,8 +33,9 @@ Cada ADR documenta una decisión importante: su contexto, la decisión, las alte
 | [0023](0023-pwa-registration-scope.md) | Alcance y registro del service worker | Aceptado | 2026-10-09 |
 | [0024](0024-sync-merge-order.md) | Orden total de la combinación en la sincronización | Aceptado | 2026-10-05 |
 | [0025](0025-presupuestos-de-bundle.md) | Presupuestos de bundle de la landing y de /app | Aceptado | 2026-10-16 |
+| [0026](0026-identidad-mercado.md) | Identidad «Mercado»: paleta, tipografía, forma y movimiento | Aceptado | 2026-10-22 |
 
-El siguiente número libre es el **0026**.
+El siguiente número libre es el **0027**.
 
 La fecha es la de la decisión original. Las precisiones posteriores están en la sección «Enmiendas» de cada ADR.
 

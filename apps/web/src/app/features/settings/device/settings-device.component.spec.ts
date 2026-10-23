@@ -125,6 +125,7 @@ describe('cc-settings-device (W7-04)', () => {
     confirm(fixture).click();
     await settle(fixture);
     await vi.waitFor(() => expect(leave).toHaveBeenCalledTimes(1));
+    expect(leave).toHaveBeenCalledWith(true);
     fixture.detectChanges();
     const status = el(fixture, 'device-progress');
     expect(status?.getAttribute('role')).toBe('status');
@@ -168,6 +169,7 @@ describe('cc-settings-device (W7-04)', () => {
     confirm(fixture).click();
     await settle(fixture);
     await vi.waitFor(() => expect(leave).toHaveBeenCalledTimes(1));
+    expect(leave).toHaveBeenCalledWith(false);
     fixture.detectChanges();
     expect(el(fixture, 'device-error')?.textContent).toBe(DEVICE_CLEAR_PARTIAL_TEXT);
     expect(el(fixture, 'device-error')?.textContent).not.toContain('No se cambió nada');

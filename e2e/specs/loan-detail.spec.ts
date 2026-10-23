@@ -91,7 +91,10 @@ test('an archived loan is hidden from the default dashboard filter and visible u
   expect((await storedLoans(page))[0]?.status).toBe('archived');
   await expectNoA11yViolations(page);
 
-  await page.getByRole('link', { name: /Mis préstamos/ }).click();
+  await page
+    .getByRole('main')
+    .getByRole('link', { name: /Mis préstamos/ })
+    .click();
   await expect(page.getByTestId('page-dashboard')).toBeVisible();
   await expect(page.getByTestId('loan-card')).toHaveCount(0);
   await page.getByTestId('status-filter').selectOption('archived');
@@ -104,7 +107,10 @@ test('an archived loan is hidden from the default dashboard filter and visible u
     .click();
   await page.getByRole('button', { name: 'Desarchivar' }).click();
   await expect(page.getByTestId('loan-status')).toHaveText('Activo');
-  await page.getByRole('link', { name: /Mis préstamos/ }).click();
+  await page
+    .getByRole('main')
+    .getByRole('link', { name: /Mis préstamos/ })
+    .click();
   await expect(page.getByTestId('loan-card')).toContainText('Casa archivable');
 });
 
@@ -143,4 +149,10 @@ test('deleting needs the typed alias, tombstones the loan and redirects to /app'
   const loans = await storedLoans(page);
   expect(loans).toHaveLength(1);
   expect(loans[0]?.deletedAt).not.toBeNull();
+});
+
+test('the detail header carries the shared transition name of its dashboard card', async ({ page }) => {
+  const id = await createLoan(page, 'Casa nombre');
+  const name = await page.locator('.cc-det-head').evaluate((el) => getComputedStyle(el).viewTransitionName);
+  expect(name).toBe(`cc-loan-${id}`);
 });

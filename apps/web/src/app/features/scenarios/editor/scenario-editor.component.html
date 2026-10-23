@@ -7,6 +7,11 @@
   @if (failureOf('scenarios'); as text) {
     <cc-banner tone="danger" [dismissible]="false" data-testid="scenarios-failure">{{ text }}</cc-banner>
   }
+  @if (saveNotice.message(); as text) {
+    <cc-banner tone="success" [live]="false" data-testid="save-notice" (dismissed)="saveNotice.hide()">{{
+      text
+    }}</cc-banner>
+  }
 
   @if (scenarios().length === 0) {
     <p data-testid="no-scenarios">Aún no tienes escenarios. Crea el primero para probar abonos y metas.</p>
@@ -84,7 +89,7 @@
     </ul>
   }
 
-  <form [formRoot]="nameForm" class="form" data-testid="name-form">
+  <form [formRoot]="nameForm" class="form" data-testid="name-form" (input)="saveNotice.hide()">
     <div class="field">
       <label [for]="id('name')">{{
         renamingId() === null ? 'Nombre del nuevo escenario' : 'Nuevo nombre del escenario'

@@ -93,3 +93,10 @@ Restricciones: escritorio primero, formatos de Guatemala, accesibilidad AA y nin
 - **Montos negativos.** El signo va antes del símbolo: `-Q 1,234.50` (y `-US$ 1,234.50`); el cero nunca lleva signo.
 
 **Enmienda (2026-10-19, W6, PR #94 y #95).** Los botones nativos nunca toman el aspecto de la plataforma: `styles.scss` les quita la apariencia nativa (`appearance: none`), porque WebKitGTK pintaba su propio tema oscuro sobre ellos con contraste insuficiente, y les da un estilo base global con los tokens de la paleta (`--cc-color-*`) en lugar de `ButtonFace` y `ButtonText` del agente de usuario. Los estilos de cada componente y los botones de Material, más específicos, mandan sobre esa base. Los componentes usan solo tokens que existen: el menú de exportación usaba variables inexistentes y se corrigió en el PR #94.
+
+**Enmienda (2026-10-22, W8-01).** La identidad «Mercado» ([ADR-0026](0026-identidad-mercado.md)) cambia cuatro decisiones de este ADR. Las demás siguen vigentes.
+
+- **Decisión 1:** la paleta pasa a «Mercado» (versión congelada en `docs/specs/design-palette.md`, aprobada el 2026-10-22) y la tipografía a Bricolage Grotesque, con JetBrains Mono en las cifras. Source Serif 4 sale del producto. Ver ADR-0026, secciones 1 y 3.
+- **Decisión 2:** el hero de `/` deja de ser la casa y pasa a ser el mosaico de bloques; el medidor de casa sigue en el panel. Ver ADR-0026, sección 4.
+- **Decisión 4:** fucsia = «ya es tuyo» y acción principal; turquesa = lo que te ahorras; verde, ámbar y rojo quedan solo para el semáforo y los errores. Ver ADR-0026, sección 2.
+- **Decisión 8:** las fuentes siguen autoalojadas en woff2; Bricolage llega desde `@fontsource-variable/bricolage-grotesque` en un solo archivo variable. Ver ADR-0026, sección 3.

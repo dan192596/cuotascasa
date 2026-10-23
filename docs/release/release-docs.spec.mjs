@@ -11,6 +11,8 @@ import {
   buildMatrix,
   coverageGaps,
   mergedCardsFromSubjects,
+  WAVE_MERGES,
+  withWaveMerges,
   parseMatrixMarkdown,
   parseRequirements,
   renderMarkdown,
@@ -52,6 +54,22 @@ function fixture() {
 }
 
 const OPTIONS = { releaseCard: 'W9-01', pending: [], closed: {} };
+
+describe('withWaveMerges', () => {
+  it('marks every card of a wave PR as merged in that PR, without overriding a per-card subject', () => {
+    const merged = withWaveMerges(mergedCardsFromSubjects(['feat(a): primera (W8-01) (#200)']), {
+      'W8-01': 108,
+      'W8-02': 108,
+    });
+    expect(merged.get('W8-01')).toEqual({ pr: 200 });
+    expect(merged.get('W8-02')).toEqual({ pr: 108 });
+  });
+
+  it('lists only W8 cards, all merged in PR #108', () => {
+    expect(Object.keys(WAVE_MERGES).every((id) => /^W8-\d{2}$/.test(id))).toBe(true);
+    expect(new Set(Object.values(WAVE_MERGES))).toEqual(new Set([108]));
+  });
+});
 
 describe('mergedCardsFromSubjects', () => {
   it('reads the card id at the end of a squash subject and its PR number', () => {

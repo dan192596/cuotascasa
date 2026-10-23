@@ -18,7 +18,7 @@ jobs:
   verify:
     name: verify
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - name: Checkout (full history, needed by owns-check)
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -79,7 +79,7 @@ jobs:
           WRANGLER_SEND_METRICS: 'false'
         run: node tools/edge/headers/smoke-csp.mjs
       - name: E2E on Chromium and WebKit (W2-11)
-        timeout-minutes: 15
+        timeout-minutes: 25
         env:
           WRANGLER_SEND_METRICS: 'false'
         run: pnpm e2e

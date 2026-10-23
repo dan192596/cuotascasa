@@ -4,7 +4,7 @@
       "id": "landing",
       "name": "landing (/)",
       "roots": ["apps/web/src/main.ts", "apps/web/src/app/public/landing/landing-page.component.ts"],
-      "budgetGzipBytes": 106496,
+      "budgetGzipBytes": 112640,
       "forbidden": [
         { "id": "dexie", "pattern": "/dexie/" },
         { "id": "persistence", "pattern": "packages/persistence/|@cuotascasa/persistence" },

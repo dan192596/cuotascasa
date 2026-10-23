@@ -97,6 +97,7 @@ interface PendingAbono {
           [rows]="ledger.rows"
           [label]="tableLabel()"
           [stickyColumns]="2"
+          [flashKey]="flashKey()"
           (cellEdit)="onCellEdit($event)"
         />
         @if (hasLocked()) {
@@ -227,6 +228,8 @@ export class SchedulePageComponent {
 
   protected readonly loan = computed(() => this.loans.loan(this.id())());
   private readonly projection = computed(() => this.service.forLoan(this.id()));
+  /** Flash the table only when the shown path changes (scenario or view switch), not on inline edits or syncs. */
+  protected readonly flashKey = computed(() => `${this.view()}|${this.activeId() ?? ''}`);
   protected readonly scenarios = computed(() => this.scenarioStore.listByLoan(this.id())());
   protected readonly activeId = computed(() => this.scenarioStore.activeScenarioId(this.id())());
   private readonly active = computed<Scenario | null>(() => {

@@ -31,6 +31,34 @@ export const CLOSED_WITHOUT_CHANGES = {
   'W3-04': 'cerrada sin cambios: el triage de W3-01 no dejó ítems del lado del oráculo',
 };
 
+/**
+ * Cards merged together in one PR, whose squash subject names the wave instead of each card (W8 landed as PR #108,
+ * «… (wave W8)»). Each id counts as merged in that PR.
+ */
+export const WAVE_MERGES = {
+  'W8-00': 108,
+  'W8-01': 108,
+  'W8-02': 108,
+  'W8-03': 108,
+  'W8-04': 108,
+  'W8-05': 108,
+  'W8-06': 108,
+  'W8-07': 108,
+  'W8-08': 108,
+};
+
+/**
+ * Adds the cards of WAVE_MERGES to the merges read from the history, without overriding a per-card squash subject.
+ * @param {Map<string, Merge>} merged
+ * @param {Record<string, number>} waveMerges
+ * @returns {Map<string, Merge>}
+ */
+export function withWaveMerges(merged, waveMerges) {
+  const out = new Map(merged);
+  for (const [id, pr] of Object.entries(waveMerges)) if (!out.has(id)) out.set(id, { pr });
+  return out;
+}
+
 const TEST_FILE = /(\.spec\.(ts|mts|mjs|js)|\.test-d\.ts)$|(^|\/)test_[^/]+\.py$/;
 const SQUASH_SUBJECT = /\((W\d-\d{2})\)(?:\s*\(#(\d+)\))?\s*$/;
 
@@ -278,7 +306,10 @@ export function computeFromRepository(root) {
     }
   }
   const requirements = parseRequirements(readFileSync(join(root, 'docs/plan/traceability.md'), 'utf8'));
-  const merged = mergedCardsFromSubjects(git(root, ['log', '--format=%s', 'HEAD']).split('\n'));
+  const merged = withWaveMerges(
+    mergedCardsFromSubjects(git(root, ['log', '--format=%s', 'HEAD']).split('\n')),
+    WAVE_MERGES,
+  );
   const testFiles = testFilesByCard(cards, git(root, ['ls-files']).split('\n').filter(Boolean));
   /** @type {Options} */
   const options = { releaseCard: RELEASE_CARD, pending: PENDING_RELEASE_CARDS, closed: CLOSED_WITHOUT_CHANGES };

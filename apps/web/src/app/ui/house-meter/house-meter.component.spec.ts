@@ -100,4 +100,10 @@ describe('cc-house-meter', () => {
     expect(withoutBlocks).not.toMatch(/transition\s*:/);
     expect(source).toMatch(/@media \(prefers-reduced-motion: no-preference\)/);
   });
+
+  it('fills with the accent colour (ya es tuyo)', () => {
+    const source = readFileSync('apps/web/src/app/ui/house-meter/house-meter.component.ts', 'utf8');
+    expect(source).toMatch(/\.fill\s*\{[^}]*fill:\s*var\(--cc-color-accent\)/);
+    expect(source).not.toMatch(/positive/);
+  });
 });

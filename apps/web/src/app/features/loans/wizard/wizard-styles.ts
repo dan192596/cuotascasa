@@ -19,6 +19,31 @@ export const WIZARD_STYLES = `
     outline: 2px solid var(--cc-color-accent);
     outline-offset: 2px;
   }
+  /* The step slides in from the side it comes from (no fade: axe must always read final contrast); reduced motion shows it in place. */
+  @media (prefers-reduced-motion: no-preference) {
+    .cc-wiz-step[data-direction='forward'] > form {
+      animation: cc-wiz-in-forward var(--cc-duration-base) var(--cc-ease-out) backwards;
+    }
+    .cc-wiz-step[data-direction='back'] > form {
+      animation: cc-wiz-in-back var(--cc-duration-base) var(--cc-ease-out) backwards;
+    }
+  }
+  @keyframes cc-wiz-in-forward {
+    from {
+      transform: translateX(24px);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+  @keyframes cc-wiz-in-back {
+    from {
+      transform: translateX(-24px);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
   .cc-wiz-steps {
     display: flex;
     flex-wrap: wrap;
@@ -89,7 +114,7 @@ export const WIZARD_STYLES = `
     margin: 0 0 1rem;
     padding: 0.75rem;
     border: 1px solid var(--cc-color-rule);
-    border-radius: 0.5rem;
+    border-radius: var(--cc-radius-block);
   }
   .cc-wiz-row {
     display: flex;
@@ -137,7 +162,7 @@ export const WIZARD_STYLES = `
     min-height: 2.5rem;
     padding: 0.375rem 1rem;
     border: 1px solid var(--cc-color-control-border);
-    border-radius: 0.375rem;
+    border-radius: var(--cc-radius-pill);
     background: var(--cc-color-surface);
     color: var(--cc-color-ink);
     font: inherit;

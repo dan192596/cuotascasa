@@ -1,6 +1,7 @@
 import { signal, type Signal } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router, type Routes } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
 import { readFileSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { DomainError, Money } from '@cuotascasa/domain';
@@ -13,7 +14,7 @@ import type {
   SyncService,
 } from '../../data/api.ts';
 import { BACKUP_SERVICE, LOAN_PROJECTION_SERVICE, LOANS_STORE, SYNC_SERVICE } from '../../data/tokens.ts';
-import { DashboardPageComponent } from './dashboard-page.component.ts';
+import { DashboardPageComponent, DEVICE_CLEARED_NOTICE } from './dashboard-page.component.ts';
 
 type Loan = ReturnType<LoansStore['loans']>[number];
 const money = (value: string): Money => value as Money;
@@ -70,7 +71,7 @@ interface Setup {
   readonly syncText?: string;
 }
 
-function mount(setup: Setup = {}): ComponentFixture<DashboardPageComponent> {
+function configure(setup: Setup = {}, routes: Routes = []): void {
   const loans = setup.loans ?? [];
   const store = {
     ready: signal(setup.ready ?? true).asReadonly(),
@@ -88,13 +89,17 @@ function mount(setup: Setup = {}): ComponentFixture<DashboardPageComponent> {
   const sync = { statusText: signal(setup.syncText ?? 'No configurado').asReadonly() } as unknown as SyncService;
   TestBed.configureTestingModule({
     providers: [
-      provideRouter([]),
+      provideRouter(routes),
       { provide: LOANS_STORE, useValue: store },
       { provide: LOAN_PROJECTION_SERVICE, useValue: service },
       { provide: BACKUP_SERVICE, useValue: backup },
       { provide: SYNC_SERVICE, useValue: sync },
     ],
   });
+}
+
+function mount(setup: Setup = {}): ComponentFixture<DashboardPageComponent> {
+  configure(setup);
   const fixture = TestBed.createComponent(DashboardPageComponent);
   fixture.detectChanges();
   return fixture;
@@ -314,5 +319,105 @@ describe('DashboardPageComponent: empty state', () => {
     const f = mount({ ready: false });
     expect(byId(f, 'empty-state')).toBeNull();
     expect(byId(f, 'loading')?.getAttribute('role')).toBe('status');
+  });
+});
+
+describe('DashboardPageComponent: Mercado', () => {
+  it('names each card for the shared route transition', () => {
+    const f = mount({ loans: [loan('a'), loan('b')] });
+    const cards = all(f, 'loan-card');
+    expect(cards.map((c) => c.style.viewTransitionName)).toEqual(['cc-loan-a', 'cc-loan-b']);
+  });
+
+  it('runs the card entrance outside a route transition', () => {
+    const f = mount({ loans: [loan('a')] });
+    expect(all(f, 'loan-card')[0]?.classList.contains('enter')).toBe(true);
+  });
+
+  it('skips the card entrance when the card is created inside a route transition, so the morph does not jump', () => {
+    document.documentElement.classList.add('cc-view-transition');
+    try {
+      const f = mount({ loans: [loan('a')] });
+      expect(all(f, 'loan-card')[0]?.classList.contains('enter')).toBe(false);
+    } finally {
+      document.documentElement.classList.remove('cc-view-transition');
+    }
+  });
+
+  it('gives each card its index for the staggered entrance, capped at 8 steps', () => {
+    const ids = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'];
+    const f = mount({ loans: ids.map((id) => loan(id)) });
+    const hosts = [...root(f).querySelectorAll<HTMLElement>('cc-loan-card')];
+    expect(hosts.map((h) => h.style.getPropertyValue('--i'))).toEqual([
+      '0',
+      '1',
+      '2',
+      '3',
+      '4',
+      '5',
+      '6',
+      '7',
+      '7',
+      '7',
+    ]);
+  });
+
+  it('shows the per-currency totals through the odometer with the formatted service value', () => {
+    const f = mount({
+      loans: [loan('a')],
+      totals: [{ currency: 'GTQ', balance: money('1000.00'), nextInstallmentTotal: money('120.00') } as CurrencyTotals],
+    });
+    const labels = [...(byId(f, 'total-GTQ') as HTMLElement).querySelectorAll('cc-odometer [role="img"]')].map((o) =>
+      o.getAttribute('aria-label'),
+    );
+    expect(labels).toEqual(['Q 1,000.00', 'Q 120.00']);
+  });
+
+  it('marks «Nuevo préstamo» with the shared primary button class, like the other screens', () => {
+    const f = mount({ loans: [loan('a')] });
+    const link = byId(f, 'new-loan') as HTMLElement;
+    expect(link.textContent?.trim()).toBe('Nuevo préstamo');
+    expect(link.classList.contains('cc-button-primary')).toBe(true);
+    const src = readFileSync('apps/web/src/app/features/dashboard/dashboard-page.component.ts', 'utf8');
+    expect(src).not.toContain('.action.primary');
+  });
+
+  it('uses the mosaic layout for the first-use state', () => {
+    const f = mount({ loans: [] });
+    expect(byId(f, 'empty-actions')?.getAttribute('data-layout')).toBe('mosaic');
+  });
+
+  it('enters cards with a stagger only when the user has no reduced-motion preference', () => {
+    const src = readFileSync('apps/web/src/app/features/dashboard/loan-card.component.ts', 'utf8');
+    expect(src).toMatch(
+      /@media \(prefers-reduced-motion: no-preference\)[\s\S]*animation-delay: calc\(var\(--i, 0\) \* 60ms\)/,
+    );
+    expect(src).toContain('var(--cc-radius-block)');
+  });
+});
+
+describe('DashboardPageComponent: after «Borrar datos de este dispositivo»', () => {
+  async function open(url: string) {
+    configure({}, [{ path: 'app', component: DashboardPageComponent }]);
+    const harness = await RouterTestingHarness.create(url);
+    await harness.fixture.whenStable();
+    const element = harness.fixture.nativeElement as HTMLElement;
+    const notice = () => element.querySelector<HTMLElement>('[data-testid="device-cleared"]');
+    return { harness, notice, router: TestBed.inject(Router) };
+  }
+
+  it('confirms the deletion once and drops the parameter from the URL', async () => {
+    const { harness, notice, router } = await open('/app?borrado=1');
+    expect(notice()?.getAttribute('role')).toBe('status');
+    expect(notice()?.textContent).toContain(DEVICE_CLEARED_NOTICE);
+    expect(router.url).toBe('/app');
+    notice()?.querySelector('button')?.click();
+    await harness.fixture.whenStable();
+    expect(notice()).toBeNull();
+  });
+
+  it('shows nothing on a normal visit', async () => {
+    const { notice } = await open('/app');
+    expect(notice()).toBeNull();
   });
 });
