@@ -53,7 +53,7 @@ Los valores de partida del spec no pasaban la matriz en tres casos. Se movió so
 |---|---|---|---|
 | `--cc-color-accent` | claro | `#D6246E` → `#CF236B` | Como texto daba 4.41:1 sobre mes-actual y 4.44:1 sobre banda |
 | `--cc-color-accent` | oscuro | `#FF5C98` → `#FF649D` | Como texto daba 4.44:1 sobre mes-actual |
-| `--cc-color-saving` | claro | `#00A6A6` → `#009999` | Como gráfico daba 2.67:1 sobre agua, 2.75:1 sobre banda y 3.00:1 (por debajo, sin redondear) sobre papel |
+| `--cc-color-saving` | claro | `#00A6A6` → `#009999` | Como gráfico daba 2.67:1 sobre agua, 2.75:1 sobre banda y 2.998:1 (por debajo de 3:1, sin redondear) sobre papel |
 
 ## Reglas de uso
 

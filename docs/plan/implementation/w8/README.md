@@ -18,6 +18,7 @@
 - Nunca `number` para dinero. Los contadores animan **caracteres** de una cadena ya formateada (efecto odómetro), nunca interpolan cantidades.
 - WCAG 2.2 AA en claro y en oscuro: texto ≥ 4.5:1 y gráficos ≥ 3:1. El texto sobre turquesa y amarillo va en `--cc-color-on-color` (negro); sobre fucsia, en papel.
 - `/` no hace peticiones de red ni escribe almacenamiento (R1). Presupuestos de ADR-0025: landing 106 496 B y `/app` inicial 204 800 B gzip, con los vetos de `tools/bundle-check/config.json`. Si una tarjeta los rebasa, **se detiene y escala**; no sube el presupuesto.
+  - **Nota del 2026-10-22:** el dueño subió el presupuesto de la landing a 112 640 B (110 kB) gzip (enmienda de ADR-0025). Los 106 496 B de esta sección y de las tarjetas W8-06 y W8-07 son el valor original. Medida al cerrar: ver Hallazgos de W8.
 - Tiempos: microinteracciones de 150–300 ms, entradas de 300–600 ms, nada de más de 1 s. Curva única `--cc-ease-out`.
 - Semántica: fucsia (`--cc-color-accent`) = ya es tuyo y acción principal; turquesa (`--cc-color-saving`) = lo que te ahorras; verde, ámbar y rojo = solo semáforo y errores. El color nunca es la única señal.
 - Solo en la landing: cursor propio, títulos que se descifran, tarjetas apiladas y botón que sigue al cursor.
