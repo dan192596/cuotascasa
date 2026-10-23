@@ -22,10 +22,10 @@ export const WIZARD_STYLES = `
   /* The step slides in from the side it comes from (no fade: axe must always read final contrast); reduced motion shows it in place. */
   @media (prefers-reduced-motion: no-preference) {
     .cc-wiz-step[data-direction='forward'] > form {
-      animation: cc-wiz-in-forward var(--cc-duration-base) var(--cc-ease-out) both;
+      animation: cc-wiz-in-forward var(--cc-duration-base) var(--cc-ease-out) backwards;
     }
     .cc-wiz-step[data-direction='back'] > form {
-      animation: cc-wiz-in-back var(--cc-duration-base) var(--cc-ease-out) both;
+      animation: cc-wiz-in-back var(--cc-duration-base) var(--cc-ease-out) backwards;
     }
   }
   @keyframes cc-wiz-in-forward {

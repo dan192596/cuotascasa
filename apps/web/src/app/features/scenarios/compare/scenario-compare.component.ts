@@ -51,6 +51,7 @@ export class RenderedDirective {
             <legend>Escenarios a comparar (hasta {{ max }})</legend>
             <span
               class="indicator"
+              [hidden]="selectedIds().length === 0"
               aria-hidden="true"
               data-testid="scenario-indicator"
               [style.--cc-i]="activeIndex()"
@@ -226,6 +227,9 @@ export class RenderedDirective {
       min-height: 2rem;
     }
     /* Slides under the first active option; the options share the width equally, so the offset is exact. */
+    .indicator[hidden] {
+      display: none;
+    }
     .indicator {
       position: absolute;
       inset-inline-start: 0.75rem;
@@ -325,10 +329,8 @@ export class ScenarioCompareComponent {
   /** Index of the first compared scenario: where the sliding indicator sits. */
   protected readonly activeIndex = computed(() => {
     const first = this.selectedIds()[0];
-    return Math.max(
-      0,
-      this.scenarios().findIndex((scenario) => scenario.id === first),
-    );
+    const index = this.scenarios().findIndex((scenario) => scenario.id === first);
+    return index < 0 ? 0 : index;
   });
   protected readonly statusText = computed(() => {
     if (this.limitReached()) return LIMIT_MESSAGE;

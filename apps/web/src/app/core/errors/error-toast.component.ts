@@ -35,16 +35,14 @@ import { AppToastService } from './app-toast.service.ts';
     /* Enters from below; reduced motion keeps it in place (the global kill switch also zeroes it). */
     @media (prefers-reduced-motion: no-preference) {
       .toast {
-        animation: cc-toast-in var(--cc-duration-base) var(--cc-ease-out) both;
+        animation: cc-toast-in var(--cc-duration-base) var(--cc-ease-out) backwards;
       }
     }
     @keyframes cc-toast-in {
       from {
-        opacity: 0;
         transform: translateY(1.5rem);
       }
       to {
-        opacity: 1;
         transform: translateY(0);
       }
     }

@@ -10,6 +10,7 @@ describe('cc-error-toast', () => {
     await fixture.whenStable();
     const css = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
     expect(css).toContain('translateY');
+    expect(css.slice(css.indexOf('cc-toast-in {'))).not.toMatch(/opacity/);
     expect(css).toContain('var(--cc-ease-out)');
     expect(css).toMatch(/prefers-reduced-motion:\s*no-preference/);
   });

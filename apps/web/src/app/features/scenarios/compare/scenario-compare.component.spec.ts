@@ -99,6 +99,8 @@ describe('cc-scenario-compare: selection', () => {
     expect(indicator()?.style.getPropertyValue('--cc-n')).toBe('4');
     click(fixture, options(fixture)[0] as HTMLInputElement);
     expect(indicator()?.style.getPropertyValue('--cc-i')).toBe('1');
+    for (const option of options(fixture).filter((o) => o.checked)) click(fixture, option);
+    expect(indicator()?.hidden).toBe(true);
     const css = [...document.head.querySelectorAll('style')].map((c) => c.textContent).join('\n');
     expect(css).toContain('translateX(calc(var(--cc-i) * 100%))');
     expect(css).toContain('var(--cc-ease-out)');

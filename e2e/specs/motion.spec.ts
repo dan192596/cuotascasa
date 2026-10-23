@@ -90,10 +90,9 @@ test.describe('with motion', () => {
     const step = page.getByTestId('wizard-step');
     await page.getByRole('button', { name: /Siguiente/ }).click();
     await expect(step).toHaveAttribute('data-direction', 'forward');
-    const names = await step
-      .locator('> form')
-      .evaluate((form) => form.getAnimations().map((a) => (a as CSSAnimation).animationName));
-    expect(names).toContain('cc-wiz-in-forward');
+    // animation-name stays computed after the run (fill is backwards), so this does not race the 320 ms.
+    const name = await step.locator('> form').evaluate((form) => getComputedStyle(form).animationName);
+    expect(name).toBe('cc-wiz-in-forward');
     await page.getByRole('button', { name: /Atrás/ }).click();
     await expect(step).toHaveAttribute('data-direction', 'back');
   });
