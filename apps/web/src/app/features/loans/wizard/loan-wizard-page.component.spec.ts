@@ -212,6 +212,21 @@ describe('LoanWizardPageComponent · shell', () => {
     expect(document.activeElement).toBe(root.querySelector('h2'));
   });
 
+  it('marks the step container with the direction of travel and slides it ±24 px', async () => {
+    const { root, q, type, click } = await setup();
+    const container = () => q('[data-testid="wizard-step"]');
+    expect(container()?.getAttribute('data-direction')).toBe('forward');
+    await type('name', 'Casa de prueba');
+    await click('Siguiente');
+    expect(container()?.getAttribute('data-direction')).toBe('forward');
+    await click('Atrás');
+    expect(container()?.getAttribute('data-direction')).toBe('back');
+    const css = [...document.head.querySelectorAll('style')].map((s) => s.textContent).join('\n');
+    expect(css).toContain('translateX(24px)');
+    expect(css).toContain('translateX(-24px)');
+    expect(root.querySelector('[data-testid="wizard-step"] form')).not.toBeNull();
+  });
+
   it('an invalid step blocks advancing, shows Spanish messages and focuses the first invalid field', async () => {
     const { heading, click, errors, field } = await setup();
     await click('Siguiente');

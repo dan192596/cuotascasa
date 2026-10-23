@@ -92,6 +92,18 @@ function row(f: ComponentFixture<unknown>, label: string): string[] {
 }
 
 describe('cc-scenario-compare: selection', () => {
+  it('slides an indicator under the first active option with translateX', () => {
+    const { fixture } = mount();
+    const indicator = () => byId(fixture, 'scenario-indicator');
+    expect(indicator()?.style.getPropertyValue('--cc-i')).toBe('0');
+    expect(indicator()?.style.getPropertyValue('--cc-n')).toBe('4');
+    click(fixture, options(fixture)[0] as HTMLInputElement);
+    expect(indicator()?.style.getPropertyValue('--cc-i')).toBe('1');
+    const css = [...document.head.querySelectorAll('style')].map((c) => c.textContent).join('\n');
+    expect(css).toContain('translateX(calc(var(--cc-i) * 100%))');
+    expect(css).toContain('var(--cc-ease-out)');
+  });
+
   it('lists the scenarios of the loan and compares the first three by default', () => {
     const { fixture, compareSpy } = mount();
     expect(options(fixture).map((o) => o.checked)).toEqual([true, true, true, false]);

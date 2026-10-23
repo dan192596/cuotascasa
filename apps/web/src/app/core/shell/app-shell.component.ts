@@ -101,11 +101,20 @@ import { ThemeToggleComponent } from '../theme/theme-toggle.component.ts';
       min-height: 2.75rem;
       padding: 0 0.75rem;
       text-decoration: none;
-      border-bottom: 3px solid transparent;
+      border-radius: var(--cc-radius-pill);
+      transition:
+        background-color var(--cc-duration-fast) var(--cc-ease-out),
+        color var(--cc-duration-fast) var(--cc-ease-out);
     }
     nav a.active {
       font-weight: 700;
-      border-bottom-color: var(--cc-color-accent);
+      color: var(--cc-color-paper);
+      background: var(--cc-color-accent);
+    }
+    @media (hover: hover) {
+      nav a:not(.active):hover {
+        background: var(--cc-color-soft);
+      }
     }
     main {
       flex: 1;

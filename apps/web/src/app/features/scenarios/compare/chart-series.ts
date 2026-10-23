@@ -6,8 +6,8 @@ import type { ScenarioComparison } from '../../../data/api.ts';
  * string in `raw` for the tooltip, and the accessible table next to the chart shows the strings themselves.
  */
 
-/** Chart colours are design-token roles (ink, ink-muted, accent), resolved from the DOM by the chart component. */
-export type SeriesRole = 'ink' | 'ink-muted' | 'accent';
+/** Chart colours are design-token roles (ink, ink-muted, accent, saving), resolved from the DOM by the chart component. */
+export type SeriesRole = 'ink' | 'ink-muted' | 'accent' | 'saving';
 export type MarkerShape = 'rectRot' | 'circle' | 'triangle' | 'rect' | 'crossRot';
 
 export interface ChartPoint {
@@ -38,8 +38,8 @@ const ORIGINAL_LOOK: Look = { role: 'ink-muted', dash: [6, 4], marker: 'rectRot'
 const REAL_LOOK: Look = { role: 'ink', dash: [], marker: 'circle' };
 const SCENARIO_LOOKS: readonly Look[] = [
   { role: 'accent', dash: [], marker: 'triangle' },
-  { role: 'accent', dash: [2, 3], marker: 'rect' },
-  { role: 'accent', dash: [10, 3, 2, 3], marker: 'crossRot' },
+  { role: 'saving', dash: [2, 3], marker: 'rect' },
+  { role: 'ink', dash: [10, 3, 2, 3], marker: 'crossRot' },
 ];
 
 type SchedulePoints = ScenarioComparison['real'];
