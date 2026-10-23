@@ -39,6 +39,8 @@ const VIEW_TRANSITION_ACTIVE_CLASS = 'cc-view-transition';
  * target (ADR-0026 §5.4). A capture-phase pointerdown skips the transition so the page is live again at once; the
  * residual is that this one press finishes the transition instead of activating what was under it.
  */
+let latestTransition = 0;
+
 function onViewTransitionCreated({ transition }: ViewTransitionInfo): void {
   const document = inject(DOCUMENT);
   if (document.defaultView?.matchMedia('(prefers-reduced-motion: reduce)').matches === true) {
@@ -46,12 +48,14 @@ function onViewTransitionCreated({ transition }: ViewTransitionInfo): void {
     return;
   }
   const root = document.documentElement;
+  // A newer transition may start while this one still runs: only the latest one may clear the root class.
+  const mine = ++latestTransition;
   const skipOnPress = (): void => transition.skipTransition();
   root.classList.add(VIEW_TRANSITION_ACTIVE_CLASS);
   document.addEventListener('pointerdown', skipOnPress, { capture: true });
   const settle = (): void => {
     document.removeEventListener('pointerdown', skipOnPress, { capture: true });
-    root.classList.remove(VIEW_TRANSITION_ACTIVE_CLASS);
+    if (mine === latestTransition) root.classList.remove(VIEW_TRANSITION_ACTIVE_CLASS);
   };
   transition.finished.then(settle, settle);
 }

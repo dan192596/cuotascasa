@@ -2,7 +2,7 @@
  * Landing-only motion (ADR-0026 §6.1): titles that unscramble, counters that roll character by character, cards that
  * shrink as the next one covers them, a custom cursor and a magnetic button. DOM APIs only, no Angular and no `ui/`,
  * so it stays tiny in the landing's initial graph. Every effect starts from the final, prerendered text and ends on it:
- * nothing waits for this file to be readable. Under `prefers-reduced-motion: reduce` it does nothing at all, and the
+ * nothing waits for this file to be readable. Under `prefers-reduced-motion: reduce` it does nothing at all (and stops if the preference turns on later), and the
  * cursor and the magnet also stay off on touch screens. Money is never parsed: only characters of formatted strings move.
  */
 
@@ -125,7 +125,9 @@ export function startLandingMotion(host: HTMLElement, win: Window): () => void {
           else play(entry.target, ODOMETER_MS, odometerFrame);
         }
       },
-      { threshold: 0.6 },
+      // Barely visible is enough: the roll starts before the counter shows its final text, so there is no visible
+      // jump from the final value back to zeros.
+      { threshold: 0.1 },
     );
     host.querySelectorAll('[data-scramble], [data-odometer]').forEach((el) => io.observe(el));
     stops.push(() => io.disconnect());
@@ -187,5 +189,19 @@ export function startLandingMotion(host: HTMLElement, win: Window): () => void {
     });
   }
 
-  return () => stops.splice(0).forEach((stop) => stop());
+  const stopAll = (): void => stops.splice(0).forEach((stop) => stop());
+
+  // The preference can turn on while the page is open: stop every effect and leave the texts final.
+  if (typeof win.matchMedia === 'function') {
+    const query = win.matchMedia('(prefers-reduced-motion: reduce)');
+    if (typeof query.addEventListener === 'function') {
+      const onChange = (e: MediaQueryListEvent): void => {
+        if (e.matches) stopAll();
+      };
+      query.addEventListener('change', onChange);
+      stops.push(() => query.removeEventListener('change', onChange));
+    }
+  }
+
+  return stopAll;
 }

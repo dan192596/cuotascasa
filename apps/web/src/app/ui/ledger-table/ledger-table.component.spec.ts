@@ -441,6 +441,7 @@ describe('cc-ledger-table', () => {
     const next = sampleRows().map((row) =>
       row.key === 'r3' ? { ...row, cells: { ...row.cells, capital: '999.00' } } : row,
     );
+    fixture.componentRef.setInput('flashKey', 'b');
     fixture.componentRef.setInput('rows', next);
     await fixture.whenStable();
     const changed = Array.from(root.querySelectorAll<HTMLElement>('.cell.changed'));
@@ -450,6 +451,26 @@ describe('cc-ledger-table', () => {
     await new Promise((resolve) => setTimeout(resolve, 700));
     await fixture.whenStable();
     expect(root.querySelectorAll('.cell.changed').length).toBe(0);
+  });
+
+  it('updates silently while flashKey stays the same, and flashes when it changes', async () => {
+    const { fixture, root } = await mount();
+    fixture.componentRef.setInput('flashKey', 'a');
+    await fixture.whenStable();
+    const edited = sampleRows().map((row) =>
+      row.key === 'r3' ? { ...row, cells: { ...row.cells, capital: '999.00' } } : row,
+    );
+    fixture.componentRef.setInput('rows', edited);
+    await fixture.whenStable();
+    expect(root.querySelectorAll('.cell.changed').length).toBe(0);
+    expect(root.querySelector('[data-r="2"][data-c="2"]')?.textContent).toContain('999.00');
+    const switched = edited.map((row) =>
+      row.key === 'r3' ? { ...row, cells: { ...row.cells, capital: '5.00' } } : row,
+    );
+    fixture.componentRef.setInput('flashKey', 'b');
+    fixture.componentRef.setInput('rows', switched);
+    await fixture.whenStable();
+    expect(root.querySelectorAll('.cell.changed').length).toBe(1);
   });
 
   it('flashes the current row once with the highlight colour', () => {
@@ -477,6 +498,7 @@ describe('cc-ledger-table', () => {
     fixture.componentRef.setInput('columns', cols);
     fixture.componentRef.setInput('rows', mk('1'));
     await fixture.whenStable();
+    fixture.componentRef.setInput('flashKey', 'next');
     fixture.componentRef.setInput('rows', mk('2'));
     await fixture.whenStable();
     const root = fixture.nativeElement as HTMLElement;

@@ -7,6 +7,7 @@ import {
   expectNoCspViolations,
   expectNoExternalRequests,
   readClientStorage,
+  waitForMotionToSettle,
 } from './expectations.ts';
 import { readStore, seedFromBackup } from './seed.ts';
 import { syntheticBackupDocument } from './synthetic.ts';
@@ -202,6 +203,19 @@ test.describe('expectNoA11yViolations', () => {
     );
     expect(await page.evaluate(() => document.getAnimations().length)).toBe(2);
     await expectNoA11yViolations(page);
+  });
+
+  test('gives up after its timeout when a finite animation never advances', async ({ page }) => {
+    await openHarness(page);
+    await page.evaluate(() => {
+      const box = document.createElement('div');
+      document.querySelector('main')?.append(box);
+      // A finite animation far longer than the budget.
+      box.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 60_000 });
+    });
+    const started = Date.now();
+    await waitForMotionToSettle(page, 300);
+    expect(Date.now() - started).toBeLessThan(3000);
   });
 });
 

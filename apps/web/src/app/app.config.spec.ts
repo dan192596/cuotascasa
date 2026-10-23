@@ -116,4 +116,30 @@ describe('route view transitions (W8-02)', () => {
     expect(document.documentElement.classList.contains('cc-view-transition')).toBe(false);
     add.mockRestore();
   });
+
+  it('keeps the root class until the newest overlapping transition settles', async () => {
+    const settlers: (() => void)[] = [];
+    stubBrowser(false);
+    startViewTransition.mockImplementation((update: () => Promise<void>) => {
+      const done = update();
+      const finished = new Promise<void>((resolve) => settlers.push(resolve));
+      return { skipTransition: vi.fn(), updateCallbackDone: done, ready: Promise.resolve(), finished };
+    });
+    TestBed.configureTestingModule({ providers: appConfig.providers });
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/ruta-sintetica-a');
+    await router.navigateByUrl('/ruta-sintetica-b');
+    await router.navigateByUrl('/ruta-sintetica-c');
+    // The initial-navigation skip was already used by an earlier test, so every navigation starts a transition.
+    expect(settlers.length).toBe(3);
+    const active = () => document.documentElement.classList.contains('cc-view-transition');
+    expect(active()).toBe(true);
+    settlers[0]?.();
+    settlers[1]?.();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(active()).toBe(true);
+    settlers[2]?.();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(active()).toBe(false);
+  });
 });

@@ -186,4 +186,55 @@ describe('startLandingMotion', () => {
     stop();
     expect(h2.getAttribute('style')).toBe('color: red;');
   });
+
+  it('starts the counter roll as soon as it is barely visible (threshold at most 0.1)', () => {
+    const options: IntersectionObserverInit[] = [];
+    vi.stubGlobal(
+      'IntersectionObserver',
+      class {
+        constructor(_callback: unknown, init: IntersectionObserverInit) {
+          options.push(init);
+        }
+        observe(): void {}
+        unobserve(): void {}
+        disconnect(): void {}
+      },
+    );
+    startLandingMotion(host(), fakeWindow(desktop))();
+    expect(options.length).toBe(1);
+    expect(options[0]?.threshold).toBeLessThanOrEqual(0.1);
+  });
+
+  it('stops all motion when prefers-reduced-motion turns on while running', () => {
+    vi.stubGlobal('IntersectionObserver', VisibleObserver);
+    const listeners: ((e: { matches: boolean }) => void)[] = [];
+    const win = new Proxy(window, {
+      get(target, key) {
+        if (key === 'matchMedia')
+          return (query: string) => ({
+            matches: desktop(query),
+            addEventListener: (_type: string, fn: (e: { matches: boolean }) => void) => listeners.push(fn),
+            removeEventListener: (_type: string, fn: (e: { matches: boolean }) => void) => {
+              listeners.splice(listeners.indexOf(fn), 1);
+            },
+          });
+        const value: unknown = Reflect.get(target, key);
+        return typeof value === 'function' ? (value as (...args: unknown[]) => unknown).bind(target) : value;
+      },
+    });
+    const el = host();
+    const h2 = el.querySelector('h2');
+    startLandingMotion(el, win);
+    expect(document.querySelector('.cursor')).not.toBeNull();
+    expect(h2?.getAttribute('aria-label')).toBe('240 cuotas. Muévelas.');
+    expect(listeners.length).toBe(1);
+    listeners[0]?.({ matches: false });
+    expect(document.querySelector('.cursor')).not.toBeNull();
+    listeners[0]?.({ matches: true });
+    expect(document.querySelector('.cursor')).toBeNull();
+    expect(h2?.hasAttribute('aria-label')).toBe(false);
+    expect(h2?.textContent).toBe('240 cuotas. Muévelas.');
+    expect(el.querySelector('b')?.textContent).toBe('Q 102,207');
+    expect(listeners.length).toBe(0);
+  });
 });

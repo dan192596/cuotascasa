@@ -74,13 +74,19 @@ export class LedgerTableComponent {
   readonly label = input('Tabla');
   /** How many leading columns stay fixed while scrolling horizontally (at most 3). */
   readonly stickyColumns = input(2);
+  /**
+   * Identity of what the rows show (for example the active scenario). Changed cells flash only when this key changes
+   * between two row updates; inline edits and sync merges (same key) update silently.
+   */
+  readonly flashKey = input<string | null>(null);
   readonly cellEdit = output<LedgerCellEdit>();
 
   protected readonly active = signal({ r: 0, c: 0 });
   protected readonly editing = signal<Editing | null>(null);
   protected readonly status = signal('');
-  /** Cells (`row|column`) whose text changed between two row inputs with the same key; they last `CHANGED_MS`. */
+  /** Cells (`row|column`) whose text changed between two row inputs when `flashKey` changed; they last `CHANGED_MS`. */
   protected readonly changed = signal<ReadonlyMap<string, 'accent' | 'highlight'>>(new Map());
+  private previousKey: string | null = null;
   private previous: ReadonlyMap<string, Readonly<Record<string, string>>> | null = null;
   private changedTimer: ReturnType<typeof setTimeout> | undefined;
   private readonly editor = viewChild<ElementRef<HTMLInputElement>>('editor');
@@ -139,9 +145,12 @@ export class LedgerTableComponent {
     inject(DestroyRef).onDestroy(() => clearTimeout(this.changedTimer));
     effect(() => {
       const rows = this.rows();
+      const key = this.flashKey();
+      const keyChanged = key !== this.previousKey;
+      this.previousKey = key;
       const previous = this.previous;
       this.previous = new Map(rows.map((row) => [row.key, row.cells]));
-      if (previous === null) return;
+      if (previous === null || !keyChanged) return;
       const flagged = new Map<string, 'accent' | 'highlight'>();
       for (const row of rows) {
         const before = previous.get(row.key);

@@ -2,13 +2,15 @@ import { ChangeDetectionStrategy, Component, computed, input, output, signal } f
 
 export type BannerTone = 'info' | 'success' | 'warning' | 'danger';
 
-const TONES: Record<BannerTone, { readonly label: string; readonly icon: string; readonly role: 'status' | 'alert' }> =
-  {
-    info: { label: 'Información', icon: 'ℹ', role: 'status' },
-    success: { label: 'Listo', icon: '✓', role: 'status' },
-    warning: { label: 'Advertencia', icon: '▲', role: 'alert' },
-    danger: { label: 'Error', icon: '■', role: 'alert' },
-  };
+const TONES: Record<
+  BannerTone,
+  { readonly label: string; readonly icon: string | null; readonly role: 'status' | 'alert' }
+> = {
+  info: { label: 'Información', icon: 'ℹ', role: 'status' },
+  success: { label: 'Listo', icon: null, role: 'status' },
+  warning: { label: 'Advertencia', icon: '▲', role: 'alert' },
+  danger: { label: 'Error', icon: '■', role: 'alert' },
+};
 
 /** Inline notice with an optional close button. Tone is conveyed by a text label and an icon, never by colour alone. */
 @Component({

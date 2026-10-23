@@ -1,12 +1,13 @@
 import { readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { buildLandingExample, renderRowsModule, renderSummaryModule } from './build-example.ts';
 import { LANDING_EXAMPLE_ROWS } from './example-rows.generated.ts';
 import { LANDING_EXAMPLE_SUMMARY } from './example-summary.generated.ts';
 
-/** cwd is the repo root under `ng test`. */
-const DIR = 'apps/web/src/app/public/landing/example';
+/** Resolved from this file, so the paths do not depend on the cwd. */
+const DIR = dirname(fileURLToPath(import.meta.url));
 const SUMMARY_FILE = join(DIR, 'example-summary.generated.ts');
 const ROWS_FILE = join(DIR, 'example-rows.generated.ts');
 const UPDATE = process.env['UPDATE_LANDING_EXAMPLE'] === '1';
