@@ -65,6 +65,22 @@ test.describe('landing /', () => {
     await expect(page.locator('.cursor')).toHaveAttribute('aria-hidden', 'true');
   });
 
+  test('the headline never scrambles: it reads the final text through hydration and the first 800 ms', async ({
+    page,
+  }) => {
+    await page.goto('/', { waitUntil: 'commit' });
+    const h1 = page.getByRole('heading', { level: 1 });
+    await expect(h1).toBeAttached();
+    const samples: (string | null)[] = [];
+    const start = Date.now();
+    while (Date.now() - start < 800) {
+      samples.push(await h1.textContent());
+      await page.waitForTimeout(40);
+    }
+    expect(samples.length).toBeGreaterThan(5);
+    expect(new Set(samples)).toEqual(new Set(['Calcula tus cuotas, mes a mes.']));
+  });
+
   test('the custom cursor and its class go away when leaving the landing', async ({ page }) => {
     await page.goto('/');
     await page.mouse.move(200, 200);

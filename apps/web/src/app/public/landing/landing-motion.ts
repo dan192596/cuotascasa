@@ -76,7 +76,15 @@ export function startLandingMotion(host: HTMLElement, win: Window): () => void {
     const walker = win.document.createTreeWalker(el, 4);
     const nodes: { node: Text; text: string }[] = [];
     while (walker.nextNode()) nodes.push({ node: walker.currentNode as Text, text: (walker.currentNode as Text).data });
-    const settle = (): void => nodes.forEach(({ node, text }) => (node.data = text));
+    // Screen readers keep the final text while the glyphs move: a name on the element (a heading keeps its role; a
+    // counter is an `img` for the duration, since a generic element may not carry a name).
+    el.setAttribute('aria-label', el.textContent ?? '');
+    if (!/^H\d$/.test(el.tagName)) el.setAttribute('role', 'img');
+    const settle = (): void => {
+      nodes.forEach(({ node, text }) => (node.data = text));
+      el.removeAttribute('aria-label');
+      el.removeAttribute('role');
+    };
     let done = false;
     const start = win.performance.now();
     const step = (now: number): void => {

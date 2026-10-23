@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   magnetOffset,
   motionEnv,
@@ -32,7 +32,21 @@ function host(): HTMLElement {
 
 afterEach(() => {
   document.body.innerHTML = '';
+  vi.unstubAllGlobals();
 });
+
+/** An IntersectionObserver that reports every observed element as visible at once. */
+class VisibleObserver {
+  private readonly callback: (entries: { isIntersecting: boolean; target: Element }[]) => void;
+  constructor(callback: (entries: { isIntersecting: boolean; target: Element }[]) => void) {
+    this.callback = callback;
+  }
+  observe(target: Element): void {
+    this.callback([{ isIntersecting: true, target }]);
+  }
+  unobserve(): void {}
+  disconnect(): void {}
+}
 
 describe('scrambleFrame', () => {
   const zero = (): number => 0;
@@ -126,5 +140,22 @@ describe('startLandingMotion', () => {
     startLandingMotion(el, fakeWindow(desktop))();
     expect(el.querySelector('h2')?.textContent).toBe('240 cuotas. Muévelas.');
     expect(el.querySelector('b')?.textContent).toBe('Q 102,207');
+  });
+
+  it('keeps the accessible text final while a title or counter moves, and cleans up on stop', () => {
+    vi.stubGlobal('IntersectionObserver', VisibleObserver);
+    const el = host();
+    const stop = startLandingMotion(el, fakeWindow(desktop));
+    const h2 = el.querySelector('h2');
+    const counter = el.querySelector('b');
+    expect(h2?.getAttribute('aria-label')).toBe('240 cuotas. Muévelas.');
+    expect(h2?.hasAttribute('role')).toBe(false);
+    expect(counter?.getAttribute('aria-label')).toBe('Q 102,207');
+    expect(counter?.getAttribute('role')).toBe('img');
+    stop();
+    expect(h2?.hasAttribute('aria-label')).toBe(false);
+    expect(counter?.hasAttribute('aria-label')).toBe(false);
+    expect(counter?.hasAttribute('role')).toBe(false);
+    expect(h2?.textContent).toBe('240 cuotas. Muévelas.');
   });
 });

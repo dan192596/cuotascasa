@@ -81,8 +81,19 @@ describe('LandingPageComponent (HU-01, R1)', () => {
     expect(render().querySelector('main cc-quick-simulator')).not.toBeNull();
   });
 
-  it('creates no custom cursor in the test environment (motion runs only in a browser with a fine pointer)', () => {
-    expect(document.querySelector('.cursor')).toBeNull();
+  it('never scrambles the headline: only the h2 titles carry data-scramble', () => {
+    const root = render();
+    expect(root.querySelector('h1')?.hasAttribute('data-scramble')).toBe(false);
+    expect(root.querySelectorAll('h2[data-scramble]')).toHaveLength(2);
+  });
+
+  it('leaves modified or non-primary clicks on in-page links to the browser (open in a new tab)', () => {
+    const link = render().querySelector<HTMLAnchorElement>('a[href="#como"]');
+    for (const init of [{ ctrlKey: true }, { metaKey: true }, { shiftKey: true }, { altKey: true }, { button: 1 }]) {
+      const click = new MouseEvent('click', { ...init, bubbles: true, cancelable: true });
+      link?.dispatchEvent(click);
+      expect(click.defaultPrevented).toBe(false);
+    }
   });
 
   it('ends with a footer with the disclaimer', () => {

@@ -129,7 +129,7 @@ class LandingBoardSlotComponent {}
     <main class="wrap">
       <section class="mosaic" aria-label="Inicio">
         <div class="b title" data-testid="mosaic-block" style="--i: 0; --r: -2deg">
-          <h1 data-scramble>Calcula tus cuotas, <em>mes a mes.</em></h1>
+          <h1>Calcula tus cuotas, <em>mes a mes.</em></h1>
         </div>
         <div class="b f" data-testid="mosaic-block" style="--i: 1; --r: 3deg">
           <small class="cc-numeric">Cuota nivelada · ejemplo</small>
@@ -203,7 +203,7 @@ class LandingBoardSlotComponent {}
         }
       </section>
 
-      <section id="simulador" tabindex="-1" aria-labelledby="sim-title">
+      <section id="simulador">
         <cc-quick-simulator />
       </section>
     </main>
@@ -525,9 +525,11 @@ export class LandingPageComponent {
 
   /**
    * In-page links: scroll to the section and move focus there. Without JS the plain `#id` link does the same; with JS
-   * the router would otherwise treat the hash change as a navigation and restore the scroll to the top.
+   * the router would otherwise treat the hash change as a navigation and restore the scroll to the top. Modified or
+   * non-primary clicks keep the browser's behaviour (open in a new tab and so on).
    */
-  protected jump(event: Event): void {
+  protected jump(event: MouseEvent): void {
+    if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
     const target = this.document.getElementById((event.currentTarget as HTMLAnchorElement).hash.slice(1));
     if (target === null) return;
     event.preventDefault();
