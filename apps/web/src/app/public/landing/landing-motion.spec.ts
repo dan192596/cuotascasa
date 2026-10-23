@@ -158,4 +158,27 @@ describe('startLandingMotion', () => {
     expect(counter?.hasAttribute('role')).toBe(false);
     expect(h2?.textContent).toBe('240 cuotas. Muévelas.');
   });
+
+  it('holds the box of a moving title, so random glyphs never reflow the page under the pointer', () => {
+    vi.stubGlobal('IntersectionObserver', VisibleObserver);
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal('requestAnimationFrame', (fn: FrameRequestCallback) => frames.push(fn));
+    const el = host();
+    const h2 = el.querySelector('h2') as HTMLElement;
+    h2.style.color = 'red';
+    vi.spyOn(h2, 'getBoundingClientRect').mockReturnValue({ width: 412.5, height: 74 } as DOMRect);
+    const stop = startLandingMotion(el, fakeWindow(desktop));
+    // One frame for each moving text (the title, then the counter), a tenth of a second in.
+    frames.splice(0).forEach((frame) => frame(performance.now() + 100));
+    expect(h2.textContent).not.toBe('240 cuotas. Muévelas.');
+    expect(h2.style.width).toBe('412.5px');
+    expect(h2.style.height).toBe('74px');
+    expect(h2.style.boxSizing).toBe('border-box');
+    expect(h2.style.overflow).toBe('hidden');
+    while (frames.length > 0) frames.shift()?.(performance.now() + 5000);
+    expect(h2.textContent).toBe('240 cuotas. Muévelas.');
+    expect(h2.getAttribute('style')).toBe('color: red;');
+    stop();
+    expect(h2.getAttribute('style')).toBe('color: red;');
+  });
 });

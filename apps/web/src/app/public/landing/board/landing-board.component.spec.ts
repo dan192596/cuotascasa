@@ -215,6 +215,59 @@ describe('cc-landing-board (W8-07)', () => {
     expect(slider(root).getAttribute('aria-valuenow')).toBe('10');
   });
 
+  it('follows a drag that starts before the behaviour loads and ends where the pointer was released', async () => {
+    stubMotion(true);
+    const { root, fixture } = await render();
+    const track = root.querySelector<HTMLElement>('.track') as HTMLElement;
+    vi.spyOn(track, 'getBoundingClientRect').mockReturnValue({ left: 0, width: 239 } as DOMRect);
+    // The whole gesture happens before the chunk arrives (no viewport signal at all): press, drag, release.
+    track.dispatchEvent(new MouseEvent('pointerdown', { clientX: 9, bubbles: true }));
+    track.dispatchEvent(new MouseEvent('pointermove', { clientX: 119, bubbles: true }));
+    track.dispatchEvent(new MouseEvent('pointermove', { clientX: 238, bubbles: true }));
+    track.dispatchEvent(new MouseEvent('pointerup', { clientX: 238, bubbles: true }));
+    expect(root.hasAttribute('data-ready')).toBe(false);
+    await vi.waitFor(() => expect(root.hasAttribute('data-ready')).toBe(true), { timeout: 10000 });
+    await fixture.whenStable();
+    expect(slider(root).getAttribute('aria-valuenow')).toBe('239');
+    expect(track.classList.contains('drag')).toBe(false);
+  });
+
+  it('keeps following a drag pressed before the behaviour loaded once it arrives', async () => {
+    stubMotion(true);
+    const { root, fixture } = await render();
+    const track = root.querySelector<HTMLElement>('.track') as HTMLElement;
+    vi.spyOn(track, 'getBoundingClientRect').mockReturnValue({ left: 0, width: 239 } as DOMRect);
+    track.dispatchEvent(new MouseEvent('pointerdown', { clientX: 9, bubbles: true }));
+    await vi.waitFor(() => expect(root.hasAttribute('data-ready')).toBe(true), { timeout: 10000 });
+    await fixture.whenStable();
+    expect(slider(root).getAttribute('aria-valuenow')).toBe('10');
+    expect(track.classList.contains('drag')).toBe(true);
+    track.dispatchEvent(new MouseEvent('pointermove', { clientX: 200, bubbles: true }));
+    await fixture.whenStable();
+    expect(slider(root).getAttribute('aria-valuenow')).toBe('201');
+  });
+
+  it('never runs the knob by itself after the user has touched it, even back at installment 60', async () => {
+    const frames = stubMotion(false);
+    const { root, fixture } = await interactive();
+    const track = root.querySelector<HTMLElement>('.track') as HTMLElement;
+    vi.spyOn(track, 'getBoundingClientRect').mockReturnValue({ left: 0, width: 239 } as DOMRect);
+    track.dispatchEvent(new MouseEvent('pointerdown', { clientX: 59, bubbles: true }));
+    track.dispatchEvent(new MouseEvent('pointerup', { clientX: 59, bubbles: true }));
+    await fixture.whenStable();
+    expect(slider(root).getAttribute('aria-valuenow')).toBe('60');
+    FakeObserver.instances[1]?.fire();
+    await fixture.whenStable();
+    expect(slider(root).getAttribute('aria-valuenow')).toBe('60');
+    let t = performance.now();
+    while (frames.length > 0) {
+      t += 100;
+      frames.shift()?.(t);
+    }
+    await fixture.whenStable();
+    expect(slider(root).getAttribute('aria-valuenow')).toBe('60');
+  });
+
   it('announces the reading politely after a pause', async () => {
     stubMotion(true);
     const { root, fixture } = await interactive();

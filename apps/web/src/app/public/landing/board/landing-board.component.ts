@@ -321,6 +321,10 @@ export class LandingBoardComponent implements AfterViewInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly browser = isPlatformBrowser(inject(PLATFORM_ID));
   private loading: Promise<void> | null = null;
+  /** Set by the first user input (pointer, key or switch): from then on the knob never runs by itself. */
+  private touched = false;
+  /** The last pointer position aimed at before the behaviour arrived; applied once it does. */
+  private pending: { readonly clientX: number; readonly left: number; readonly width: number } | null = null;
   private stopAutoplay: () => void = () => undefined;
   private announceTimer: ReturnType<typeof setTimeout> | undefined;
   private destroyed = false;
@@ -363,15 +367,17 @@ export class LandingBoardComponent implements AfterViewInit {
   }
 
   protected key(event: KeyboardEvent): void {
+    this.touched = true;
     const target = this.behaviour()?.keyTarget(event.key, event.shiftKey, this.k()) ?? null;
     if (target === null) return;
     event.preventDefault();
     this.set(target);
   }
 
+  /** A press works even before the behaviour has loaded: the drag starts at once and its position waits for it. */
   protected down(event: PointerEvent): void {
-    const behaviour = this.behaviour();
-    if (behaviour === null) return;
+    this.touched = true;
+    this.stopAutoplay();
     const track = event.currentTarget as HTMLElement;
     try {
       track.setPointerCapture(event.pointerId);
@@ -379,21 +385,37 @@ export class LandingBoardComponent implements AfterViewInit {
       // No active pointer with that id (synthetic events): the drag still follows pointermove on the track.
     }
     this.dragging.set(true);
-    this.set(behaviour.kAt(event.clientX, track.getBoundingClientRect()));
+    this.aim(event.clientX, track.getBoundingClientRect());
   }
 
   protected move(event: PointerEvent): void {
-    const behaviour = this.behaviour();
-    if (behaviour === null || !this.dragging()) return;
-    this.set(behaviour.kAt(event.clientX, (event.currentTarget as HTMLElement).getBoundingClientRect()));
+    if (!this.dragging()) return;
+    this.aim(event.clientX, (event.currentTarget as HTMLElement).getBoundingClientRect());
   }
 
   protected up(): void {
     this.dragging.set(false);
   }
 
+  /** Moves the knob under the pointer; before the behaviour arrives, keeps the latest position and applies it then. */
+  private aim(clientX: number, rect: DOMRect): void {
+    const behaviour = this.behaviour();
+    if (behaviour !== null) {
+      this.set(behaviour.kAt(clientX, rect));
+      return;
+    }
+    this.pending = { clientX, left: rect.left, width: rect.width };
+    void this.load().then(() => {
+      const ready = this.behaviour();
+      const aimed = this.pending;
+      this.pending = null;
+      if (ready !== null && aimed !== null) this.set(ready.kAt(aimed.clientX, aimed));
+    });
+  }
+
   /** Before the rows arrive, the choice waits for them, so the reading never mixes the two paths. */
   protected choose(prepaid: boolean): void {
+    this.touched = true;
     if (this.behaviour() === null) {
       void this.load().then(() => {
         if (this.behaviour() !== null) this.choose(prepaid);
@@ -415,7 +437,10 @@ export class LandingBoardComponent implements AfterViewInit {
     }, ANNOUNCE_MS);
   }
 
-  /** The knob runs from 1 to 60 once, the first time half the board is in view; never under reduced motion. */
+  /**
+   * The knob runs from 1 to 60 once, the first time half the board is in view; never under reduced motion, and never
+   * once the user has pressed, dragged, typed on the knob or chosen a scenario (any of them also stops a run).
+   */
   private watchAutoplay(behaviour: Behaviour): void {
     const win = this.win;
     if (win === null || typeof IntersectionObserver === 'undefined') return;
@@ -424,7 +449,7 @@ export class LandingBoardComponent implements AfterViewInit {
       (entries) => {
         if (!entries.some((entry) => entry.isIntersecting)) return;
         observer.disconnect();
-        if (this.k() !== S.prepayment.installment || this.prepaid()) return;
+        if (this.touched) return;
         this.stopAutoplay = behaviour.autoplay(win, S.prepayment.installment, AUTOPLAY_MS, (k) => this.k.set(k));
       },
       { threshold: 0.5 },

@@ -80,10 +80,23 @@ export function startLandingMotion(host: HTMLElement, win: Window): () => void {
     // counter is an `img` for the duration, since a generic element may not carry a name).
     el.setAttribute('aria-label', el.textContent ?? '');
     if (!/^H\d$/.test(el.tagName)) el.setAttribute('role', 'img');
+    // The element keeps the box of its final text while the glyphs move: wider random glyphs would otherwise rewrap
+    // the title and its neighbours, and shift everything below (the board) under a pointer that is already aiming.
+    // Glyphs that do not fit are clipped, so they never paint, or catch the pointer, over the next block.
+    const style = el.getAttribute('style');
+    const box = el.getBoundingClientRect();
+    if (el instanceof HTMLElement && box.width > 0) {
+      el.style.boxSizing = 'border-box';
+      el.style.width = `${String(box.width)}px`;
+      el.style.height = `${String(box.height)}px`;
+      el.style.overflow = 'hidden';
+    }
     const settle = (): void => {
       nodes.forEach(({ node, text }) => (node.data = text));
       el.removeAttribute('aria-label');
       el.removeAttribute('role');
+      if (style === null) el.removeAttribute('style');
+      else el.setAttribute('style', style);
     };
     let done = false;
     const start = win.performance.now();
