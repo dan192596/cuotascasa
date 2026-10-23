@@ -9,11 +9,22 @@ describe('prerendered landing in dist (HU-01, R1)', () => {
     expect(existsSync(INDEX)).toBe(true);
   });
 
-  it('contains the hero heading and the privacy call to action', () => {
+  it('contains the headline, the «Sin cuenta» promise and the calls to action (complete without JS)', () => {
     const html = readFileSync(INDEX, 'utf8');
-    expect(html).toContain('Tu casa se va llenando, cuota a cuota.');
-    expect(html).toContain('Tus datos se quedan en tu navegador');
-    expect(html).toContain('Empezar en la app');
+    const h1 = (/<h1[^>]*>([\s\S]*?)<\/h1>/.exec(html)?.[1] ?? '')
+      .replace(/<[^>]+>/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    expect(h1).toBe('Calcula tus cuotas, mes a mes.');
+    expect(html).toContain('Sin cuenta. Tus números se quedan en tu navegador.');
+    expect(html).toContain('Calcular mi cuota');
+    expect(html).toContain('Abrir la app');
+  });
+
+  it('shows the final value of the four counters in the prerendered markup', () => {
+    const html = readFileSync(INDEX, 'utf8');
+    const counters = [...html.matchAll(/<b[^>]*data-odometer[^>]*>([^<]*)<\/b>/g)].map((m) => m[1]?.trim());
+    expect(counters).toEqual(['240', 'Q 50,000', '35', 'Q 102,207']);
   });
 
   it('contains the disclaimer in the landing footer', () => {
