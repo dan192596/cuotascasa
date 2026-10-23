@@ -16,6 +16,8 @@ export default defineConfig({
   testMatch: ['specs/**/*.spec.ts', 'support/**/*.spec.ts'],
   outputDir: './test-results',
   fullyParallel: true,
+  /** CI runners have 4 vCPUs; the default (half the cores) left the suite at ~15 min. Local runs keep the default. */
+  workers: process.env['CI'] !== undefined ? 3 : undefined,
   forbidOnly: process.env['CI'] !== undefined,
   retries: process.env['CI'] !== undefined ? 1 : 0,
   reporter: process.env['CI'] !== undefined ? [['list'], ['html', { open: 'never' }]] : 'list',

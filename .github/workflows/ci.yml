@@ -78,7 +78,11 @@ jobs:
         env:
           WRANGLER_SEND_METRICS: 'false'
         run: node tools/edge/headers/smoke-csp.mjs
+      # Pull requests only. main requires branches to be up to date before merging (strict status checks), so the
+      # tree a push to main carries is the tree its PR already passed e2e on. Skipping the repeat on main lets the
+      # deploy (workflow_run on this CI) reach the owner's approval minutes after the merge instead of ~25.
       - name: E2E on Chromium and WebKit (W2-11)
+        if: github.event_name == 'pull_request'
         timeout-minutes: 25
         env:
           WRANGLER_SEND_METRICS: 'false'
