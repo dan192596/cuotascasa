@@ -92,6 +92,10 @@ Decisiones que fijó la implementación y aceptó Opus tras la revisión de segu
 
 ## Referencias
 
-- ADR-0007, ADR-0008, ADR-0015, ADR-0016, ADR-0021 (reservado).
+- ADR-0007, ADR-0008, ADR-0015, ADR-0016, ADR-0021.
 - Tarjetas W1-07, W2-08, W4-08, W4-09 y W5-08.
 - OWASP Password Storage Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+
+## Enmiendas
+
+**Enmienda (2026-10-21, W7-01, PR #100).** Por defensa en profundidad, el almacén de claves tampoco guarda ni carga un registro con menos iteraciones que el piso (`PBKDF2_ITERATIONS`, 600 000); antes aceptaba cualquier entero positivo y el piso lo aplicaban solo `decrypt` y la capa de datos. Las pruebas bajan el piso con la misma costura que `decrypt` (`minIterations`).

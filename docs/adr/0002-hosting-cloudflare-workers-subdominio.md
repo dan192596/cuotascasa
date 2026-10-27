@@ -27,7 +27,7 @@ La v1 no tiene backend (ADR-0001): el producto es un conjunto de archivos estát
    - Caché inmutable para los activos con hash.
    - `no-cache` para el HTML, `ngsw.json` y el manifiesto.
 5. **Despliegue desde CI** (W3-17) con un token de Cloudflare guardado como secreto de GitHub. El ID de cliente de Google se inyecta al compilar.
-6. **Comportamientos de la plataforma documentados en ADR-0022** (reservado, lo escribe W1-09): barra final, `html_handling` y precedencia de rewrites, con evidencia.
+6. **Comportamientos de la plataforma documentados en ADR-0022** (redactado en W1-09 y aceptado en W2-02): barra final, `html_handling` y precedencia de rewrites, con evidencia.
 
 **Acciones del dueño:** comprar el dominio y crear el token de Cloudflare, la ruta del subdominio y las variables de GitHub (W3-17).
 
@@ -66,6 +66,6 @@ La v1 no tiene backend (ADR-0001): el producto es un conjunto de archivos estát
 
 ## Referencias
 
-- ADR-0001, ADR-0008, ADR-0011, ADR-0016, ADR-0021 (reservado), ADR-0022 (reservado), ADR-0023 (reservado).
+- ADR-0001, ADR-0008, ADR-0011, ADR-0016, ADR-0021, ADR-0022, ADR-0023.
 - Tarjetas W1-09, W2-10, W3-17 y W6-04.
 - Cloudflare Workers, activos estáticos: https://developers.cloudflare.com/workers/static-assets/

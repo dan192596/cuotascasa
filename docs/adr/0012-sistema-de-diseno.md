@@ -92,6 +92,8 @@ Restricciones: escritorio primero, formatos de Guatemala, accesibilidad AA y nin
 - **Avisos propios en vez de `MatSnackBar`.** El aviso de errores (`cc-error-toast`, en `core/errors`) y el aviso de actualización (`cc-update-prompt`, en `core/pwa`) son componentes ligeros propios, para cuidar los presupuestos del bundle de la landing y de `/app`.
 - **Montos negativos.** El signo va antes del símbolo: `-Q 1,234.50` (y `-US$ 1,234.50`); el cero nunca lleva signo.
 
+**Enmienda (2026-10-19, W6, PR #94 y #95).** Los botones nativos nunca toman el aspecto de la plataforma: `styles.scss` les quita la apariencia nativa (`appearance: none`), porque WebKitGTK pintaba su propio tema oscuro sobre ellos con contraste insuficiente, y les da un estilo base global con los tokens de la paleta (`--cc-color-*`) en lugar de `ButtonFace` y `ButtonText` del agente de usuario. Los estilos de cada componente y los botones de Material, más específicos, mandan sobre esa base. Los componentes usan solo tokens que existen: el menú de exportación usaba variables inexistentes y se corrigió en el PR #94.
+
 **Enmienda (2026-10-22, W8-01).** La identidad «Mercado» ([ADR-0026](0026-identidad-mercado.md)) cambia cuatro decisiones de este ADR. Las demás siguen vigentes.
 
 - **Decisión 1:** la paleta pasa a «Mercado» (versión congelada en `docs/specs/design-palette.md`, aprobada el 2026-10-22) y la tipografía a Bricolage Grotesque, con JetBrains Mono en las cifras. Source Serif 4 sale del producto. Ver ADR-0026, secciones 1 y 3.

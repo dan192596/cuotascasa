@@ -104,7 +104,7 @@ Con datos solo en el navegador (ADR-0001), un borrado o un cambio de equipo pier
 
 ## Referencias
 
-- ADR-0001, ADR-0002, ADR-0005, ADR-0009, ADR-0016, ADR-0020, ADR-0021 (reservado), ADR-0024.
+- ADR-0001, ADR-0002, ADR-0005, ADR-0009, ADR-0016, ADR-0020, ADR-0021, ADR-0024.
 - `docs/specs/drive-api-subset.md`; tarjetas W1-06, W2-08, W2-09, W3-18, W4-09 y W5-08.
 - https://developers.google.com/workspace/drive/api/guides/appdata
 - https://developers.google.com/identity/oauth2/web/guides/use-token-model
@@ -123,3 +123,9 @@ Con datos solo en el navegador (ADR-0001), un borrado o un cambio de equipo pier
 - **`prepare(): Promise<boolean>`.** Devuelve `true` solo cuando el módulo de Drive y el script de Google quedaron listos, y `false` si la sincronización no está configurada o la carga falló. Nunca rechaza. La pantalla de Ajustes ofrece el segundo paso (el botón que abre la ventana de consentimiento con `connect()`) **solo** cuando `prepare()` devolvió `true`; con `false` se queda en el primer paso y muestra un aviso.
 - **`changePassphrase()` devuelve su resultado:** `'changed' | 'busy' | 'failed'`. Solo `'changed'` significa que la copia de Drive y este dispositivo ya usan la frase nueva, y solo con `'changed'` la UI puede decir que la frase cambió. Con `'busy'` (otro dispositivo estaba sincronizando) no cambió nada; con `'failed'` no se confirmó nada y `status` dice por qué (sin conexión, falta autorizar, etc.).
 - **Pantalla de W5-08 (PR #84).** La conexión en dos pasos de la enmienda de W4 ya existe en Ajustes, con e2e de la ventana emergente en Chromium y WebKit sobre un ID de cliente sintético inyectado al compilar el build de e2e (PR #75).
+
+**Enmienda (2026-10-21, W7, decisiones del dueño).** Dos decisiones para v1 que no cambian el modelo de sincronización:
+
+- **Tope de descarga de 20 MiB** (W7-03, PR #98), el mismo de la importación (ADR-0007). `downloadFile` rechaza con `SyncError('InvalidRemote')` si `Content-Length` pasa el tope, antes de leer el cuerpo; sin esa cabecera, o con una que miente, cuenta los bytes del flujo y lo cancela en cuanto pasa el tope. La sesión ya se detiene ante `InvalidRemote` sin guardar ni subir nada (decisión 4).
+- **«Borrar datos de este dispositivo»** (W7-04, PR #99) **nunca toca la copia de Drive**. En orden: carga primero lo que necesita (los nombres de las dos bases), así que un fallo ahí no cambia nada; si Drive está en uso, desconecta, lo que revoca el token (la única llamada a Google); cierra el almacén de datos; avisa por `BroadcastChannel` a las demás pestañas, que recargan `/app` y sueltan sus conexiones; y, bajo el candado de sincronización (`cuotascasa-sync`), borra primero la base de la clave y después la de datos, para que ninguna sincronización ni cambio de frase la recree a mitad. Un fallo después de empezar se informa con honestidad como borrado posiblemente parcial, con el pedido de cerrar las demás pestañas y reintentar. La copia `cuotascasa.json` y su `.prev` se quedan en Drive; para borrarlas, la persona usa «Administrar aplicaciones» en Drive (decisión 8), como explica `/privacidad`.
+- **Revocación de un token rechazado** (PR #100, revisión de W7-01). Un token que GIS entrega pero la app rechaza (alcance sin `drive.appdata` o vencimiento inválido) también se revoca, igual que uno que llega tarde, para que no quede vivo en Google.
