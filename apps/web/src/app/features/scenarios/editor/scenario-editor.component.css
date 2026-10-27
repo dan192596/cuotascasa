@@ -3,7 +3,7 @@
   display: grid;
   gap: 1.5rem;
 }
-.block {
+.panel {
   display: grid;
   gap: 0.75rem;
 }

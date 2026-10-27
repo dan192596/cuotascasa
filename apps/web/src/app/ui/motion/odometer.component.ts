@@ -37,7 +37,7 @@ interface Glyph {
             </span>
           </span>
         } @else {
-          <span class="fixed" aria-hidden="true" [attr.data-char]="glyph.char">{{ glyph.char }}</span>
+          <span class="sep" aria-hidden="true" [attr.data-char]="glyph.char">{{ glyph.char }}</span>
         }
       }
     </span>
@@ -67,7 +67,7 @@ interface Glyph {
     }
     /* Copying the figure yields the hidden final text, never the 0-9 strips of every column. */
     .col,
-    .fixed {
+    .sep {
       user-select: none;
     }
     .col {
@@ -84,7 +84,7 @@ interface Glyph {
       display: block;
       height: 1em;
     }
-    .fixed {
+    .sep {
       display: inline-block;
       height: 1em;
     }

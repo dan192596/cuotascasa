@@ -1,4 +1,4 @@
-<section class="block" [attr.aria-labelledby]="id('list-title')" data-testid="scenario-list">
+<section class="panel" [attr.aria-labelledby]="id('list-title')" data-testid="scenario-list">
   <h2 [id]="id('list-title')" tabindex="-1">Escenarios</h2>
   <p class="hint">
     Un escenario es tu camino real más eventos hipotéticos. Los datos reales no cambian. Solo uno está activo a la vez.
@@ -122,7 +122,7 @@
 </section>
 
 @if (active(); as scenario) {
-  <section class="block" [attr.aria-labelledby]="id('active-title')" data-testid="active-scenario">
+  <section class="panel" [attr.aria-labelledby]="id('active-title')" data-testid="active-scenario">
     <h2 [id]="id('active-title')" tabindex="-1">Escenario activo: {{ scenario.name }}</h2>
 
     @if (engineNotice(); as notice) {
@@ -190,7 +190,7 @@
   </section>
 
   @if (canEdit()) {
-    <section class="block" [attr.aria-labelledby]="id('tools-title')" data-testid="tools">
+    <section class="panel" [attr.aria-labelledby]="id('tools-title')" data-testid="tools">
       <h2 [id]="id('tools-title')">Herramientas</h2>
 
       <form
@@ -462,7 +462,7 @@
       }
     </section>
   } @else {
-    <section class="block" data-testid="tools-unavailable">
+    <section class="panel" data-testid="tools-unavailable">
       <h2>Herramientas</h2>
       <p class="hint">
         Las herramientas esperan a que el escenario se pueda calcular. Corrige o quita el evento que causa el problema.
@@ -470,7 +470,7 @@
     </section>
   }
 } @else {
-  <section class="block" data-testid="tools-placeholder">
+  <section class="panel" data-testid="tools-placeholder">
     <h2>Herramientas</h2>
     <p>Activa o crea un escenario para probar abonos, adelantos de cuotas y metas.</p>
   </section>
