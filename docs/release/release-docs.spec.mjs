@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import {
   CLOSED_WITHOUT_CHANGES,
   PENDING_RELEASE_CARDS,
+  POST_RELEASE_WAVES,
   RELEASE_CARD,
   REQUIREMENT_IDS,
   buildMatrix,
@@ -158,6 +159,7 @@ describe('docs/release/traceability.md (the real matrix)', () => {
     expect(rows.map((row) => row.id)).toEqual(REQUIREMENT_IDS);
     for (const row of rows) {
       const planned = plan.waves
+        .filter((wave) => !POST_RELEASE_WAVES.includes(wave.id))
         .flatMap((wave) => wave.cards)
         .filter((card) => card.requirements.includes(row.id))
         .map((card) => card.id)

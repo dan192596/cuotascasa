@@ -74,6 +74,8 @@ El siguiente número libre es el **0025**. Solo Opus crea ADR nuevos.
 | W5 | Pantallas restantes | 8 (0) | 8 listas a la vez; lotes de ≤ 6 Sonnet | **Todas las pantallas** |
 | W6 | Recorridos e2e, barridos y docs | 4 (0) | 4 listas a la vez; lotes de ≤ 6 Sonnet | Producto probado de punta a punta en Chromium y WebKit |
 | W7 | Release | 4 (1) | W7-02 ∥ W7-03 ∥ W7-04 (tarjetas de corrección registradas el 2026-10-21) → W7-01 | **v1.0.0** |
+| W8 | Identidad «Mercado» | 8 (3) | W8-01 → W8-02 → tarjetas por área → W8-08; fusionada en un solo PR (#108) | Landing y app con la identidad nueva |
+| W9 | Correcciones del panel multi-rol (2026-10-27) | 13 (4) | W9-01, W9-05, W9-07 y W9-09 listas a la vez; luego el resto según `depends_on`; cierre W9-13. Evidencia en `implementation/w9/README.md` | Errores de nivel 1 y 2 corregidos y las 3 funcionalidades más votadas |
 
 En total son 61 tarjetas Sonnet y 14 Opus: las 72 aprobadas más las tres de corrección de W7.
 
