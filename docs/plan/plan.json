@@ -3092,6 +3092,551 @@
           "notes": "Opus card. Commit «docs: close wave W8»."
         }
       ]
+    },
+    {
+      "id": "W9",
+      "name": "Panel review fixes",
+      "goal": "Fix the defects that the multi-role review panel of 2026-10-27 confirmed at levels 1 and 2 (sync pending count, savings shown from re-anchoring, tombstones keeping the payload, backup marked before download, full Drive as auth error, frozen engine date, anchor by installment number, net saving with IUSI, sub-pages without loan context, unsaved changes lost) and ship its three most voted features (warning before clearing the device, one-tap payment of the month, anchor by statement date). Two Opus contract and ruling cards open the wave; Sonnet cards per area follow; an Opus close.",
+      "cards": [
+        {
+          "id": "W9-01",
+          "title": "Contract amendments: upload-scoped markSynced, Drive quota error, backup marked after download",
+          "executor": "opus",
+          "owns": [
+            "packages/persistence/src/ports.ts",
+            "packages/sync/src/ports.ts",
+            "packages/sync/src/testing/",
+            "docs/specs/drive-api-subset.md",
+            "apps/web/src/app/data/api.ts",
+            "apps/web/src/app/data/api.spec.ts",
+            "apps/web/src/app/data/backup/",
+            "apps/web/src/app/data/sync/sync-status-text.ts",
+            "apps/web/src/app/data/sync/sync-status-text.spec.ts",
+            "docs/adr/0007-formato-de-respaldo-json.md",
+            "docs/adr/0008-sincronizacion-google-drive.md"
+          ],
+          "depends_on": [
+            "W8-08"
+          ],
+          "contracts_used": [
+            "docs/plan/implementation/w9/README.md",
+            "docs/adr/0024-sync-merge-order.md",
+            "packages/persistence/src/contract/",
+            "packages/sync/src/session/"
+          ],
+          "deliverables": "Opus contract micro-card for three panel findings (docs/plan/implementation/w9/README.md, qa-B1, qa-B3, seguridad-B3). Every change is additive and keeps main green: the implementations land in W9-02 and W9-03. (1) DataStore.markSynced in packages/persistence/src/ports.ts and the LocalDataset port of packages/sync/src/ports.ts take what was uploaded, so a record written after local.save keeps counting as pending (suggested: markSynced(at, uploaded) with the entity:id + updatedAt keys that travelled in the file; the parameter is optional until W9-02 makes the session pass it, and its doc comment states the rule). (2) A new SyncErrorCode for a full Drive (suggested 'QuotaExceeded') for 403 storageQuotaExceeded, with the Spanish status text in data/sync/sync-status-text.ts («Tu Google Drive está lleno: libera espacio y vuelve a sincronizar») and the 403 reasons documented in docs/specs/drive-api-subset.md; dailyLimitExceeded is classified as a rate limit (NetworkError) and the decision is written there; the Google fakes in packages/sync/src/testing/ can answer a 403 with a given reason. (3) BackupService in data/api.ts: exportJson no longer marks the backup; a new method (suggested markExported(file)) marks it, and data/backup/provide-backup.ts implements it keeping the existing guard (a write notified after exportAll prevents the mark). (4) ADR-0008 decision 4 and ADR-0007 amended with the new rules; ADR-0024 is not changed.",
+          "acceptance_criteria": [
+            "Type-level api.spec.ts and the persistence/sync port docs state the new rules; pnpm typecheck passes with the existing implementations untouched except data/backup and sync-status-text",
+            "provide-backup specs: exportJson leaves lastBackupAt and changesSinceBackup unchanged; markExported sets them, and it does not mark when a write was notified after exportAll",
+            "sync-status-text specs cover the new code with its fixed Spanish text; the Google fakes answer a 403 with a chosen reason",
+            "ADR-0007 and ADR-0008 amendments merged; docs/specs/drive-api-subset.md lists the 403 reasons and how each one is classified",
+            "pnpm lint && pnpm typecheck && pnpm test pass"
+          ],
+          "requirements": [
+            "R10",
+            "R11",
+            "R12"
+          ],
+          "size": "M",
+          "notes": "Opus card registered after the multi-role panel of 2026-10-27. If the chosen shape differs from the suggestions, write it in the ADR amendments and in the W9-02 and W9-03 prompts as «Contexto adicional de Opus». Evidence, repro and the panel's votes: docs/plan/implementation/w9/README.md."
+        },
+        {
+          "id": "W9-02",
+          "title": "Sync correctness: edits made during an upload stay pending; a full Drive is not an auth error",
+          "executor": "sonnet",
+          "owns": [
+            "packages/persistence/src/dexie/",
+            "packages/persistence/src/memory/",
+            "packages/persistence/src/contract/",
+            "packages/sync/src/session/",
+            "packages/sync/src/google-drive/provider.ts",
+            "packages/sync/src/google-drive/provider.spec.ts",
+            "apps/web/src/app/data/sync/drive-sync-service.ts",
+            "apps/web/src/app/data/sync/drive-sync-service.spec.ts",
+            "apps/web/src/app/data/sync/local-dataset.ts",
+            "apps/web/src/app/data/sync/local-dataset.spec.ts",
+            "apps/web/src/app/features/settings/sync/settings-sync.component.ts",
+            "apps/web/src/app/features/settings/sync/settings-sync.component.spec.ts"
+          ],
+          "depends_on": [
+            "W9-01"
+          ],
+          "contracts_used": [
+            "docs/plan/implementation/w9/README.md",
+            "packages/persistence/src/ports.ts",
+            "packages/sync/src/ports.ts",
+            "packages/sync/src/testing/",
+            "docs/specs/drive-api-subset.md",
+            "docs/adr/0008-sincronizacion-google-drive.md",
+            "docs/adr/0024-sync-merge-order.md",
+            "apps/web/src/app/data/api.ts",
+            "apps/web/src/app/data/tokens.ts"
+          ],
+          "deliverables": "Implement the W9-01 contracts. (1) Dexie and in-memory stores: markSynced clears only the pending entries covered by what was uploaded; an entry written later (newer updatedAt, or not uploaded) stays pending and lastSyncAt is still set. Add the case to the shared contract suite (packages/persistence/src/contract/) so both adapters and the reference fake prove it. (2) SyncSession passes what it uploaded to markSynced; session specs add an interleaved write between local.save and markSynced and assert the record is still pending and is uploaded by the next pass. (3) data/sync: after a session ends, pendingChanges is re-read, so the status never shows «Sincronizado» while a pending record exists. (4) provider.ts failureOf maps 403 storageQuotaExceeded to the new code and dailyLimitExceeded as W9-01 decided; settings-sync keeps the user connected on a full Drive (no «Conectar» loop) and shows the status text with what to do.",
+          "acceptance_criteria": [
+            "Contract suite: a record written after the uploaded snapshot is still counted by pendingChanges after markSynced, on Dexie (fake-indexeddb), memory and the reference fake",
+            "Session spec with a delayed upload and a write in between: status ends with pendingChanges >= 1 and the next sync uploads the record",
+            "Provider spec: 403 storageQuotaExceeded yields the new code, a 403 rate limit stays NetworkError, 401 stays AuthError",
+            "settings-sync spec: with the quota code the component stays in connected mode, shows the full-Drive text and offers «Sincronizar» again, never «Conectar»",
+            "Coverage of packages/persistence and packages/sync stays >= 95 %; pnpm lint && pnpm typecheck && pnpm test pass"
+          ],
+          "requirements": [
+            "R10",
+            "R12"
+          ],
+          "size": "M",
+          "notes": "Sonnet card. Do not change the merge order or ADR-0024 (the read→save window stays accepted). Evidence, repro and the panel's votes: docs/plan/implementation/w9/README.md."
+        },
+        {
+          "id": "W9-03",
+          "title": "Backup download: mark it only after the download starts and keep the file URL alive",
+          "executor": "sonnet",
+          "owns": [
+            "apps/web/src/app/features/settings/backup/settings-backup.component.ts",
+            "apps/web/src/app/features/settings/backup/settings-backup.component.spec.ts",
+            "apps/web/src/app/features/settings/backup/backup-model.ts",
+            "apps/web/src/app/features/settings/backup/backup-model.spec.ts"
+          ],
+          "depends_on": [
+            "W9-01"
+          ],
+          "contracts_used": [
+            "docs/plan/implementation/w9/README.md",
+            "apps/web/src/app/features/export/export-support.ts",
+            "apps/web/src/app/features/settings/backup/settings-backup.contract.spec.ts",
+            "docs/adr/0007-formato-de-respaldo-json.md",
+            "apps/web/src/app/data/api.ts",
+            "apps/web/src/app/data/tokens.ts"
+          ],
+          "deliverables": "The backup download in Ajustes follows the pattern export-support.ts already uses for Safari: the anchor is attached to the document, clicked, removed, and the object URL is revoked after the same lifetime (OBJECT_URL_LIFETIME_MS semantics, not immediately). Only after the click succeeds does the component call the W9-01 method that marks the backup; if building the file or the click throws, the backup is not marked and an assertive Spanish error says so. The success notice keeps its current wording. Same flow for the plain and the encrypted export.",
+          "acceptance_criteria": [
+            "Component spec: markExported is called once after the click and never when exportJson or the click throws; the object URL is not revoked synchronously (fake timers) and is revoked after the lifetime",
+            "The anchor is in the document at click time and removed afterwards",
+            "settings-backup.contract.spec.ts still passes unchanged; pnpm lint && pnpm typecheck && pnpm test pass"
+          ],
+          "requirements": [
+            "R11",
+            "R18"
+          ],
+          "size": "S",
+          "notes": "Sonnet card. Browsers do not report whether the user saved the file; «after the click» is the agreed best effort. Do not copy export-support.ts: import its helper only if the dependency matrix allows it; otherwise reproduce the lifetime constant locally and say so in the PR. Evidence, repro and the panel's votes: docs/plan/implementation/w9/README.md."
+        },
+        {
+          "id": "W9-04",
+          "title": "Tombstones without the financial payload, purged locally, and out of the backup",
+          "executor": "opus",
+          "owns": [
+            "docs/adr/0005-modelo-de-datos.md",
+            "docs/adr/0008-sincronizacion-google-drive.md",
+            "packages/schema/src/entities/",
+            "packages/schema/src/backup/",
+            "packages/persistence/src/dexie/",
+            "packages/persistence/src/memory/",
+            "packages/persistence/src/contract/",
+            "packages/sync/src/merge/",
+            "apps/web/src/app/data/backup/"
+          ],
+          "depends_on": [
+            "W9-02",
+            "W9-03"
+          ],
+          "contracts_used": [
+            "docs/plan/implementation/w9/README.md",
+            "docs/adr/0007-formato-de-respaldo-json.md",
+            "docs/adr/0024-sync-merge-order.md",
+            "packages/persistence/src/ports.ts"
+          ],
+          "deliverables": "Opus card for seguridad-B1: a deleted record must not keep amounts, bank, notes or any other user field on the device indefinitely or in a backup. Decide and record in ADR-0005 and ADR-0008 (amendments) the shape, covering at least: (a) a tombstone stores only id, entity, loanId where the merge needs it, createdAt, updatedAt, updatedByDevice and deletedAt (entity schemas accept a tombstone variant; schema version and migration of existing tombstones on open and on backup import); (b) without Drive (lastSyncAt null) tombstones are purged by the ADR-0008 retention rule outside a sync, or immediately when the device never synced, whichever the ADR chooses with its reasoning about a later first connection; (c) the backup export carries tombstones only if the import needs them, and never their payload. Implement it across schema, both adapters, the contract suite and the merge (property tests keep LWW and deletion-wins-at-equal-timestamp results unchanged).",
+          "acceptance_criteria": [
+            "Contract suite: after remove(), reading the raw tombstone (adapter test hook) shows none of the entity's user fields, on Dexie and memory",
+            "Migration test: a v1 dataset with full-payload tombstones opens and imports with the payload stripped; the backup schema accepts old files",
+            "Purge test without Drive follows the amended ADR rule; merge property tests still pass",
+            "Export test: a backup made after deleting a synthetic loan with a note contains no amount, bank or note of that loan",
+            "Coverage >= 95 % in schema, persistence and sync; pnpm lint && pnpm typecheck && pnpm test pass"
+          ],
+          "requirements": [
+            "R9",
+            "R10",
+            "R11",
+            "R12"
+          ],
+          "size": "M",
+          "notes": "Opus card: it changes frozen entity and backup schemas. If the decision needs the owner (for example, dropping tombstones from backups changes what a restored device does after reconnecting Drive), present the options before implementing. Evidence, repro and the panel's votes: docs/plan/implementation/w9/README.md."
+        },
+        {
+          "id": "W9-05",
+          "title": "Spec rulings: savings metrics vs anchors and charges that outlive the loan; HU-04 anchor by date",
+          "executor": "opus",
+          "owns": [
+            "docs/algorithm.md",
+            "docs/glossary.md",
+            "docs/specs/algorithm-examples/",
+            "docs/discovery/historias-de-usuario.md",
+            "docs/adr/0027-metricas-de-ahorro-y-ancla-por-fecha.md",
+            "docs/adr/README.md"
+          ],
+          "depends_on": [
+            "W8-08"
+          ],
+          "contracts_used": [
+            "docs/plan/implementation/w9/README.md",
+            "docs/adr/0004-algoritmo-fha-guatemala-v1.md",
+            "docs/specs/2026-10-04-cuotascasa-v1-design.md"
+          ],
+          "deliverables": "Opus rulings for three findings, written in ADR-0027 and reflected in their sources. (1) finanzas-B2: the «Plan original frente a lo real» comparison counts re-anchoring as saving. Decide between a presentation fix (show the anchor adjustment, the sum of realDelta.perAnchor, apart from the saving, with an explanatory note; [ALG.METRICS] unchanged) and a rule change. (2) finanzas-B1: netSaving includes fixed charges such as IUSI that continue after payoff. Decide between relabelling (state what the figure includes, plus a figure without fixed charges) and a rule or schema change (a FixedCharge attribute «continues after payoff», which touches ADR-0005 and the oracle). Also fix the «Interés ahorrado» label that includes insurance (finanzas-B7). (3) ux-B3/finanzas-B5: amend HU-04 so the wizard asks for the statement date first, derives the installment with [ALG.EVENTS.ANCHOR] and offers «antes / después de pagar la cuota de ese mes», converting to k or k+1 before saving (stored model unchanged); state whether [ALG.EVENTS.ANCHOR] needs a new example. If a rule in docs/algorithm.md changes, follow section 5 of docs/plan/README.md (oracle regeneration and lineage notices) and update the owns of W9-06 in plan.json before it is launched.",
+          "acceptance_criteria": [
+            "ADR-0027 accepted and indexed in docs/adr/README.md, with each decision and its reason",
+            "HU-04 amended; any changed [ALG.*] rule has its example and glossary row, and the docs job passes",
+            "W9-06 and W9-08 cards updated in plan.json if the rulings change their scope; render_plan.py --check passes"
+          ],
+          "requirements": [
+            "R5",
+            "R7",
+            "R14",
+            "R16"
+          ],
+          "size": "S",
+          "notes": "Opus card. Precedence: docs/algorithm.md > ADR > spec > HU > card; these rulings set what W9-06 and W9-08 implement. Evidence, repro and the panel's votes: docs/plan/implementation/w9/README.md."
+        },
+        {
+          "id": "W9-06",
+          "title": "Savings figures that do not count re-anchoring or charges that continue after payoff",
+          "executor": "sonnet",
+          "owns": [
+            "apps/web/src/app/features/loans/detail/loan-detail-page.component.ts",
+            "apps/web/src/app/features/loans/detail/loan-detail-page.component.spec.ts",
+            "apps/web/src/app/features/loans/detail/loan-detail-model.ts",
+            "apps/web/src/app/features/loans/detail/loan-detail-model.spec.ts",
+            "apps/web/src/app/features/scenarios/compare/compare-model.ts",
+            "apps/web/src/app/features/scenarios/compare/compare-model.spec.ts"
+          ],
+          "depends_on": [
+            "W9-05"
+          ],
+          "contracts_used": [
+            "docs/plan/implementation/w9/README.md",
+            "docs/adr/0027-metricas-de-ahorro-y-ancla-por-fecha.md",
+            "docs/algorithm.md",
+            "apps/web/src/app/data/api.ts",
+            "apps/web/src/app/data/tokens.ts"
+          ],
+          "deliverables": "Implement the W9-05 rulings in the presentation (default scope, assuming no rule change): in the loan detail, «Plan original frente a lo real» shows the anchor adjustment (sum of realDelta.perAnchor) as its own row with a short Spanish note that it comes from reported balances, not from registered payments, and the months/saving figures are labelled accordingly; the net saving states what it includes per ADR-0027 (and shows the variant without fixed charges if the ruling asks for it); the comparison table renames the interest-plus-insurance figure. Money stays as decimal strings formatted by the ui/ pipes.",
+          "acceptance_criteria": [
+            "Model spec with a synthetic loan and a lower reported balance and no payment: the anchor adjustment row equals the sum of realDelta.perAnchor and the note is present",
+            "Detail and compare specs: labels match ADR-0027 exactly; no money value goes through number",
+            "pnpm lint && pnpm typecheck && pnpm test pass"
+          ],
+          "requirements": [
+            "R5",
+            "R17"
+          ],
+          "size": "M",
+          "notes": "Sonnet card. If W9-05 changes a rule in docs/algorithm.md, Opus amends this card (engine and oracle work go to their lineages) before launch. Evidence, repro and the panel's votes: docs/plan/implementation/w9/README.md."
+        },
+        {
+          "id": "W9-07",
+          "title": "The engine's «today» follows the calendar while the app stays open",
+          "executor": "sonnet",
+          "owns": [
+            "apps/web/src/app/data/engine/engine-facade.ts",
+            "apps/web/src/app/data/engine/provide-engine-facade.ts",
+            "apps/web/src/app/data/engine/provide-engine-facade.spec.ts",
+            "apps/web/src/app/data/engine/loan-projection-service.spec.ts",
+            "apps/web/src/app/data/engine/testing/"
+          ],
+          "depends_on": [
+            "W8-08"
+          ],
+          "contracts_used": [
+            "docs/plan/implementation/w9/README.md",
+            "packages/persistence/src/ports.ts",
+            "apps/web/src/app/data/backup/provide-backup.ts",
+            "apps/web/src/app/data/api.ts",
+            "apps/web/src/app/data/tokens.ts"
+          ],
+          "deliverables": "EngineFacade.asOf becomes reactive: it derives from a «today» signal that re-reads Clock.today() when the page becomes visible again (visibilitychange/pageshow) and at the next local midnight while visible (one timer rescheduled each time, cleared when the injector is destroyed). Everything derived from asOf (current installment, balance, percent paid, next installment, cutoffK, totals, export generatedOn) follows. The value only changes when the date changes, so no recomputation happens on every visibility event. Fix the spec «derived values depend on asOf only» so it actually advances a mutable fake clock.",
+          "acceptance_criteria": [
+            "Spec with a mutable fake Clock: advancing one day and dispatching visibilitychange changes asOf and currentInstallment; dispatching it on the same day does not recompute (same signal value)",
+            "Spec with fake timers: crossing local midnight while visible updates asOf; destroying the injector clears the timer and the listener",
+            "loan-projection-service.spec.ts: the asOf test changes asOf and asserts the derived values change",
+            "pnpm lint && pnpm typecheck && pnpm test pass"
+          ],
+          "requirements": [
+            "R13"
+          ],
+          "size": "S",
+          "notes": "Sonnet card. The Clock port stays as is; the public pages keep their own clock (public/public-clock.ts) and are out of scope. Evidence, repro and the panel's votes: docs/plan/implementation/w9/README.md."
+        },
+        {
+          "id": "W9-08",
+          "title": "Anchor by statement date, with a before/after-payment choice",
+          "executor": "sonnet",
+          "owns": [
+            "apps/web/src/app/features/loans/wizard/steps/step-anchor.component.ts",
+            "apps/web/src/app/features/loans/wizard/wizard-rules.ts",
+            "apps/web/src/app/features/loans/wizard/wizard-rules.spec.ts",
+            "apps/web/src/app/features/loans/wizard/wizard-model.ts",
+            "apps/web/src/app/features/loans/wizard/wizard-model.spec.ts",
+            "apps/web/src/app/features/loans/wizard/wizard-messages.ts",
+            "apps/web/src/app/features/real-data/forms/"
+          ],
+          "depends_on": [
+            "W9-05"
+          ],
+          "contracts_used": [
+            "docs/plan/implementation/w9/README.md",
+            "docs/adr/0027-metricas-de-ahorro-y-ancla-por-fecha.md",
+            "docs/discovery/historias-de-usuario.md",
+            "docs/algorithm.md",
+            "apps/web/src/app/data/api.ts",
+            "apps/web/src/app/data/tokens.ts"
+          ],
+          "deliverables": "Implement amended HU-04 in wizard step 4 and in the reported-balance form of «Datos reales»: ask first for the statement date, derive the installment with the [ALG.EVENTS.ANCHOR] rule (shown as «Corresponde a la cuota N, que vence el dd/mm/aaaa»), and offer «Este saldo es antes de pagar esa cuota / después de pagarla». «Después» stores the anchor as the balance before installment k+1; the stored model is unchanged. The installment number stays editable as an advanced option. Wizard and form share the derivation logic (one pure function in the feature with its spec, no new cross-feature import).",
+          "acceptance_criteria": [
+            "Rules spec: with only a date the wizard saves (no «Indica la cuota…» error); «antes» stores k and «después» stores k+1 per ADR-0027",
+            "Form spec: same behaviour in «Datos reales»; event-form.contract.spec.ts still passes",
+            "A synthetic loan registered with an «after payment» balance from the [ALG.EXAMPLE] schedule shows a green semáforo",
+            "Keyboard and screen-reader labels for the new choice; pnpm lint && pnpm typecheck && pnpm test pass"
+          ],
+          "requirements": [
+            "R7",
+            "R14",
+            "R16"
+          ],
+          "size": "M",
+          "notes": "Sonnet card. Launch only after W9-05 amended HU-04. Evidence, repro and the panel's votes: docs/plan/implementation/w9/README.md."
+        },
+        {
+          "id": "W9-09",
+          "title": "Loan sub-pages say which loan they belong to and link back to it",
+          "executor": "sonnet",
+          "owns": [
+            "apps/web/src/app/features/real-data/real-data-page.component.ts",
+            "apps/web/src/app/features/scenarios/scenarios-page.component.ts",
+            "apps/web/src/app/features/schedule/schedule-page.component.ts",
+            "apps/web/src/app/features/schedule/schedule-page.component.spec.ts",
+            "apps/web/src/app/features/schedule/schedule-messages.ts",
+            "e2e/specs/loan-context.spec.ts"
+          ],
+          "depends_on": [
+            "W8-08"
+          ],
+          "contracts_used": [
+            "docs/plan/implementation/w9/README.md",
+            "apps/web/src/app/ui/",
+            "apps/web/src/app/data/api.ts",
+            "apps/web/src/app/data/tokens.ts"
+          ],
+          "deliverables": "«Datos reales», «Proyecciones» and the schedule show the loan alias in the h1 (for example «Datos reales · Casa zona 10» with synthetic aliases in tests), a «← Volver al préstamo» link to the detail, and a document title with the alias. The schedule's error messages that say «Revisa sus datos en el detalle» link to the detail. A missing loan keeps today's not-found message. Focus management of the page h1 stays as it is.",
+          "acceptance_criteria": [
+            "Spec per page: the h1 contains the alias, the back link points to /app/prestamos/:id, and document.title contains the alias",
+            "Schedule spec: the generic error message contains a link to the detail",
+            "e2e (Chromium and WebKit): open «Datos reales» of the second of two synthetic loans by direct URL and see its alias; axe without serious or critical issues",
+            "pnpm lint && pnpm typecheck && pnpm test pass"
+          ],
+          "requirements": [
+            "R15",
+            "R16",
+            "R17"
+          ],
+          "size": "S",
+          "notes": "Sonnet card. real-data-page and scenarios-page are frozen page shells; this card is in their editableBy. Evidence, repro and the panel's votes: docs/plan/implementation/w9/README.md."
+        },
+        {
+          "id": "W9-10",
+          "title": "«Registrar el pago de este mes» in one tap, and mark past installments as paid in bulk",
+          "executor": "sonnet",
+          "owns": [
+            "apps/web/src/app/features/dashboard/loan-card.component.ts",
+            "apps/web/src/app/features/dashboard/loan-card.component.spec.ts",
+            "apps/web/src/app/features/real-data/forms/",
+            "apps/web/src/app/features/real-data/bulk/",
+            "apps/web/src/app/features/real-data/real-data-page.component.ts",
+            "e2e/specs/register-payment.spec.ts"
+          ],
+          "depends_on": [
+            "W9-08",
+            "W9-09"
+          ],
+          "contracts_used": [
+            "docs/plan/implementation/w9/README.md",
+            "docs/algorithm.md",
+            "apps/web/src/app/ui/",
+            "apps/web/src/app/data/api.ts",
+            "apps/web/src/app/data/tokens.ts"
+          ],
+          "deliverables": "(1) The dashboard loan card (active loans only) and «Datos reales» offer «Registrar el pago de este mes». It opens the real-payment form prefilled with the current installment: date = its due date, installment = k, amount = projected total, and the projected breakdown as editable suggestions (today initialModel leaves date and amount empty, event-form.logic.ts:113-120). The prefill travels in router navigation state, never in the URL or storage. (2) In «Datos reales», «Marcar cuotas pasadas como pagadas»: the user picks up to which past installment (default: the last one due before today), sees how many payments will be created, confirms, and each one is saved as a normal ActualPayment with the projected amounts. Installments that already have a payment are skipped. By [ALG.ACTUAL] this does not change the projection. If a failure mid-way would leave a partial set and data/api has no batch write, stop and ask Opus instead of improvising one.",
+          "acceptance_criteria": [
+            "Logic spec: the prefill for a synthetic loan equals the projected row of the current installment; nothing goes to the URL",
+            "Bulk spec: marking up to k creates exactly the missing payments 1..k, skips existing ones, and announces the count politely",
+            "Card spec: paid and archived loans do not show the button",
+            "e2e (Chromium and WebKit): register this month's payment from the dashboard in two taps; axe without serious or critical issues",
+            "pnpm lint && pnpm typecheck && pnpm test pass"
+          ],
+          "requirements": [
+            "R13",
+            "R16"
+          ],
+          "size": "M",
+          "notes": "Sonnet card. real-data-page is a frozen page shell; this card is in its editableBy. Evidence, repro and the panel's votes: docs/plan/implementation/w9/README.md."
+        },
+        {
+          "id": "W9-11",
+          "title": "Warn before leaving unsaved changes in the wizard and the forms",
+          "executor": "sonnet",
+          "owns": [
+            "apps/web/src/app/ui/feedback/unsaved-changes.ts",
+            "apps/web/src/app/ui/feedback/unsaved-changes.spec.ts",
+            "apps/web/src/app/features/loans/loans.routes.ts",
+            "apps/web/src/app/features/real-data/real-data.routes.ts",
+            "apps/web/src/app/features/scenarios/scenarios.routes.ts",
+            "apps/web/src/app/features/loans/wizard/loan-wizard-page.component.ts",
+            "apps/web/src/app/features/loans/wizard/loan-wizard-page.component.spec.ts",
+            "apps/web/src/app/features/loans/detail/loan-edit-form.component.ts",
+            "apps/web/src/app/features/loans/detail/loan-edit-form.component.spec.ts",
+            "apps/web/src/app/features/loans/detail/loan-detail-page.component.ts",
+            "apps/web/src/app/features/real-data/forms/",
+            "apps/web/src/app/features/real-data/real-data-page.component.ts",
+            "apps/web/src/app/features/scenarios/scenarios-page.component.ts",
+            "apps/web/src/app/features/scenarios/editor/scenario-editor.component.ts",
+            "apps/web/src/app/features/scenarios/editor/scenario-editor.component.spec.ts",
+            "e2e/specs/unsaved-changes.spec.ts"
+          ],
+          "depends_on": [
+            "W9-06",
+            "W9-10"
+          ],
+          "contracts_used": [
+            "docs/plan/implementation/w9/README.md",
+            "apps/web/src/app/ui/feedback/confirm-dialog.component.ts",
+            "docs/specs/component-contracts.md",
+            "apps/web/src/app/data/api.ts",
+            "apps/web/src/app/data/tokens.ts"
+          ],
+          "deliverables": "A functional canDeactivate guard in ui/feedback/unsaved-changes.ts asks components that implement a small HasUnsavedChanges interface, and uses cc-confirm-dialog («Tienes cambios sin guardar. ¿Salir de todos modos?» with «Seguir editando» as the default focus). A beforeunload listener is active only while a form is dirty. Wire it into the wizard route, the loan detail (edit form), «Datos reales» (event form) and «Proyecciones» (scenario editor). The wizard also gets a «Cancelar» that goes back to the dashboard through the same guard. A saved form or an untouched one never asks.",
+          "acceptance_criteria": [
+            "Guard spec: dirty → dialog; confirm leaves, cancel stays; clean → no dialog; beforeunload is registered only while dirty",
+            "Component specs: each of the four forms reports dirty after an edit and clean after save or reset",
+            "e2e (Chromium and WebKit): fill wizard steps 1-2, click «Ajustes» in the top bar, choose «Seguir editando» and find the data intact; axe without serious or critical issues on the dialog",
+            "pnpm lint && pnpm typecheck && pnpm test pass"
+          ],
+          "requirements": [
+            "R14",
+            "R16",
+            "R17"
+          ],
+          "size": "M",
+          "notes": "Sonnet card. The routes files and the real-data and scenarios page shells are frozen; this card is in their editableBy. The update prompt of core/pwa is out of scope (it may be a follow-up). Evidence, repro and the panel's votes: docs/plan/implementation/w9/README.md."
+        },
+        {
+          "id": "W9-12",
+          "title": "Before «Borrar datos de este dispositivo», show unsynced and unbacked changes",
+          "executor": "sonnet",
+          "owns": [
+            "apps/web/src/app/features/settings/device/",
+            "e2e/specs/settings-device.spec.ts"
+          ],
+          "depends_on": [
+            "W9-02",
+            "W9-03"
+          ],
+          "contracts_used": [
+            "docs/plan/implementation/w9/README.md",
+            "apps/web/src/app/ui/feedback/",
+            "docs/specs/privacy-requirements.md",
+            "apps/web/src/app/data/api.ts",
+            "apps/web/src/app/data/tokens.ts"
+          ],
+          "deliverables": "The destructive confirm of cc-settings-device first states what would be lost: «N cambios sin sincronizar con Drive» (SyncService pendingChanges, when Drive is connected) and «N cambios desde el último respaldo» (BackupService.changesSinceBackup), with two ways out: «Sincronizar ahora» (calls sync(), shown only when Drive is connected and authorized) and «Ir a respaldos» (navigates to the backup section of Ajustes). When both counts are 0 the dialog says «Todo está respaldado o sincronizado». Typing BORRAR is still required in every case.",
+          "acceptance_criteria": [
+            "Component spec: the counts come from the services and update live; «Sincronizar ahora» calls sync() and is hidden without Drive; zero counts show the all-clear text",
+            "e2e: with one unsynced synthetic change the dialog shows the count, and after «Sincronizar ahora» it shows 0 (Google fakes)",
+            "The existing W7-04 specs and e2e still pass; pnpm lint && pnpm typecheck && pnpm test pass"
+          ],
+          "requirements": [
+            "R12",
+            "R18"
+          ],
+          "size": "S",
+          "notes": "Sonnet card. Depends on W9-02 because before that fix the pending count can read 0 while a change is not in Drive. Evidence, repro and the panel's votes: docs/plan/implementation/w9/README.md."
+        },
+        {
+          "id": "W9-14",
+          "title": "Deflake three tests: landing headline sampling, service worker sweep in WebKit, route view transitions spec",
+          "executor": "opus",
+          "owns": [
+            "e2e/specs/landing.spec.ts",
+            "e2e/specs/sweeps/stubs-and-worker.sweep.spec.ts",
+            "apps/web/src/app/app.config.ts",
+            "apps/web/src/app/app.config.spec.ts"
+          ],
+          "depends_on": [
+            "W8-08"
+          ],
+          "contracts_used": [
+            "docs/plan/implementation/w9/README.md",
+            "apps/web/src/app/core/pwa/provide-app-pwa.ts",
+            "e2e/playwright.config.ts",
+            "docs/adr/0023-pwa-registration-scope.md",
+            "docs/adr/0026-identidad-mercado.md"
+          ],
+          "deliverables": "Three tests fail without a product defect and block PRs (CI retries once; seen on #111 and #112, 2026-10-28). Fix the cause, keep what each test proves, and do not raise global timeouts or retries. (1) landing.spec.ts «the headline never scrambles»: it samples the h1 with textContent in a wall-clock loop of 800 ms and needs more than 5 samples; on WebKit in CI each read takes over 130 ms. Record every h1 text from the first parse instead: an init script with a MutationObserver on the document stores the h1 text on every mutation inside it, and the test reads the record once the page clock passes 800 ms after load. The assertion becomes: the record is not empty and holds only the final headline. (2) stubs-and-worker.sweep.spec.ts «one worker scoped to /…»: it loads seven /app routes with full page loads and only then waits for navigator.serviceWorker.ready. WebKit cancels a registration whose download a navigation interrupts (documented in core/pwa/provide-app-pwa.ts), so ready can hang until the 30 s timeout. Wait for ready (bounded) on the first /app page, then visit the other routes, then check registrations and the cache. (3) app.config.spec.ts «wraps navigations in a view transition, skipping only the initial one»: withViewTransitions keeps its skip-initial flag on the options object built once by appConfig, so the test only passes when it is the first router created in the worker (it fails inside the full ng test run). Export from app.config.ts a factory for the router's view-transition feature that appConfig uses, and test the behaviour on a fresh router built from it; keep one order-independent check that appConfig starts a transition on a later navigation.",
+          "acceptance_criteria": [
+            "The three tests pass 20 times in a row on WebKit and Chromium (e2e with --repeat-each=20 for the two e2e tests) and app.config.spec.ts passes inside the full pnpm test:web run",
+            "Mutating the headline during the first 800 ms (temporary local check) makes the landing test fail; an app that never registers a worker makes the sweep fail",
+            "No change to playwright.config.ts timeouts or retries; the comment «Must stay first» is gone from app.config.spec.ts",
+            "pnpm lint && pnpm typecheck && pnpm test and pnpm e2e pass"
+          ],
+          "requirements": [
+            "R1",
+            "R20",
+            "R24"
+          ],
+          "size": "S",
+          "notes": "Opus correction card registered on 2026-10-28 after flaky failures on #111 and #112. app.config.ts is frozen; this card is in its editableBy. Evidence: docs/plan/implementation/w9/README.md."
+        },
+        {
+          "id": "W9-13",
+          "title": "Close wave W9: full sweep, changelog, findings",
+          "executor": "opus",
+          "owns": [
+            "e2e/specs/sweeps/known-defects.ts",
+            "CHANGELOG.md",
+            "docs/plan/implementation/w0/README.md",
+            "docs/release/"
+          ],
+          "depends_on": [
+            "W9-01",
+            "W9-02",
+            "W9-03",
+            "W9-04",
+            "W9-05",
+            "W9-06",
+            "W9-07",
+            "W9-08",
+            "W9-09",
+            "W9-10",
+            "W9-11",
+            "W9-12",
+            "W9-14"
+          ],
+          "contracts_used": [
+            "docs/plan/implementation/w9/README.md"
+          ],
+          "deliverables": "Run pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm bundle:check && pnpm e2e on main with every W9 card merged; axe without violations in light and dark; known-defects.ts updated; CHANGELOG entry (v1.1.0 or as the owner decides); «Hallazgos de W9» in docs/plan/implementation/w0/README.md, including which panel findings remain open (see «Fuera de esta ola» in the W9 guide); project memory updated; decide whether the release traceability (docs/release/traceability.mjs, POST_RELEASE_WAVES) gets a v1.1 matrix that includes W9 or keeps it out.",
+          "acceptance_criteria": [
+            "All commands pass on main and axe finds no violations in light and dark",
+            "Budgets of ADR-0025 respected and measured in the PR",
+            "CHANGELOG and «Hallazgos de W9» written; open panel findings listed for a later wave"
+          ],
+          "requirements": [
+            "R24",
+            "R26"
+          ],
+          "size": "S",
+          "notes": "Opus card. Commit «docs: close wave W9»."
+        }
+      ]
     }
   ],
   "wave0_contracts": "W0 freezes the files below. After W0 any card may read them but none may edit them: docs/plan/frozen-files.json lists them, each entry with editableBy: [card ids], and owns-check rejects an edit by any other card even when the file sits inside a directory the card owns. Changing one takes an Opus contract-change micro-card (registered in docs/plan/plan.json, with the views, cards.json and frozen-files.json regenerated on a branch opus/register-<ID> before the card branch is created), a broadcast to in-flight cards and a rebase.\n\nW0-01, toolchain:\n(1) pnpm-workspace.yaml catalogs pinning every planned dependency, including the test-only readers fflate and pdfjs-dist and @types/google.accounts; pnpm-lock.yaml; .npmrc (lifecycle scripts blocked except an allowlist).\n(2) Every package.json (root, packages/domain, schema, persistence, sync, export, apps/web, e2e, tools/conformance) with catalog: references, the root scripts and the final subpath exports (@cuotascasa/persistence/memory|dexie|contract, @cuotascasa/sync/crypto|session|google-drive|testing, @cuotascasa/export/model|csv|excel|pdf, @cuotascasa/schema/testing).\n(3) tsconfig.base.json path aliases, eslint.config.mjs (boundaries exactly as the ADR-0010 §5 matrix, Date ban in domain, ban on number arithmetic for money), lefthook.yml, .gitleaks.toml, .gitignore.\n\nW0-02, spec:\n(4) docs/algorithm.md with stable section ids. It fixes the decimal context [ALG.CONV] (precision 34, ROUND_HALF_EVEN, cents only via HALF_UP_2; r unrounded) and every event semantic, including the derived term [ALG.TERM], anchor re-base and the total order [ALG.EVENTS.ORDER]. It gives closed definitions of Real delta, interestSaved, monthsSaved, netSaving, endDate, totalPaid and yearly subtotals (calendar year of dueDate), plus goal-seek outcomes, the numeric traffic-light thresholds, the closed causes enum and the 'Hipotecario simple' values. Also docs/glossary.md.\n(5) docs/specs/algorithm-examples/*.json + INDEX.md: one synthetic worked example for every item of [ALG.PENDING] in docs/algorithm.md, all mapped by INDEX.md; examples with events go in separate JSON files from event-free ones. These are the shared ground truth for both the engine lineage and the oracle lineage.\n\nW0-03, domain and export:\n(6) packages/domain/src/types/primitives.ts: branded Money and Rate (decimal strings), LocalDate ('YYYY-MM-DD'), Currency 'GTQ'|'USD', DomainError hierarchy.\n(7) types/loan.ts: LoanTerms (principal, termMonths, disbursementDate, firstDueDate, paymentDay number|'END_OF_MONTH', currency, percentage components, fixed charges with effectiveFrom, RoundingProfile 'FHA_GT_V1'|'SIMPLE') and Template {id, version, values}.\n(8) types/events.ts: the DomainEvent union (RateChange with its 3 policies, FixedChargeChange, Prepayment with mode and commission, AdvanceInstallments, ReportedBalance, ActualPayment) and the frozen total order key [ALG.EVENTS.ORDER] (k, phase, date, typeRank, id).\n(9) types/schedule.ts: ScheduleRow (with a 'paid' flag), Schedule, PathKind, Paths (with cutoffK and realDelta per anchor and per component), ComparisonMetrics (incl. netSaving), YearlySubtotal, GoalSeekRequest, GoalSeekResult (ALREADY_MET | FOUND{amount, metrics, isPayoff} | INFEASIBLE{payoffAmount, reason}, [ALG.GOAL]), TemplateValidationResult.\n(10) types/engine.ts: PeriodState per [ALG.TERM] (state after paying installment k including phase 3: balance, i, insuranceRates[], level, roundingProfile, k, term mode and term), EventHandler<T>, EngineContext with an injectable registry and the shared helper signatures levelPayment(B, r, m), remainingTerm(state: PeriodState) and projectCapital(state, n).\n(11) events/registry.ts, mapping each event type to its card-owned dir; types not yet implemented map to stubs that throw NotImplementedError('<card id>').\n(12) index.ts, the public API: buildSchedule, buildPaths, compareSchedules, yearlySubtotals, goalSeek, listTemplates, instantiateTemplate, deriveFixedCharges, validateAgainstReportedBalance, levelPayment, percentToRate/rateToPercent, money/date helpers.\n(13) money/ (incl. decimal-config.ts) and dates/, implemented and tested by Opus.\n(14) packages/export/src/report-model.ts (ReportModel, ReportWriter, ExportFormat) and index.ts.\n\nW0-04, schema, persistence, sync and oracle format:\n(15) packages/schema/src/:\n- common.ts: BaseRecord with id, createdAt, updatedAt, updatedByDevice, deletedAt.\n- entities/{loan, loan-event, reported-balance, actual-payment, scenario, settings}.ts: the single source of field names (e.g. Loan.name, Loan.bank; LoanEvent.date, ReportedBalance.date, ActualPayment.paidDate; optional note on ReportedBalance, ActualPayment and LoanEvent), status active|paid|archived, required rateType 'FIXED'|'VARIABLE', templateRef plus copied values, currency locked while any non-deleted LoanEvent, ReportedBalance, ActualPayment or Scenario exists, synced vs device-local settings.\n- backup/v1.ts and backup/types.ts: BackupDocument v1 (root accepts synthetic: z.literal(true).optional()), LATEST_VERSION, ImportPreview, BackupError codes.\n- oracle/fixture.ts: fixture and manifest schema (synthetic: true literal, profile, seed, generatorVersion, feature tags vs trait tags, incl. lastRow, latePayment, explicitKAnchor, sameKAnchors, zeroRate and zeroInsurance).\n- index.ts.\n(16) packages/persistence/src/:\n- ports.ts: Repository<T>; DataStore with transaction, exportAll incl. tombstones, replaceAll, snapshots, async post-commit subscribe, pendingChanges/markSynced, changesSinceBackup/markBackedUp and meta; Clock with today(): LocalDate (device local time); IdGenerator.\n- contract/: the Opus-written runDataStoreContract suite, with list order (createdAt, id).\n(17) packages/sync/src/:\n- ports.ts: SyncProvider, RemoteFile, LocalDataset, KeyStore, EncryptedEnvelopeV1, SyncStatus, SyncError codes, MergeStats, RecordOrderKey (a tombstone wins a full tie), separate mergeDatasets and purgeTombstones signatures, typed Drive v3 subset.\n- testing/drive-fake.ts and testing/gis-fake.ts.\n(18) docs/specs/drive-api-subset.md and docs/adr/0024-sync-merge-order.md.\n(19) tools/oracle/FORMAT.md (incl. profile composition, trait tags, fixture file naming, the generate/regenerate CLI, the three-line compare output, the --log-line format and the private schema for compare and private-compare), pyproject.toml, .python-version, requirements-dev.txt.\n\nW0-05, Angular:\n(20) angular.json, apps/web/src/main*.ts, index.html, app.config.ts, app.config.server.ts, app.routes.ts, app.routes.server.ts and app-area.routes.ts. Of these, angular.json, app.config.ts, app.routes.server.ts and app-area.routes.ts are edited only by the Opus card W2-02.\n(21) Every features/*/*.routes.ts, plus the page shells of the split routes: scenarios-page, settings-page and real-data-page. loans.routes.ts maps nuevo to wizard/ and :id to detail/.\n(22) data/api.ts, data/tokens.ts, data/provide-app-data.ts. They define LoansStore with create (no anchor) and createWithAnchor, LoanEventsStore, ReportedBalancesStore, PaymentsStore, ScenariosStore with activeScenarioId, SettingsStore, LoanProjectionService with the spec §9 derived values plus cutoffK, per-row paid flags and realDelta per anchor and per component, BackupService with reminderDue, SyncService and StorageHealth with requestPersist. data/api.ts and data/tokens.ts use only import type from packages.\n(23) docs/specs/component-contracts.md and one *.contract.spec.ts per cc-* component: cc-quick-simulator, cc-theme-toggle, cc-safari-banner, cc-update-prompt, cc-export-menu, cc-scenario-editor, cc-scenario-compare, cc-settings-backup, cc-settings-sync, cc-real-data-timeline, cc-event-form. Also the rule that every page root keeps data-testid='page-<route-id>'.\n(24) apps/web/src/design-contract/: token-names.json and tokens.contract.spec.ts. The token values belong to W3-05.\n(25) apps/web/src/app/_patterns/ with docs/specs/angular-patterns.md, plus docs/specs/design-palette.md (frozen after the owner approves the docs/discovery/direccion-visual.md proposal; approval date recorded) and docs/specs/privacy-requirements.md.\n(26) apps/web/src/environments/build-constants.ts: the GOOGLE_CLIENT_ID define, changed only by W3-17.\n\nW0-06, process:\n(27) docs/plan/cards.json and docs/plan/frozen-files.json (each entry with editableBy: [card ids]), both generated by tools/plan/render_plan.py from docs/plan/plan.json (frozen-files.json from its structured top-level 'frozen_files' section).\n(28) tools/owns-check/ rules: frozen files, append-only files, exempt prefixes.\n(29) tools/conformance/src/: the harness, the fixture-id grep check and the private-compare CLI.\n(30) The initial .github/ workflows. After W0 they are edited only by the Opus cards W2-01, W3-16 and W3-17.\n\nStub semantics:\n- Package stubs throw NotImplementedError('<card id>'). Each stub dir holds a stub.spec.ts, which its owning card deletes when it implements the dir.\n- App-level provide* functions and cc-* components are inert: they return safe defaults, keep the page testid and export a CC_STUB marker. W6-02 proves no marker remains in the production build.",
@@ -3237,21 +3782,24 @@
       "path": "docs/algorithm.md",
       "editableBy": [
         "W0-02",
-        "W3-01"
+        "W3-01",
+        "W9-05"
       ]
     },
     {
       "path": "docs/glossary.md",
       "editableBy": [
         "W0-02",
-        "W3-01"
+        "W3-01",
+        "W9-05"
       ]
     },
     {
       "path": "docs/specs/algorithm-examples/",
       "editableBy": [
         "W0-02",
-        "W3-01"
+        "W3-01",
+        "W9-05"
       ]
     },
     {
@@ -3347,19 +3895,23 @@
     {
       "path": "docs/specs/drive-api-subset.md",
       "editableBy": [
-        "W0-04"
+        "W0-04",
+        "W9-01"
       ]
     },
     {
       "path": "packages/persistence/src/contract/",
       "editableBy": [
-        "W0-04"
+        "W0-04",
+        "W9-02",
+        "W9-04"
       ]
     },
     {
       "path": "packages/persistence/src/ports.ts",
       "editableBy": [
-        "W0-04"
+        "W0-04",
+        "W9-01"
       ]
     },
     {
@@ -3377,7 +3929,8 @@
     {
       "path": "packages/schema/src/backup/",
       "editableBy": [
-        "W0-04"
+        "W0-04",
+        "W9-04"
       ]
     },
     {
@@ -3389,7 +3942,8 @@
     {
       "path": "packages/schema/src/entities/",
       "editableBy": [
-        "W0-04"
+        "W0-04",
+        "W9-04"
       ]
     },
     {
@@ -3425,13 +3979,15 @@
     {
       "path": "packages/sync/src/ports.ts",
       "editableBy": [
-        "W0-04"
+        "W0-04",
+        "W9-01"
       ]
     },
     {
       "path": "packages/sync/src/testing/",
       "editableBy": [
-        "W0-04"
+        "W0-04",
+        "W9-01"
       ]
     },
     {
@@ -3513,7 +4069,8 @@
       "editableBy": [
         "W0-05",
         "W2-02",
-        "W8-02"
+        "W8-02",
+        "W9-14"
       ]
     },
     {
@@ -3556,13 +4113,15 @@
     {
       "path": "apps/web/src/app/data/api.spec.ts",
       "editableBy": [
-        "W0-05"
+        "W0-05",
+        "W9-01"
       ]
     },
     {
       "path": "apps/web/src/app/data/api.ts",
       "editableBy": [
-        "W0-05"
+        "W0-05",
+        "W9-01"
       ]
     },
     {
@@ -3610,7 +4169,8 @@
     {
       "path": "apps/web/src/app/features/loans/loans.routes.ts",
       "editableBy": [
-        "W0-05"
+        "W0-05",
+        "W9-11"
       ]
     },
     {
@@ -3622,13 +4182,17 @@
     {
       "path": "apps/web/src/app/features/real-data/real-data-page.component.ts",
       "editableBy": [
-        "W0-05"
+        "W0-05",
+        "W9-09",
+        "W9-10",
+        "W9-11"
       ]
     },
     {
       "path": "apps/web/src/app/features/real-data/real-data.routes.ts",
       "editableBy": [
-        "W0-05"
+        "W0-05",
+        "W9-11"
       ]
     },
     {
@@ -3652,13 +4216,16 @@
     {
       "path": "apps/web/src/app/features/scenarios/scenarios-page.component.ts",
       "editableBy": [
-        "W0-05"
+        "W0-05",
+        "W9-09",
+        "W9-11"
       ]
     },
     {
       "path": "apps/web/src/app/features/scenarios/scenarios.routes.ts",
       "editableBy": [
-        "W0-05"
+        "W0-05",
+        "W9-11"
       ]
     },
     {
@@ -3814,7 +4381,8 @@
       "path": "docs/plan/",
       "editableBy": [
         "W0-06",
-        "W8-08"
+        "W8-08",
+        "W9-13"
       ]
     },
     {

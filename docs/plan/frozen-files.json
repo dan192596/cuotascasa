@@ -139,21 +139,24 @@
     "path": "docs/algorithm.md",
     "editableBy": [
       "W0-02",
-      "W3-01"
+      "W3-01",
+      "W9-05"
     ]
   },
   {
     "path": "docs/glossary.md",
     "editableBy": [
       "W0-02",
-      "W3-01"
+      "W3-01",
+      "W9-05"
     ]
   },
   {
     "path": "docs/specs/algorithm-examples/",
     "editableBy": [
       "W0-02",
-      "W3-01"
+      "W3-01",
+      "W9-05"
     ]
   },
   {
@@ -249,19 +252,23 @@
   {
     "path": "docs/specs/drive-api-subset.md",
     "editableBy": [
-      "W0-04"
+      "W0-04",
+      "W9-01"
     ]
   },
   {
     "path": "packages/persistence/src/contract/",
     "editableBy": [
-      "W0-04"
+      "W0-04",
+      "W9-02",
+      "W9-04"
     ]
   },
   {
     "path": "packages/persistence/src/ports.ts",
     "editableBy": [
-      "W0-04"
+      "W0-04",
+      "W9-01"
     ]
   },
   {
@@ -279,7 +286,8 @@
   {
     "path": "packages/schema/src/backup/",
     "editableBy": [
-      "W0-04"
+      "W0-04",
+      "W9-04"
     ]
   },
   {
@@ -291,7 +299,8 @@
   {
     "path": "packages/schema/src/entities/",
     "editableBy": [
-      "W0-04"
+      "W0-04",
+      "W9-04"
     ]
   },
   {
@@ -327,13 +336,15 @@
   {
     "path": "packages/sync/src/ports.ts",
     "editableBy": [
-      "W0-04"
+      "W0-04",
+      "W9-01"
     ]
   },
   {
     "path": "packages/sync/src/testing/",
     "editableBy": [
-      "W0-04"
+      "W0-04",
+      "W9-01"
     ]
   },
   {
@@ -415,7 +426,8 @@
     "editableBy": [
       "W0-05",
       "W2-02",
-      "W8-02"
+      "W8-02",
+      "W9-14"
     ]
   },
   {
@@ -458,13 +470,15 @@
   {
     "path": "apps/web/src/app/data/api.spec.ts",
     "editableBy": [
-      "W0-05"
+      "W0-05",
+      "W9-01"
     ]
   },
   {
     "path": "apps/web/src/app/data/api.ts",
     "editableBy": [
-      "W0-05"
+      "W0-05",
+      "W9-01"
     ]
   },
   {
@@ -512,7 +526,8 @@
   {
     "path": "apps/web/src/app/features/loans/loans.routes.ts",
     "editableBy": [
-      "W0-05"
+      "W0-05",
+      "W9-11"
     ]
   },
   {
@@ -524,13 +539,17 @@
   {
     "path": "apps/web/src/app/features/real-data/real-data-page.component.ts",
     "editableBy": [
-      "W0-05"
+      "W0-05",
+      "W9-09",
+      "W9-10",
+      "W9-11"
     ]
   },
   {
     "path": "apps/web/src/app/features/real-data/real-data.routes.ts",
     "editableBy": [
-      "W0-05"
+      "W0-05",
+      "W9-11"
     ]
   },
   {
@@ -554,13 +573,16 @@
   {
     "path": "apps/web/src/app/features/scenarios/scenarios-page.component.ts",
     "editableBy": [
-      "W0-05"
+      "W0-05",
+      "W9-09",
+      "W9-11"
     ]
   },
   {
     "path": "apps/web/src/app/features/scenarios/scenarios.routes.ts",
     "editableBy": [
-      "W0-05"
+      "W0-05",
+      "W9-11"
     ]
   },
   {
@@ -716,7 +738,8 @@
     "path": "docs/plan/",
     "editableBy": [
       "W0-06",
-      "W8-08"
+      "W8-08",
+      "W9-13"
     ]
   },
   {

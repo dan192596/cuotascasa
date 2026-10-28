@@ -150,6 +150,27 @@ Take the landing and the app to the Mercado identity (light and dark palette, Br
 | [W8-07](cards/W8-07.md) | sonnet | L | W8-06 | 240-installment board and engine-generated example data |
 | [W8-08](cards/W8-08.md) | opus | M | W8-01, W8-02, W8-03, W8-04, W8-05, W8-06, W8-07 | Close wave W8: full sweep, budgets, visual review, changelog |
 
+## W9 · Panel review fixes
+
+Fix the defects that the multi-role review panel of 2026-10-27 confirmed at levels 1 and 2 (sync pending count, savings shown from re-anchoring, tombstones keeping the payload, backup marked before download, full Drive as auth error, frozen engine date, anchor by installment number, net saving with IUSI, sub-pages without loan context, unsaved changes lost) and ship its three most voted features (warning before clearing the device, one-tap payment of the month, anchor by statement date). Two Opus contract and ruling cards open the wave; Sonnet cards per area follow; an Opus close.
+
+| Tarjeta | Ejecutor | Tamaño | Depende de | Título |
+|---|---|---|---|---|
+| [W9-01](cards/W9-01.md) | opus | M | W8-08 | Contract amendments: upload-scoped markSynced, Drive quota error, backup marked after download |
+| [W9-02](cards/W9-02.md) | sonnet | M | W9-01 | Sync correctness: edits made during an upload stay pending; a full Drive is not an auth error |
+| [W9-03](cards/W9-03.md) | sonnet | S | W9-01 | Backup download: mark it only after the download starts and keep the file URL alive |
+| [W9-04](cards/W9-04.md) | opus | M | W9-02, W9-03 | Tombstones without the financial payload, purged locally, and out of the backup |
+| [W9-05](cards/W9-05.md) | opus | S | W8-08 | Spec rulings: savings metrics vs anchors and charges that outlive the loan; HU-04 anchor by date |
+| [W9-06](cards/W9-06.md) | sonnet | M | W9-05 | Savings figures that do not count re-anchoring or charges that continue after payoff |
+| [W9-07](cards/W9-07.md) | sonnet | S | W8-08 | The engine's «today» follows the calendar while the app stays open |
+| [W9-08](cards/W9-08.md) | sonnet | M | W9-05 | Anchor by statement date, with a before/after-payment choice |
+| [W9-09](cards/W9-09.md) | sonnet | S | W8-08 | Loan sub-pages say which loan they belong to and link back to it |
+| [W9-10](cards/W9-10.md) | sonnet | M | W9-08, W9-09 | «Registrar el pago de este mes» in one tap, and mark past installments as paid in bulk |
+| [W9-11](cards/W9-11.md) | sonnet | M | W9-06, W9-10 | Warn before leaving unsaved changes in the wizard and the forms |
+| [W9-12](cards/W9-12.md) | sonnet | S | W9-02, W9-03 | Before «Borrar datos de este dispositivo», show unsynced and unbacked changes |
+| [W9-14](cards/W9-14.md) | opus | S | W8-08 | Deflake three tests: landing headline sampling, service worker sweep in WebKit, route view transitions spec |
+| [W9-13](cards/W9-13.md) | opus | S | W9-01, W9-02, W9-03, W9-04, W9-05, W9-06, W9-07, W9-08, W9-09, W9-10, W9-11, W9-12, W9-14 | Close wave W9: full sweep, changelog, findings |
+
 ## Contratos congelados en W0
 
 W0 freezes the files below. After W0 any card may read them but none may edit them: docs/plan/frozen-files.json lists them, each entry with editableBy: [card ids], and owns-check rejects an edit by any other card even when the file sits inside a directory the card owns. Changing one takes an Opus contract-change micro-card (registered in docs/plan/plan.json, with the views, cards.json and frozen-files.json regenerated on a branch opus/register-<ID> before the card branch is created), a broadcast to in-flight cards and a rebase.

@@ -48,6 +48,12 @@ export const WAVE_MERGES = {
 };
 
 /**
+ * Waves registered after v1 (W9: fixes from the multi-role review panel of 2026-10-27). Their cards are not part of
+ * this v1 matrix, so they are neither pending for the tag nor «sin fusionar».
+ */
+export const POST_RELEASE_WAVES = ['W9'];
+
+/**
  * Adds the cards of WAVE_MERGES to the merges read from the history, without overriding a per-card squash subject.
  * @param {Map<string, Merge>} merged
  * @param {Record<string, number>} waveMerges
@@ -301,6 +307,7 @@ export function computeFromRepository(root) {
   /** @type {Map<string, Card>} */
   const cards = new Map();
   for (const wave of plan.waves) {
+    if (POST_RELEASE_WAVES.includes(wave.id)) continue;
     for (const card of wave.cards) {
       cards.set(card.id, { id: card.id, owns: card.owns, requirements: card.requirements });
     }
