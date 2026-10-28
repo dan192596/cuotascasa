@@ -986,7 +986,11 @@
       "apps/web/src/app/data/sync/sync-status-text.ts",
       "apps/web/src/app/data/sync/sync-status-text.spec.ts",
       "docs/adr/0007-formato-de-respaldo-json.md",
-      "docs/adr/0008-sincronizacion-google-drive.md"
+      "docs/adr/0008-sincronizacion-google-drive.md",
+      "packages/sync/src/ports.spec.ts",
+      "packages/sync/src/session/index.ts",
+      "apps/web/src/app/features/settings/backup/settings-backup.component.ts",
+      "apps/web/src/app/features/settings/backup/settings-backup.component.spec.ts"
     ]
   },
   {
