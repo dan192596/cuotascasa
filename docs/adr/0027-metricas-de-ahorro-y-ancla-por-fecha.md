@@ -4,7 +4,7 @@ Estado: Aceptado
 
 Fecha: 2026-10-28
 
-Decisores: Claude (Opus), por delegación de la tarjeta W9-05
+Decisores: Claude (Opus), por delegación de la tarjeta W9-05. El dueño confirmó el valor por defecto «antes» o «después» del dictamen 3 el 2026-10-28.
 
 Enmienda a: spec de diseño v1 (`docs/specs/2026-10-04-cuotascasa-v1-design.md`), sección 9, «Paso 4, ancla y validación»; HU-04, HU-09, HU-13 y HU-16.
 
@@ -56,7 +56,7 @@ Aplica al paso 4 del asistente y al formulario de saldo reportado de «Datos rea
 
 1. El formulario pide primero la **fecha del estado de cuenta** y el saldo. Con la regla 2 de [ALG.EVENTS.ANCHOR], deriva `k`, la primera cuota con vencimiento `≥` esa fecha, y lo muestra así: «Corresponde a la cuota N, que vence el dd/mm/aaaa». Los vencimientos no dependen de los eventos ([ALG.DATES]), así que `k` es el mismo en el plan original y en el camino real.
 2. Debajo ofrece dos opciones: «Este saldo es antes de pagar esa cuota» y «Este saldo es después de pagarla».
-   - Por defecto se marca **«después»** si la fecha coincide con el vencimiento de `k`, y **«antes»** si es anterior. Así, solo con fecha y saldo el formulario se puede guardar sin pedir la cuota.
+   - Por defecto se marca **«después»** si la fecha coincide con el vencimiento de `k`, y **«antes»** si es anterior. El dueño confirmó esta regla el 2026-10-28. Así, solo con fecha y saldo el formulario se puede guardar sin pedir la cuota.
    - Con «después» se muestra además: «Se guarda como el saldo antes de pagar la cuota N+1».
 3. Al guardar, el `ReportedBalance` lleva siempre `installmentNumber` explícito: `k` con «antes» y `k + 1` con «después». La fecha queda guardada como dato informativo (regla 1 de [ALG.EVENTS.ANCHOR]). El modelo guardado no cambia.
 4. Si `k + 1` pasa de la última cuota del calendario, el formulario no guarda y muestra: «Después de pagar la última cuota ya no queda saldo. Elige «antes» o revisa la fecha.» Una fecha posterior a la última cuota sigue dando el error de la regla 3.
