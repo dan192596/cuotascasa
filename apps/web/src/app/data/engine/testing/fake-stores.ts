@@ -68,9 +68,14 @@ export class FakeScenariosStore extends FakeChildStore<Scenario> implements Scen
 }
 
 export class FakeClock implements Clock {
-  private readonly todayValue: string;
+  private todayValue: string;
 
   constructor(todayValue: string) {
+    this.todayValue = todayValue;
+  }
+
+  /** Moves the fake calendar to another day. */
+  setToday(todayValue: string): void {
     this.todayValue = todayValue;
   }
 
