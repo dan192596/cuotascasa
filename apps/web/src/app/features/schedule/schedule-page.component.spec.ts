@@ -1,7 +1,12 @@
 import { signal, type Signal, type WritableSignal } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { InvalidInputError, NEGATIVE_AMORTIZATION_RULES, NegativeAmortizationError } from '@cuotascasa/domain';
+import {
+  InvalidInputError,
+  NEGATIVE_AMORTIZATION_RULES,
+  NegativeAmortizationError,
+  NotImplementedError,
+} from '@cuotascasa/domain';
 import type {
   ComponentRealDelta,
   DomainError,
@@ -647,6 +652,30 @@ describe('SchedulePageComponent: scenario selector', () => {
     select.dispatchEvent(new Event('change'));
     await settle(fixture);
     expect(scenarioStore.setActiveScenario).toHaveBeenCalledWith(LOAN_ID, null);
+  });
+});
+
+describe('SchedulePageComponent: loan context (W9-09)', () => {
+  it('the h1 has the alias, the back link goes to the detail and the document title has the alias', () => {
+    const { fixture } = mount();
+    expect(clean(root(fixture).querySelector('h1'))).toContain('Casa A');
+    const back = byId(fixture, 'back-to-loan') as HTMLAnchorElement;
+    expect(clean(back)).toBe('← Volver al préstamo');
+    expect(back.getAttribute('href')).toBe(`/app/prestamos/${LOAN_ID}`);
+    expect(document.title).toContain('Casa A');
+  });
+
+  it('the generic error message links to the loan detail', () => {
+    const { fixture } = mount({ error: new NotImplementedError('W1-01') });
+    expect(clean(byId(fixture, 'schedule-error'))).toContain('Revisa sus datos en el detalle');
+    const link = byId(fixture, 'error-detail-link') as HTMLAnchorElement;
+    expect(link.getAttribute('href')).toBe(`/app/prestamos/${LOAN_ID}`);
+  });
+
+  it('a missing loan keeps the not-found message without a back link', () => {
+    const { fixture } = mount({ loan: undefined });
+    expect(clean(byId(fixture, 'schedule-missing'))).toContain('No encontramos');
+    expect(byId(fixture, 'back-to-loan')).toBeNull();
   });
 });
 
