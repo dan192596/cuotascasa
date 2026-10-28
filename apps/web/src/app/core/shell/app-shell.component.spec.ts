@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, type WritableSignal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -7,6 +7,8 @@ import type { SettingsStore, StorageHealth } from '../../data/api.ts';
 import { SETTINGS_STORE, STORAGE_HEALTH } from '../../data/tokens.ts';
 import { AppShellComponent } from './app-shell.component.ts';
 
+type ThemePreference = ReturnType<SettingsStore['theme']>;
+
 @Component({ template: '<h1 id="t">Pantalla</h1>' })
 class WithHeadingComponent {}
 
@@ -14,8 +16,8 @@ class WithHeadingComponent {}
 class WithoutHeadingComponent {}
 
 /** Minimal fakes for what the real slot components inject; their internals are tested in their own specs. */
-const fakeSettings: Pick<SettingsStore, 'theme' | 'setTheme'> = {
-  theme: signal('system' as const),
+const fakeSettings: Pick<SettingsStore, 'setTheme'> & { theme: WritableSignal<ThemePreference> } = {
+  theme: signal<ThemePreference>('system'),
   setTheme: () => Promise.resolve(),
 };
 const fakeStorageHealth: Pick<StorageHealth, 'safariNonStandalone'> = { safariNonStandalone: signal(false) };
@@ -49,11 +51,24 @@ const link = (root: HTMLElement, text: string) =>
   [...root.querySelectorAll('nav a')].find((a) => a.textContent?.trim() === text) as HTMLAnchorElement;
 
 describe('AppShellComponent', () => {
-  it('keeps data-testid=page-app and renders the three frozen slots by selector', async () => {
+  it('keeps data-testid=page-app and renders its slots by selector; the theme choice lives in Ajustes', async () => {
     const { root } = await mount();
     expect(root.querySelector('[data-testid="page-app"]')).not.toBeNull();
-    for (const selector of ['cc-safari-banner', 'cc-update-prompt', 'cc-theme-toggle']) {
+    for (const selector of ['cc-safari-banner', 'cc-update-prompt']) {
       expect(root.querySelectorAll(selector), selector).toHaveLength(1);
+    }
+    expect(root.querySelector('cc-theme-toggle')).toBeNull();
+  });
+
+  it('applies the stored theme to the page', async () => {
+    fakeSettings.theme.set('dark');
+    try {
+      await mount();
+      TestBed.tick();
+      expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    } finally {
+      fakeSettings.theme.set('system');
+      document.documentElement.removeAttribute('data-theme');
     }
   });
 

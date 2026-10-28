@@ -3,6 +3,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  effect,
   ElementRef,
   inject,
   Injector,
@@ -13,14 +14,16 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } fro
 import { ErrorToastComponent } from '../errors/error-toast.component.ts';
 import { UpdatePromptComponent } from '../pwa/update-prompt.component.ts';
 import { SafariBannerComponent } from '../storage-health/safari-banner.component.ts';
-import { ThemeToggleComponent } from '../theme/theme-toggle.component.ts';
+import { SETTINGS_STORE } from '../../data/tokens.ts';
+import { ThemeService } from '../theme/theme.service.ts';
 
 /** The loan list (/app) and everything under one loan (/app/prestamos/…) belong to «Mis préstamos». */
 const isLoansPath = (path: string) => path === '/app' || path === '/app/' || path.startsWith('/app/prestamos');
 
 /**
  * Shell of /app: top bar, skip link, slots (cc-safari-banner is hosted only here), outlet and disclaimer footer.
- * Keeps data-testid='page-app' (docs/specs/component-contracts.md).
+ * Keeps data-testid='page-app' (docs/specs/component-contracts.md). It applies the stored theme on every /app page;
+ * the choice itself lives in Ajustes (cc-theme-toggle).
  */
 @Component({
   selector: 'cc-app-shell',
@@ -30,7 +33,6 @@ const isLoansPath = (path: string) => path === '/app' || path === '/app/' || pat
     RouterLinkActive,
     SafariBannerComponent,
     UpdatePromptComponent,
-    ThemeToggleComponent,
     ErrorToastComponent,
   ],
   template: `
@@ -43,7 +45,6 @@ const isLoansPath = (path: string) => path === '/app' || path === '/app/' || pat
         >
         <a routerLink="/app/ajustes" routerLinkActive="active" ariaCurrentWhenActive="page">Ajustes</a>
       </nav>
-      <cc-theme-toggle />
     </header>
     <cc-safari-banner />
     <cc-update-prompt />
@@ -153,6 +154,11 @@ export class AppShellComponent {
   protected readonly inLoans = signal(false);
 
   constructor() {
+    const theme = inject(ThemeService);
+    const settings = inject(SETTINGS_STORE);
+    effect(() => {
+      theme.setPreference(settings.theme());
+    });
     const router = inject(Router);
     // WCAG 2.4.3: after every navigation except the first, move focus to the page heading (or main).
     let isFirst = true;

@@ -58,6 +58,7 @@ const FILES = [
   { category: 'chart-host', pattern: `${APP}/features/scenarios/compare/**` },
   { category: 'export-menu', pattern: `${APP}/features/export/**/*export-menu*` },
   { category: 'safari-banner', pattern: `${APP}/core/storage-health/**/*safari-banner*` },
+  { category: 'theme-toggle', pattern: `${APP}/core/theme/theme-toggle.component.ts` },
 ];
 
 const PACKAGES = [
@@ -191,6 +192,7 @@ const POLICIES = [
       { to: { ...area('data'), file: { categories: ['data-api', 'data-tokens'] } } },
       viaPackage('schema', '@cuotascasa/schema'),
       { to: { ...area('core-storage-health'), file: { categories: 'safari-banner' } } },
+      { to: { ...area('core-theme'), file: { categories: 'theme-toggle' } } },
       { to: { ...area('feature', { feature: 'export' }), file: { categories: 'export-menu' } } },
     ],
   },

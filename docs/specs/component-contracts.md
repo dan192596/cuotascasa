@@ -32,14 +32,14 @@ El cableado lo congelan `apps/web/src/app/app.routes.ts`, `apps/web/src/app/app-
 | `/app/ajustes` | `page-settings` | `apps/web/src/app/features/settings/settings-page.component.ts` · `SettingsPageComponent` (**congelado**) | Cliente | W0-05 |
 | cualquier otra | `page-not-found` | `apps/web/src/app/public/not-found/not-found-page.component.ts` · `NotFoundPageComponent` | Cliente (W2-02 decide el 404 estático, ADR-0022) | W4-05 |
 
-Las tres páginas congeladas solo alojan a sus componentes: `RealDataPageComponent` → `<cc-real-data-timeline [loanId]="id()" />`; `ScenariosPageComponent` → `<cc-scenario-editor [loanId]="id()" />` y `<cc-scenario-compare [loanId]="id()" />`; `SettingsPageComponent` → `<cc-settings-backup />` y `<cc-settings-sync />`. El shell aloja `<cc-safari-banner />`, `<cc-update-prompt />`, `<cc-theme-toggle />` y el `<router-outlet />` dentro de `<main id="contenido">`.
+Las tres páginas congeladas solo alojan a sus componentes: `RealDataPageComponent` → `<cc-real-data-timeline [loanId]="id()" />`; `ScenariosPageComponent` → `<cc-scenario-editor [loanId]="id()" />` y `<cc-scenario-compare [loanId]="id()" />`; `SettingsPageComponent` → `<cc-theme-toggle />` (sección «Apariencia»), `<cc-settings-backup />`, `<cc-settings-sync />` y `<cc-settings-device />`. El shell aloja `<cc-safari-banner />`, `<cc-update-prompt />` y el `<router-outlet />` dentro de `<main id="contenido">`.
 
 ## 3. Componentes `cc-*`
 
 | Selector | Archivo · clase | Entradas | Salidas | Implementa | Lo usa |
 |---|---|---|---|---|---|
 | `cc-quick-simulator` | `apps/web/src/app/public/simulator/quick-simulator.component.ts` · `QuickSimulatorComponent` | — | — | W4-03 | landing (W4-04) |
-| `cc-theme-toggle` | `apps/web/src/app/core/theme/theme-toggle.component.ts` · `ThemeToggleComponent` | — | — | W3-05 | shell (W3-09) |
+| `cc-theme-toggle` | `apps/web/src/app/core/theme/theme-toggle.component.ts` · `ThemeToggleComponent` | — | — | W3-05 | Ajustes (desde 2026-10-27; antes, el shell) |
 | `cc-safari-banner` | `apps/web/src/app/core/storage-health/safari-banner.component.ts` · `SafariBannerComponent` | — | — | W3-13 | shell (W3-09) |
 | `cc-update-prompt` | `apps/web/src/app/core/pwa/update-prompt.component.ts` · `UpdatePromptComponent` | — | — | W3-14 | shell (W3-09) |
 | `cc-export-menu` | `apps/web/src/app/features/export/export-menu.component.ts` · `ExportMenuComponent` | `request: ExportRequest` (requerida) | — | W5-06 | tabla (W5-02), comparación (W5-05) |
@@ -129,6 +129,6 @@ Las herramientas de «Proyecciones» (W5-04) trabajan sobre el escenario activo:
 
 ## 6. Tema, reloj público y constantes de compilación
 
-- **Tema:** `apps/web/src/styles/tokens.css` declara cada token de color con `light-dark()` y `:root { color-scheme: light dark; }`. Para forzar un tema, `ThemeService` (W3-05) pone `data-theme="light"` o `data-theme="dark"` en `<html>`; con «sistema» quita el atributo. `ThemeService` vive en la raíz (`provideAppTheme()` en `app.config.ts`) y nunca ve `SETTINGS_STORE`, que es un provider de la ruta `/app`: lo inyecta `cc-theme-toggle`, dentro del shell, que le pasa al servicio la preferencia guardada y guarda los cambios. En `/` no hay toggle: el tema sigue al sistema y no se escribe nada.
+- **Tema:** `apps/web/src/styles/tokens.css` declara cada token de color con `light-dark()` y `:root { color-scheme: light dark; }`. Para forzar un tema, `ThemeService` (W3-05) pone `data-theme="light"` o `data-theme="dark"` en `<html>`; con «sistema» quita el atributo. `ThemeService` vive en la raíz (`provideAppTheme()` en `app.config.ts`) y nunca ve `SETTINGS_STORE`, que es un provider de la ruta `/app`: lo inyecta el shell, que le pasa al servicio la preferencia guardada en cada página de `/app`. El selector `cc-theme-toggle` vive en Ajustes y guarda los cambios; por defecto el tema es «Sistema». En `/` no hay toggle: el tema sigue al sistema y no se escribe nada.
 - **Reloj público:** `apps/web/src/app/public/public-clock.ts` exporta `PUBLIC_CLOCK` (`providedIn: 'root'`, `today(): LocalDate` del navegador). El simulador (W4-03) lo usa al interactuar, nunca durante el prerender; las pruebas lo reemplazan.
 - **Constantes:** `apps/web/src/environments/build-constants.ts` exporta `GOOGLE_OAUTH_CLIENT_ID` y `ISSUES_URL`, leídas de los `define` `GOOGLE_CLIENT_ID` y `REPOSITORY_ISSUES_URL` de `angular.json` (`''` por defecto). El deploy (W3-17) los reemplaza con `ng build --define`. `public/` no puede importar `environments/` (lint): `app.routes.ts` pasa `ISSUES_URL` a `/privacidad` como dato de ruta `issuesUrl`, y `withComponentInputBinding()` lo entrega a la entrada `issuesUrl` de `PrivacyPageComponent` (también en el prerender).
