@@ -246,6 +246,8 @@ const KNOB_KEYS: ReadonlySet<string> = new Set([
     }
     .switch button {
       flex: 1;
+      /* «+ Q 50,000.00 en la cuota 60» breaks before «en», never leaving the installment number alone. */
+      text-wrap: balance;
       min-height: 2.75rem;
       padding: 0.75rem;
       border: 0;
@@ -254,6 +256,10 @@ const KNOB_KEYS: ReadonlySet<string> = new Set([
       color: var(--cc-color-ink);
       font-weight: 800;
       font-size: 0.95rem;
+    }
+    .switch button:first-child {
+      flex: 0 0 auto;
+      padding-inline: 1.25rem;
     }
     .switch [aria-pressed='true'] {
       background: var(--cc-color-saving);

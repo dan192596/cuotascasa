@@ -82,6 +82,53 @@ button,
   transform: scale(0.98);
 }
 
+// Mercado form controls (ADR-0026): one look for every text field, select and textarea in the landing and the app,
+// so a field never falls back to the browser's small grey box. `:where()` keeps it at zero specificity: component
+// styles still win. The 1.5px resting border is the 3:1 control colour; focus adds the global 3px ring.
+:where(
+  input:not(
+    [type='checkbox'],
+    [type='radio'],
+    [type='range'],
+    [type='file'],
+    [type='button'],
+    [type='submit'],
+    [type='reset']
+  ),
+  select,
+  textarea
+) {
+  box-sizing: border-box;
+  min-height: 2.75rem;
+  padding: 0 0.75rem;
+  border: 1.5px solid var(--cc-color-control-border);
+  border-radius: 12px;
+  background-color: var(--cc-color-paper);
+  color: var(--cc-color-ink);
+  font: inherit;
+  font-size: 1rem;
+}
+
+:where(textarea) {
+  padding-block: 0.5rem;
+}
+
+:where(input, select, textarea):disabled {
+  opacity: 0.6;
+}
+
+:where(input[type='checkbox'], input[type='radio']) {
+  width: 1.125rem;
+  height: 1.125rem;
+  accent-color: var(--cc-color-accent);
+}
+
+:where(fieldset) {
+  border: 1.5px solid var(--cc-color-rule);
+  border-radius: var(--cc-radius-block);
+  padding: 0.75rem 1.25rem 1.25rem;
+}
+
 // Primary action: fucsia with paper text (design-palette.md, 5.11:1 light and 6.63:1 dark).
 .cc-button-primary {
   border-color: var(--cc-color-accent);

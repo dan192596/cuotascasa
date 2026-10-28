@@ -22,6 +22,31 @@ import { SettingsSyncComponent } from './sync/settings-sync.component.ts';
     <cc-settings-sync />
     <cc-settings-device />
   `,
+  styles: `
+    /* Mercado (ADR-0026): each section is a rounded block, with the page heading aligned to their edge. */
+    :host {
+      display: grid;
+      gap: 1.25rem;
+      padding: 1rem;
+      color: var(--cc-color-ink);
+    }
+    h1 {
+      margin: 0.5rem 0 0;
+    }
+    section,
+    cc-settings-backup,
+    cc-settings-sync,
+    cc-settings-device {
+      display: block;
+      padding: 0.25rem clamp(1rem, 3vw, 1.75rem) 1.25rem;
+      border: 1.5px solid var(--cc-color-rule);
+      border-radius: var(--cc-radius-block);
+      background: var(--cc-color-paper);
+    }
+    section p {
+      color: var(--cc-color-ink-muted);
+    }
+  `,
   host: { 'data-testid': 'page-settings' },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

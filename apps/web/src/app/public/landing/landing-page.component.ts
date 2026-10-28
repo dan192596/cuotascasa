@@ -275,6 +275,27 @@ const CARDS: readonly Card[] = [
       background: var(--cc-color-ink);
       color: var(--cc-color-paper);
     }
+    /* Phones: one compact row under the brand; only «Abrir la app» keeps its pill, the other two read as links. */
+    @media (max-width: 40rem) {
+      nav {
+        flex-wrap: nowrap;
+        gap: 0.25rem;
+        justify-content: flex-start;
+        /* The first two links start at the text edge: their padding hangs into the gutter. */
+        width: calc(100% + 0.625rem);
+        margin-inline-start: -0.625rem;
+      }
+      nav a {
+        padding: 0 0.625rem;
+        border-color: transparent;
+        font-size: 0.9375rem;
+        white-space: nowrap;
+      }
+      nav .dark {
+        margin-inline-start: auto;
+        border-color: var(--cc-color-ink);
+      }
+    }
     main {
       display: grid;
       gap: clamp(3rem, 8vw, 5rem);

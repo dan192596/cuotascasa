@@ -11,7 +11,8 @@ import {
 import { formatLocalDate, formatMoney } from '../../ui/format/format.ts';
 import { MoneyInputComponent } from '../../ui/money-input/money-input.component.ts';
 import { RateInputComponent } from '../../ui/money-input/rate-input.component.ts';
-import { INSURANCE_LEGEND } from './simulator-legend.ts';
+import { INSURANCE_LEGEND, SIMULATOR_IDLE } from './simulator-legend.ts';
+import { SIMULATOR_LAYOUT_STYLES } from './simulator-styles.ts';
 import { PUBLIC_CLOCK } from '../public-clock.ts';
 import { type SimulationPrepayment, type SimulationResult, simulate } from './quick-simulation.ts';
 import {
@@ -50,316 +51,276 @@ const MAX_YEARS = 30;
   imports: [FormField, MoneyInputComponent, RateInputComponent],
   template: `
     <section class="sim" aria-labelledby="sim-title" data-testid="sim-form">
-      <h2 id="sim-title" class="title">Simulador rápido</h2>
-      <p class="template">Plantilla: FHA Guatemala v1 · Quetzales</p>
-      <form
-        novalidate
-        (submit)="$event.preventDefault()"
-        (input)="scheduleAnnouncement()"
-        (change)="scheduleAnnouncement()"
-      >
-        <div class="field">
-          <label for="sim-principal">Monto del préstamo (Q)</label>
-          <cc-money-input
-            inputId="sim-principal"
-            currency="GTQ"
-            placeholder="500,000.00"
-            [formField]="form.principal"
-          />
-        </div>
-
-        <div class="field">
-          <label for="sim-rate">Tasa de interés anual</label>
-          <div class="row">
-            <cc-rate-input inputId="sim-rate" placeholder="7.00" [formField]="form.rate" />
-            <span class="legend" data-testid="sim-rate-legend">{{ insuranceLegend }}</span>
-          </div>
-        </div>
-
-        <div class="field">
-          <label for="sim-years">Plazo en años</label>
-          <div class="row">
-            <input
-              id="sim-years"
-              type="text"
-              inputmode="numeric"
-              autocomplete="off"
-              placeholder="20"
-              [formField]="form.years"
-              [attr.aria-invalid]="shows('years')"
-              [attr.aria-describedby]="shows('years') ? 'sim-years-errors' : null"
-            />
-            <span class="legend">años (1 a 30)</span>
-          </div>
-          @if (shows('years')) {
-            <ul id="sim-years-errors" class="errors">
-              <li>{{ form.years().errors()[0]?.message }}</li>
-            </ul>
-          }
-        </div>
-
-        <div class="field toggle">
-          <input id="sim-prepay-toggle" type="checkbox" [formField]="form.withPrepayment" />
-          <label for="sim-prepay-toggle">Probar un abono a capital</label>
-        </div>
-
-        @if (model().withPrepayment) {
-          <div class="prepay" data-testid="sim-prepay-fields">
+      <div>
+        <h2 id="sim-title" class="title">Simulador rápido</h2>
+        <p class="template">Plantilla: FHA Guatemala v1 · Quetzales</p>
+      </div>
+      <div class="body">
+        <div>
+          <form
+            novalidate
+            (submit)="$event.preventDefault()"
+            (input)="scheduleAnnouncement()"
+            (change)="scheduleAnnouncement()"
+          >
             <div class="field">
-              <label for="sim-prepay-amount">Monto del abono (Q)</label>
+              <label for="sim-principal">Monto del préstamo (Q)</label>
               <cc-money-input
-                inputId="sim-prepay-amount"
+                inputId="sim-principal"
                 currency="GTQ"
-                placeholder="20,000.00"
-                [formField]="form.prepayAmount"
+                placeholder="500,000.00"
+                [formField]="form.principal"
               />
             </div>
+
             <div class="field">
-              <label for="sim-prepay-k">Después de la cuota número</label>
-              <input
-                id="sim-prepay-k"
-                type="text"
-                inputmode="numeric"
-                autocomplete="off"
-                placeholder="12"
-                [formField]="form.prepayInstallment"
-                [attr.aria-invalid]="shows('prepayInstallment')"
-                [attr.aria-describedby]="shows('prepayInstallment') ? 'sim-prepay-k-errors' : null"
-              />
-              @if (shows('prepayInstallment')) {
-                <ul id="sim-prepay-k-errors" class="errors">
-                  <li>{{ form.prepayInstallment().errors()[0]?.message }}</li>
+              <label for="sim-rate">Tasa de interés anual</label>
+              <div class="row">
+                <cc-rate-input inputId="sim-rate" placeholder="7.00" [formField]="form.rate" />
+                <span class="legend" data-testid="sim-rate-legend">{{ insuranceLegend }}</span>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="sim-years">Plazo en años</label>
+              <div class="row">
+                <input
+                  id="sim-years"
+                  type="text"
+                  inputmode="numeric"
+                  autocomplete="off"
+                  placeholder="20"
+                  [formField]="form.years"
+                  [attr.aria-invalid]="shows('years')"
+                  [attr.aria-describedby]="shows('years') ? 'sim-years-errors' : null"
+                />
+                <span class="legend">años (1 a 30)</span>
+              </div>
+              @if (shows('years')) {
+                <ul id="sim-years-errors" class="errors">
+                  <li>{{ form.years().errors()[0]?.message }}</li>
                 </ul>
               }
             </div>
-            <fieldset class="modes">
-              <legend>Efecto del abono</legend>
-              <label class="mode" for="sim-mode-term">
-                <input id="sim-mode-term" type="radio" value="REDUCE_TERM" [formField]="form.prepayMode" />
-                Reducir plazo
-              </label>
-              <label class="mode" for="sim-mode-installment">
-                <input
-                  id="sim-mode-installment"
-                  type="radio"
-                  value="REDUCE_INSTALLMENT"
-                  [formField]="form.prepayMode"
-                />
-                Reducir cuota
-              </label>
-            </fieldset>
-          </div>
-        }
-      </form>
 
-      @let current = outcome();
-      @if (current.kind === 'error') {
-        <p class="errors" data-testid="sim-error">{{ current.message }}</p>
-      }
-      @if (current.kind === 'ok') {
-        <div class="results" data-testid="sim-results">
-          <h3 class="results-title">Resultados</h3>
-          <dl>
-            <div class="stat primary">
-              <dt>Cuota nivelada</dt>
-              <dd data-testid="sim-level">{{ money(current.result.level) }}</dd>
+            <div class="field toggle">
+              <input id="sim-prepay-toggle" type="checkbox" [formField]="form.withPrepayment" />
+              <label for="sim-prepay-toggle">Probar un abono a capital</label>
             </div>
-            <div class="stat">
-              <dt>Cuota 1: interés</dt>
-              <dd data-testid="sim-first-interest">{{ money(current.result.firstInstallment.interest) }}</dd>
-            </div>
-            <div class="stat">
-              <dt>Cuota 1: seguros FHA</dt>
-              <dd data-testid="sim-first-insurance">{{ money(current.result.firstInstallment.insurance) }}</dd>
-            </div>
-            <div class="stat">
-              <dt>Cuota 1: capital</dt>
-              <dd data-testid="sim-first-capital">{{ money(current.result.firstInstallment.capital) }}</dd>
-            </div>
-            <div class="stat">
-              <dt>Intereses y seguros totales</dt>
-              <dd data-testid="sim-total">{{ money(current.result.totalInterestAndInsurance) }}</dd>
-            </div>
-            <div class="stat">
-              <dt>Número de cuotas</dt>
-              <dd data-testid="sim-count">{{ current.result.installmentCount }}</dd>
-            </div>
-            <div class="stat">
-              <dt>Fecha de fin</dt>
-              <dd data-testid="sim-end">{{ date(current.result.endDate) }}</dd>
-            </div>
-          </dl>
-          @if (current.result.prepayment; as prepayment) {
-            <h3 class="results-title">Con el abono</h3>
-            <dl>
-              <div class="stat primary">
-                <dt>Intereses y seguros ahorrados</dt>
-                <dd data-testid="sim-saved">{{ money(prepayment.interestSaved) }}</dd>
-              </div>
-              <div class="stat">
-                <dt>Meses ahorrados</dt>
-                <dd data-testid="sim-months-saved">{{ prepayment.monthsSaved }}</dd>
-              </div>
-              <div class="stat">
-                <dt>Nuevo número de cuotas</dt>
-                <dd data-testid="sim-new-count">{{ prepayment.installmentCount }}</dd>
-              </div>
-              <div class="stat">
-                <dt>Nueva fecha de fin</dt>
-                <dd data-testid="sim-new-end">{{ date(prepayment.endDate) }}</dd>
-              </div>
-              @if (prepayment.newLevel; as newLevel) {
-                <div class="stat">
-                  <dt>Nueva cuota nivelada</dt>
-                  <dd data-testid="sim-new-level">{{ money(newLevel) }}</dd>
+
+            @if (model().withPrepayment) {
+              <div class="prepay" data-testid="sim-prepay-fields">
+                <div class="field">
+                  <label for="sim-prepay-amount">Monto del abono (Q)</label>
+                  <cc-money-input
+                    inputId="sim-prepay-amount"
+                    currency="GTQ"
+                    placeholder="20,000.00"
+                    [formField]="form.prepayAmount"
+                  />
                 </div>
-              }
-            </dl>
+                <div class="field">
+                  <label for="sim-prepay-k">Después de la cuota número</label>
+                  <input
+                    id="sim-prepay-k"
+                    type="text"
+                    inputmode="numeric"
+                    autocomplete="off"
+                    placeholder="12"
+                    [formField]="form.prepayInstallment"
+                    [attr.aria-invalid]="shows('prepayInstallment')"
+                    [attr.aria-describedby]="shows('prepayInstallment') ? 'sim-prepay-k-errors' : null"
+                  />
+                  @if (shows('prepayInstallment')) {
+                    <ul id="sim-prepay-k-errors" class="errors">
+                      <li>{{ form.prepayInstallment().errors()[0]?.message }}</li>
+                    </ul>
+                  }
+                </div>
+                <fieldset class="modes">
+                  <legend>Efecto del abono</legend>
+                  <label class="mode" for="sim-mode-term">
+                    <input id="sim-mode-term" type="radio" value="REDUCE_TERM" [formField]="form.prepayMode" />
+                    Reducir plazo
+                  </label>
+                  <label class="mode" for="sim-mode-installment">
+                    <input
+                      id="sim-mode-installment"
+                      type="radio"
+                      value="REDUCE_INSTALLMENT"
+                      [formField]="form.prepayMode"
+                    />
+                    Reducir cuota
+                  </label>
+                </fieldset>
+              </div>
+            }
+          </form>
+
+          @let current = outcome();
+          @if (current.kind === 'error') {
+            <p class="errors" data-testid="sim-error">{{ current.message }}</p>
           }
-          <p class="disclaimer" data-testid="sim-disclaimer">{{ disclaimer }}</p>
         </div>
-      }
+        <div class="out">
+          @if (current.kind !== 'ok') {
+            <p class="idle">{{ idle }}</p>
+          } @else {
+            <div class="results" data-testid="sim-results">
+              <h3 class="results-title">Resultados</h3>
+              <dl>
+                <div class="stat primary">
+                  <dt>Cuota nivelada</dt>
+                  <dd data-testid="sim-level">{{ money(current.result.level) }}</dd>
+                </div>
+                <div class="stat">
+                  <dt>Cuota 1: interés</dt>
+                  <dd data-testid="sim-first-interest">{{ money(current.result.firstInstallment.interest) }}</dd>
+                </div>
+                <div class="stat">
+                  <dt>Cuota 1: seguros FHA</dt>
+                  <dd data-testid="sim-first-insurance">{{ money(current.result.firstInstallment.insurance) }}</dd>
+                </div>
+                <div class="stat">
+                  <dt>Cuota 1: capital</dt>
+                  <dd data-testid="sim-first-capital">{{ money(current.result.firstInstallment.capital) }}</dd>
+                </div>
+                <div class="stat">
+                  <dt>Intereses y seguros totales</dt>
+                  <dd data-testid="sim-total">{{ money(current.result.totalInterestAndInsurance) }}</dd>
+                </div>
+                <div class="stat">
+                  <dt>Número de cuotas</dt>
+                  <dd data-testid="sim-count">{{ current.result.installmentCount }}</dd>
+                </div>
+                <div class="stat">
+                  <dt>Fecha de fin</dt>
+                  <dd data-testid="sim-end">{{ date(current.result.endDate) }}</dd>
+                </div>
+              </dl>
+              @if (current.result.prepayment; as prepayment) {
+                <h3 class="results-title">Con el abono</h3>
+                <dl>
+                  <div class="stat primary">
+                    <dt>Intereses y seguros ahorrados</dt>
+                    <dd data-testid="sim-saved">{{ money(prepayment.interestSaved) }}</dd>
+                  </div>
+                  <div class="stat">
+                    <dt>Meses ahorrados</dt>
+                    <dd data-testid="sim-months-saved">{{ prepayment.monthsSaved }}</dd>
+                  </div>
+                  <div class="stat">
+                    <dt>Nuevo número de cuotas</dt>
+                    <dd data-testid="sim-new-count">{{ prepayment.installmentCount }}</dd>
+                  </div>
+                  <div class="stat">
+                    <dt>Nueva fecha de fin</dt>
+                    <dd data-testid="sim-new-end">{{ date(prepayment.endDate) }}</dd>
+                  </div>
+                  @if (prepayment.newLevel; as newLevel) {
+                    <div class="stat">
+                      <dt>Nueva cuota nivelada</dt>
+                      <dd data-testid="sim-new-level">{{ money(newLevel) }}</dd>
+                    </div>
+                  }
+                </dl>
+              }
+              <p class="disclaimer" data-testid="sim-disclaimer">{{ disclaimer }}</p>
+            </div>
+          }
+        </div>
+      </div>
       <p class="visually-hidden" aria-live="polite" data-testid="sim-announcement">{{ announcement() }}</p>
     </section>
   `,
-  styles: `
-    :host {
-      display: block;
-    }
-    .sim {
-      background: var(--cc-color-surface);
-      border: 1px solid var(--cc-color-rule);
-      border-radius: var(--cc-radius-block);
-      padding: 1.25rem;
-      color: var(--cc-color-ink);
-      font-family: var(--cc-font-body);
-    }
-    .title {
-      margin: 0;
-      font-family: var(--cc-font-heading);
-      font-size: 1.375rem;
-    }
-    .template {
-      margin: 0.25rem 0 1rem;
-      color: var(--cc-color-ink-muted);
-      font-size: 0.875rem;
-    }
-    .field {
-      margin-bottom: 0.875rem;
-    }
-    label,
-    legend {
-      display: block;
-      margin-bottom: 0.25rem;
-      font-size: 0.9375rem;
-    }
-    .row {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 0.5rem 0.75rem;
-    }
-    .legend {
-      color: var(--cc-color-ink-muted);
-      font-size: 0.875rem;
-    }
-    input[type='text'] {
-      min-height: 2.5rem;
-      padding: 0 0.5rem;
-      border: 1px solid var(--cc-color-control-border);
-      border-radius: 0.25rem;
-      background: var(--cc-color-paper);
-      color: var(--cc-color-ink);
-      font-family: var(--cc-font-numeric);
-      font-size: 1rem;
-    }
-    input:focus-visible {
-      outline: 2px solid var(--cc-color-accent);
-      outline-offset: 2px;
-    }
-    .toggle {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .toggle label {
-      margin: 0;
-    }
-    .prepay {
-      margin-bottom: 0.5rem;
-      padding: 0.75rem;
-      border: 1px solid var(--cc-color-rule);
-      border-radius: 0.375rem;
-      background: var(--cc-color-band);
-    }
-    .modes {
-      margin: 0;
-      padding: 0;
-      border: 0;
-    }
-    .mode {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.375rem;
-      margin-right: 1rem;
-    }
-    .errors {
-      margin: 0.25rem 0 0;
-      padding: 0;
-      list-style: none;
-      color: var(--cc-color-danger);
-      font-size: 0.875rem;
-    }
-    .results {
-      margin-top: 1rem;
-      padding-top: 0.75rem;
-      border-top: 1px solid var(--cc-color-rule);
-    }
-    .results-title {
-      margin: 0.5rem 0 0.25rem;
-      font-family: var(--cc-font-heading);
-      font-size: 1.0625rem;
-    }
-    dl {
-      margin: 0;
-    }
-    .stat {
-      display: flex;
-      justify-content: space-between;
-      gap: 1rem;
-      padding: 0.375rem 0;
-      border-bottom: 1px solid var(--cc-color-rule);
-    }
-    .stat dt {
-      color: var(--cc-color-ink-muted);
-    }
-    .stat dd {
-      margin: 0;
-      font-family: var(--cc-font-numeric);
-      font-variant-numeric: tabular-nums;
-      text-align: right;
-    }
-    .primary dd {
-      font-size: 1.25rem;
-      font-weight: 600;
-    }
-    .disclaimer {
-      margin: 0.75rem 0 0;
-      color: var(--cc-color-ink-muted);
-      font-size: 0.875rem;
-    }
-    .visually-hidden {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      margin: -1px;
-      padding: 0;
-      overflow: hidden;
-      clip-path: inset(50%);
-      white-space: nowrap;
-      border: 0;
-    }
-  `,
+  styles: [
+    SIMULATOR_LAYOUT_STYLES,
+    `
+      .prepay {
+        margin-bottom: 0.5rem;
+        padding: 1rem;
+        border-radius: 12px;
+        background: var(--cc-color-paper);
+      }
+      .modes {
+        margin: 0;
+        padding: 0;
+        border: 0;
+      }
+      .mode {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        margin-right: 1rem;
+        font-weight: 400;
+      }
+      .errors {
+        margin: 0.25rem 0 0;
+        padding: 0;
+        list-style: none;
+        color: var(--cc-color-danger);
+        font-size: 0.875rem;
+      }
+      .results-title {
+        margin: 1rem 0 0.25rem;
+        color: var(--cc-color-highlight);
+        font-family: var(--cc-font-numeric);
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .results-title:first-child {
+        margin-top: 0;
+      }
+      dl {
+        margin: 0;
+      }
+      .stat {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 1rem;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid color-mix(in srgb, var(--cc-color-on-block) 22%, transparent);
+      }
+      .stat dt {
+        font-size: 0.9375rem;
+      }
+      .stat dd {
+        margin: 0;
+        font-family: var(--cc-font-numeric);
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+      }
+      .primary {
+        display: grid;
+        gap: 0.25rem;
+        padding-top: 0.25rem;
+      }
+      .primary dd {
+        font-size: clamp(2rem, 4vw, 2.75rem);
+        font-weight: 700;
+        line-height: 1.05;
+        text-align: left;
+      }
+      .disclaimer {
+        margin: 1rem 0 0;
+        font-size: 0.8125rem;
+      }
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+        border: 0;
+      }
+    `,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class QuickSimulatorFormComponent {
@@ -367,6 +328,7 @@ export class QuickSimulatorFormComponent {
 
   protected readonly disclaimer = DISCLAIMER;
   protected readonly insuranceLegend = INSURANCE_LEGEND;
+  protected readonly idle = SIMULATOR_IDLE;
   protected readonly model = signal<SimulatorModel>({
     principal: '',
     rate: '',
