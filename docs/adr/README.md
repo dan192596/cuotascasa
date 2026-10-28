@@ -34,8 +34,9 @@ Cada ADR documenta una decisión importante: su contexto, la decisión, las alte
 | [0024](0024-sync-merge-order.md) | Orden total de la combinación en la sincronización | Aceptado | 2026-10-05 |
 | [0025](0025-presupuestos-de-bundle.md) | Presupuestos de bundle de la landing y de /app | Aceptado | 2026-10-16 |
 | [0026](0026-identidad-mercado.md) | Identidad «Mercado»: paleta, tipografía, forma y movimiento | Aceptado | 2026-10-22 |
+| [0027](0027-metricas-de-ahorro-y-ancla-por-fecha.md) | Métricas de ahorro frente a anclas y cargos fijos, y ancla por fecha del estado de cuenta | Aceptado | 2026-10-28 |
 
-El siguiente número libre es el **0027**.
+El siguiente número libre es el **0028**.
 
 La fecha es la de la decisión original. Las precisiones posteriores están en la sección «Enmiendas» de cada ADR.
 

@@ -43,7 +43,7 @@ El código usa **inglés**, la interfaz **español (Guatemala)** y la documentac
 | Plantilla | `Template` | Valores precargados versionados (`fha-gt@1`, `simple@1`) |
 | Perfil de redondeo | `RoundingProfile` (`FHA_GT_V1`, `SIMPLE`) | Reglas de redondeo de un banco |
 | Diferencia real | `realDelta` | Real − proyectado |
-| Interés ahorrado | `interestSaved` | Reducción de interés + seguros |
+| Intereses y seguros ahorrados | `interestSaved` | Reducción de interés + seguros. En la UI nunca se llama solo «Interés ahorrado» (ADR-0027) |
 | Meses ahorrados | `monthsSaved` | Reducción en número de cuotas |
 | Total pagado | `totalPaid` | Cuotas + abonos + comisiones |
 | Respaldo | `Backup` | Documento JSON versionado exportable |
@@ -57,7 +57,10 @@ El código usa **inglés**, la interfaz **español (Guatemala)** y la documentac
 | Corte | `cutoffK` | Última cuota con dato real; los eventos hipotéticos van después ([ALG.PATHS.CUTOFF]) |
 | Liquidación anticipada | `payoff` / `isPayoff` | Abono que cancela todo el saldo |
 | Fecha de fin | `endDate` | Vencimiento de la última cuota |
-| Ahorro neto | `netSaving` | Diferencia de total pagado entre base y escenario |
+| Ahorro neto | `netSaving` | Diferencia de total pagado entre base y escenario; incluye los cargos fijos que ya no se le pagan al banco. En la UI: «Ahorro neto (incluye cargos fijos)» (ADR-0027) |
+| Ahorro sin cargos fijos | `netSavingExcludingFixedCharges` | Cifra de presentación, no del motor: `netSaving` menos la diferencia de `totals.fixedCharges` entre base y escenario (ADR-0027) |
+| Ajuste por saldos reportados | `anchorAdjustment` | Cifra de presentación del detalle: suma de `realDelta` de las diferencias reales por ancla ([ALG.ANCHOR], ADR-0027) |
+| Fecha del estado de cuenta / antes o después de pagar | `date` / `balanceTiming` (`BEFORE_PAYMENT`, `AFTER_PAYMENT`) | Estado del formulario del ancla, no del esquema: la fecha deriva `k` ([ALG.EVENTS.ANCHOR], regla 2) y «después» guarda `installmentNumber = k + 1` (ADR-0027) |
 | Meta: terminar antes de | `FINISH_BY` | Tipo de meta de la búsqueda por meta (reducir plazo) |
 | Meta: cuota máxima | `MAX_INSTALLMENT` | Tipo de meta de la búsqueda por meta (reducir cuota) |
 | Resultado de búsqueda | `GoalSeekResult` (`ALREADY_MET`, `FOUND`, `INFEASIBLE`) | Ya cumplida, monto encontrado o inalcanzable |
