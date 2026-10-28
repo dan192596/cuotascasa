@@ -60,6 +60,15 @@ function onViewTransitionCreated({ transition }: ViewTransitionInfo): void {
   transition.finished.then(settle, settle);
 }
 
+/**
+ * The router's view-transition feature (W8-02). The first navigation (hydration of the prerendered page) never
+ * animates; the router keeps that "skip next" flag on the options object built here, so each call gives a fresh one
+ * (the spec builds its own router instead of depending on which test creates the first one, W9-14).
+ */
+export function routeViewTransitions(): ReturnType<typeof withViewTransitions> {
+  return withViewTransitions({ skipInitialTransition: true, onViewTransitionCreated });
+}
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -69,8 +78,7 @@ export const appConfig: ApplicationConfig = {
       withComponentInputBinding(),
       withRouterConfig({ paramsInheritanceStrategy: 'always' }),
       withInMemoryScrolling({ scrollPositionRestoration: 'enabled' }),
-      // W8-02: the first navigation (hydration of the prerendered page) never animates.
-      withViewTransitions({ skipInitialTransition: true, onViewTransitionCreated }),
+      routeViewTransitions(),
     ),
     // Event replay stays: its inline scripts are covered by the post-build hashes of ADR-0021.
     provideClientHydration(withEventReplay()),
