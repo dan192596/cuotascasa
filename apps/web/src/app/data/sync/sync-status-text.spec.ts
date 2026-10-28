@@ -24,6 +24,7 @@ describe('syncStatusText (Spanish, es-GT; W5-08 asserts these strings literally)
       { state: 'error', code: 'UnsupportedVersion' },
       'La copia de Drive es de una versión más nueva de la app. Actualiza la app. Tus datos locales no cambiaron.',
     ],
+    [{ state: 'error', code: 'QuotaExceeded' }, 'Tu Google Drive está lleno: libera espacio y vuelve a sincronizar'],
     [
       { state: 'error', code: 'WeakParams' },
       'La copia de Drive usa un cifrado más débil de lo permitido y no se leyó. Tus datos locales no cambiaron.',
@@ -32,5 +33,11 @@ describe('syncStatusText (Spanish, es-GT; W5-08 asserts these strings literally)
 
   it.each(cases)('%j -> %s', (status, text) => {
     expect(syncStatusText(status)).toBe(text);
+  });
+
+  it('a full Drive (W9-01) is not a session or connection problem: the text never asks to reconnect', () => {
+    const text = syncStatusText({ state: 'error', code: 'QuotaExceeded' });
+    expect(text).not.toBe(syncStatusText({ state: 'needs-auth' }));
+    expect(text).not.toMatch(/autoriza|conecta/i);
   });
 });

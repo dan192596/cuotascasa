@@ -27,8 +27,13 @@ export interface LocalDataset {
   /** DataStore.replaceAll(dataset, { pending: 'keep', backedUpAt: 'keep' }). */
   save(dataset: SyncDataset): Promise<void>;
   getSyncMeta(): Promise<LocalSyncMeta>;
-  /** DataStore.markSynced(at); called only after a successful upload. */
-  markSynced(at: IsoInstant): Promise<void>;
+  /**
+   * DataStore.markSynced(at, uploaded); called only after a successful upload, with the merged and purged dataset that
+   * travelled in the uploaded file. A record written after save() is not in `uploaded` (or is there with an earlier
+   * updatedAt), so it stays pending for the next pass (ADR-0008 decision 4). `uploaded` is optional only until the
+   * session passes it (W9-02); without it the whole pending set is cleared.
+   */
+  markSynced(at: IsoInstant, uploaded?: SyncDataset): Promise<void>;
 }
 
 /* ---------- Merge order, merge and purge ---------- */
@@ -137,10 +142,14 @@ export const SYNC_ERROR_CODES = [
   'UnsupportedVersion',
   'WeakParams',
   'InvalidRemote',
+  'QuotaExceeded',
 ] as const;
 export type SyncErrorCode = (typeof SYNC_ERROR_CODES)[number];
 
-/** Typed sync failure. The message is the code unless a caller passes a fixed English sentence; never plaintext data. */
+/**
+ * Typed sync failure. The message is the code unless a caller passes a fixed English sentence; never plaintext data.
+ * QuotaExceeded (W9-01): Drive refused a write because the user's storage is full (403 storageQuotaExceeded).
+ */
 export class SyncError extends Error {
   readonly code: SyncErrorCode;
 
@@ -151,7 +160,10 @@ export class SyncError extends Error {
   }
 }
 
-/** UI state of sync (ADR-0008 decision 6); data/sync (W4-09) maps it to Spanish text. */
+/**
+ * UI state of sync (ADR-0008 decision 6); data/sync (W4-09) maps it to Spanish text. A SyncError('QuotaExceeded') ends
+ * the run as { state: 'error', code: 'QuotaExceeded' }: the user stays connected and frees space (W9-01).
+ */
 export type SyncStatus =
   | { readonly state: 'not-configured' }
   | { readonly state: 'disconnected' }
@@ -160,7 +172,7 @@ export type SyncStatus =
   | { readonly state: 'offline'; readonly pendingChanges: number }
   | { readonly state: 'needs-auth' }
   | { readonly state: 'needs-passphrase'; readonly reason: 'no-key' | 'KeyMismatch' | 'WrongPassphraseOrTamper' }
-  | { readonly state: 'error'; readonly code: 'UnsupportedVersion' | 'WeakParams' | 'InvalidRemote' };
+  | { readonly state: 'error'; readonly code: 'UnsupportedVersion' | 'WeakParams' | 'InvalidRemote' | 'QuotaExceeded' };
 
 /* ---------- Encryption (ADR-0009) ---------- */
 
@@ -206,9 +218,13 @@ export interface RemoteFile {
 
 /**
  * Cloud storage port; v1 has one implementation, Google Drive appDataFolder (W2-09).
- * Every method rejects with SyncError('AuthError') on 401, on a 403 other than a rate limit, or without a live token,
- * and with SyncError('NetworkError') on a fetch failure, a 5xx, a 429, a 403 rateLimitExceeded/userRateLimitExceeded,
- * or any other non-2xx answer (400, 404, …), so the next user-initiated sync starts over.
+ * Every method rejects with:
+ * - SyncError('QuotaExceeded') on a 403 storageQuotaExceeded: the user's Drive is full; the token is still valid, so
+ *   the user stays connected (W9-01, drive-api-subset.md, «Respuestas 403»);
+ * - SyncError('NetworkError') on a fetch failure, a 5xx, a 429, a 403 rateLimitExceeded, userRateLimitExceeded or
+ *   dailyLimitExceeded (rate limits: retrying later works), or any other non-2xx answer (400, 404, …), so the next
+ *   user-initiated sync starts over;
+ * - SyncError('AuthError') on 401, on any other 403, or without a live token.
  */
 export interface SyncProvider {
   /** First authorization with the consent popup; call only from a user gesture. */
@@ -263,8 +279,8 @@ export interface SyncOutcome {
 
 /**
  * One user-initiated run (ADR-0008 decision 4): download -> decrypt -> merge -> purge -> save -> encrypt -> upload
- * (previous remote kept as cuotascasa.prev.json) -> markSynced. Concurrent calls coalesce into one run, also across
- * tabs (SYNC_LOCK_NAME).
+ * (previous remote kept as cuotascasa.prev.json) -> markSynced(at, uploaded dataset). Concurrent calls coalesce into
+ * one run, also across tabs (SYNC_LOCK_NAME).
  * - sync() resolves with the outcome, failures included (offline, needs-auth, needs-passphrase, error); it rejects
  *   only on a programming error.
  * - The envelope's plaintext is serializeBackup(BackupDocument) whose data is the merged, purged dataset. A download
@@ -276,6 +292,8 @@ export interface SyncOutcome {
  *   leave the device (ADR-0024, decision 4).
  * - LocalDataset.read() runs after download and decrypt, right before merging, and save() right after purging, with
  *   no network call in between.
+ * - A SyncError('QuotaExceeded') resolves as { state: 'error', code: 'QuotaExceeded' } and skips markSynced, like any
+ *   failed upload (W9-01).
  * - Right before uploading, the run re-reads the remote file's version (ADR-0008 decision 5, best effort): if it
  *   changed since the download, the run starts over from the download once; on the second pass it uploads.
  */

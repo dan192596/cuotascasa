@@ -21,6 +21,11 @@ export interface DriveFakeFile {
   readonly version: string;
 }
 
+/**
+ * An injected failure. `reason` replaces the default one; on a 403 the documented reasons (storageQuotaExceeded,
+ * dailyLimitExceeded, userRateLimitExceeded, rateLimitExceeded, insufficientFilePermissions) also carry Drive's own
+ * domain and message (W9-01).
+ */
 export type DriveFailure =
   | { readonly kind: 'status'; readonly status: 401 | 403 | 429 | 500 | 502 | 503; readonly reason?: string }
   | { readonly kind: 'network' };
@@ -90,6 +95,21 @@ function errorResponse(status: number, detail: DriveErrorDetail): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json; charset=UTF-8' } });
 }
 
+/**
+ * Domain and message Drive sends with each documented 403 reason (drive-api-subset.md, «Respuestas 403»). Any other reason keeps the
+ * rate-limit domain and message, as before W9-01.
+ */
+const FORBIDDEN_DETAILS: Readonly<Partial<Record<string, { readonly domain: string; readonly message: string }>>> = {
+  rateLimitExceeded: { domain: 'usageLimits', message: 'Rate Limit Exceeded' },
+  userRateLimitExceeded: { domain: 'usageLimits', message: 'User Rate Limit Exceeded' },
+  dailyLimitExceeded: { domain: 'usageLimits', message: 'Daily Limit Exceeded' },
+  storageQuotaExceeded: { domain: 'usageLimits', message: "The user's Drive storage quota has been exceeded." },
+  insufficientFilePermissions: {
+    domain: 'global',
+    message: 'The user does not have sufficient permissions for this file.',
+  },
+};
+
 function injectedDetail(status: 401 | 403 | 429 | 500 | 502 | 503, reason: string | undefined): DriveErrorDetail {
   if (status === 401) {
     return {
@@ -101,7 +121,11 @@ function injectedDetail(status: 401 | 403 | 429 | 500 | 502 | 503, reason: strin
     };
   }
   if (status === 403 || status === 429) {
-    return { domain: 'usageLimits', reason: reason ?? 'rateLimitExceeded', message: 'Rate Limit Exceeded' };
+    const chosen = reason ?? 'rateLimitExceeded';
+    const known = status === 403 ? FORBIDDEN_DETAILS[chosen] : undefined;
+    return known === undefined
+      ? { domain: 'usageLimits', reason: chosen, message: 'Rate Limit Exceeded' }
+      : { domain: known.domain, reason: chosen, message: known.message };
   }
   const messages = { 500: 'Backend Error', 502: 'Bad Gateway', 503: 'Service Unavailable' } as const;
   return { domain: 'global', reason: reason ?? 'backendError', message: messages[status] };

@@ -157,6 +157,7 @@ export function createSyncSession(deps: SyncSessionDeps, options: SyncSessionOpt
       case 'UnsupportedVersion':
       case 'WeakParams':
       case 'InvalidRemote':
+      case 'QuotaExceeded':
         return { state: 'error', code: error.code };
     }
   }

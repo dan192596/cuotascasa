@@ -99,19 +99,36 @@ afterEach(() => {
 });
 
 describe('exportJson', () => {
-  it('names the file by date, marks the backup and resets the counter', async () => {
+  it('names the file by date and leaves lastBackupAt and changesSinceBackup unchanged (W9-01)', async () => {
     const { store, backup, clock } = await world();
     await seed(store);
     await vi.waitFor(() => expect(backup.changesSinceBackup()).toBeGreaterThan(0));
+    const changes = backup.changesSinceBackup();
     const result = await backup.exportJson();
     expect(result.fileName).toBe('cuotascasa-respaldo-2026-10-04.json');
     expect(result.encrypted).toBe(false);
     const parsed = JSON.parse(await result.blob.text()) as { format: string; exportedAt: string };
     expect(parsed.format).toBe('cuotascasa');
-    expect(backup.lastBackupAt()).toBe(parsed.exportedAt);
     expect(parsed.exportedAt).toBe(clock.now());
-    expect(backup.changesSinceBackup()).toBe(0);
-    expect((await store.getMeta()).lastBackupAt).toBe(parsed.exportedAt);
+    await settle();
+    expect(backup.lastBackupAt()).toBeNull();
+    expect(backup.changesSinceBackup()).toBe(changes);
+    expect((await store.getMeta()).lastBackupAt).toBeNull();
+    expect(await store.changesSinceBackup()).toBe(changes);
+  });
+
+  it('leaves an earlier backup mark in place when exporting again', async () => {
+    const { store, backup, clock } = await world();
+    await backup.markExported(await backup.exportJson());
+    const first = backup.lastBackupAt();
+    expect(first).not.toBeNull();
+    await store.loans.create(sampleLoan());
+    await vi.waitFor(() => expect(backup.changesSinceBackup()).toBe(1));
+    clock.advance(60_000);
+    await backup.exportJson({ passphrase: PASSPHRASE });
+    await settle();
+    expect(backup.lastBackupAt()).toBe(first);
+    expect(backup.changesSinceBackup()).toBe(1);
   });
 
   it('rejects an empty passphrase instead of exporting in the clear', async () => {
@@ -496,10 +513,89 @@ describe('encryption', () => {
   });
 });
 
-describe('reminderDue through the service', () => {
-  it('is due above 20 changes since the backup and clears after exporting', async () => {
+describe('markExported (W9-01)', () => {
+  it("marks the backup at the file's exportedAt and resets the counter", async () => {
+    const { store, backup, clock } = await world();
+    await seed(store);
+    await vi.waitFor(() => expect(backup.changesSinceBackup()).toBeGreaterThan(0));
+    const exported = await backup.exportJson();
+    const parsed = JSON.parse(await exported.blob.text()) as { exportedAt: string };
+    clock.advance(40_000);
+    await backup.markExported(exported);
+    expect(backup.lastBackupAt()).toBe(parsed.exportedAt);
+    expect(backup.changesSinceBackup()).toBe(0);
+    expect((await store.getMeta()).lastBackupAt).toBe(parsed.exportedAt);
+    expect(await store.changesSinceBackup()).toBe(0);
+  });
+
+  it('marks an encrypted export the same way', async () => {
     const { store, backup } = await world();
-    await backup.exportJson();
+    await seed(store);
+    await vi.waitFor(() => expect(backup.changesSinceBackup()).toBeGreaterThan(0));
+    await settle();
+    const exported = await backup.exportJson({ passphrase: PASSPHRASE });
+    await backup.markExported(exported);
+    expect(backup.changesSinceBackup()).toBe(0);
+    expect(backup.lastBackupAt()).not.toBeNull();
+  });
+
+  it('does not mark when a write was notified after exportAll, even after the export returned', async () => {
+    const { store, backup } = await world();
+    await seed(store);
+    const exported = await backup.exportJson();
+    await store.loans.create(sampleLoan());
+    await vi.waitFor(async () => expect(await store.changesSinceBackup()).toBeGreaterThan(0));
+    await settle();
+    const changes = await store.changesSinceBackup();
+    await backup.markExported(exported);
+    expect((await store.getMeta()).lastBackupAt).toBeNull();
+    expect(backup.lastBackupAt()).toBeNull();
+    expect(await store.changesSinceBackup()).toBe(changes);
+  });
+
+  it('does not mark when a write lands during the export', async () => {
+    const { store, backup } = await world();
+    await seed(store);
+    const original = store.exportAll.bind(store);
+    vi.spyOn(store, 'exportAll').mockImplementationOnce(async () => {
+      const data = await original();
+      await store.loans.create(sampleLoan());
+      await settle();
+      return data;
+    });
+    const exported = await backup.exportJson();
+    await backup.markExported(exported);
+    expect((await store.getMeta()).lastBackupAt).toBeNull();
+    expect(backup.lastBackupAt()).toBeNull();
+  });
+
+  it('marks a file once: a second call, a stale file or a file it did not build changes nothing', async () => {
+    const { store, backup, clock } = await world();
+    const older = await backup.exportJson();
+    clock.advance(60_000);
+    const newer = await backup.exportJson();
+    await backup.markExported(newer);
+    const marked = backup.lastBackupAt();
+    clock.advance(60_000);
+    await backup.markExported(newer);
+    await backup.markExported(older);
+    await backup.markExported({ fileName: 'otro.json', blob: new Blob(['{}']), encrypted: false });
+    expect(backup.lastBackupAt()).toBe(marked);
+    expect((await store.getMeta()).lastBackupAt).toBe(marked);
+  });
+
+  it('wraps a storage failure in a DataError', async () => {
+    const { store, backup } = await world();
+    const exported = await backup.exportJson();
+    vi.spyOn(store, 'markBackedUp').mockRejectedValueOnce(new Error('disk'));
+    await expect(backup.markExported(exported)).rejects.toMatchObject({ code: 'STORAGE' });
+  });
+});
+
+describe('reminderDue through the service', () => {
+  it('is due above 20 changes since the backup and clears after a marked export', async () => {
+    const { store, backup } = await world();
+    await backup.markExported(await backup.exportJson());
     for (let index = 0; index < 20; index += 1) {
       await store.loans.create(sampleLoan());
     }
@@ -508,6 +604,9 @@ describe('reminderDue through the service', () => {
     await store.loans.create(sampleLoan());
     await vi.waitFor(() => expect(backup.reminderDue()).toBe(true));
     await backup.exportJson();
+    await settle();
+    expect(backup.reminderDue()).toBe(true);
+    await backup.markExported(await backup.exportJson());
     expect(backup.reminderDue()).toBe(false);
   });
 
@@ -523,21 +622,6 @@ describe('reminderDue through the service', () => {
 });
 
 describe('export and reminder races', () => {
-  it('does not mark the backup when a write lands during the export', async () => {
-    const { store, backup } = await world();
-    await seed(store);
-    const original = store.exportAll.bind(store);
-    vi.spyOn(store, 'exportAll').mockImplementationOnce(async () => {
-      const data = await original();
-      await store.loans.create(sampleLoan());
-      await settle();
-      return data;
-    });
-    await backup.exportJson();
-    expect((await store.getMeta()).lastBackupAt).toBeNull();
-    expect(backup.lastBackupAt()).toBeNull();
-  });
-
   it('re-evaluates reminderDue when the page becomes visible again', async () => {
     const { store, backup, clock } = await world();
     await store.loans.create(sampleLoan());

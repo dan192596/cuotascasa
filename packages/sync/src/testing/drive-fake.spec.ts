@@ -429,6 +429,30 @@ describe('drive-fake: auth and failure injection', () => {
     expect((await drive.fetch(`${DRIVE_FILES_URL}/${file.id}?alt=media`, { headers: AUTH })).status).toBe(200);
   });
 
+  it.each([
+    ['storageQuotaExceeded', 'usageLimits', "The user's Drive storage quota has been exceeded."],
+    ['dailyLimitExceeded', 'usageLimits', 'Daily Limit Exceeded'],
+    ['userRateLimitExceeded', 'usageLimits', 'User Rate Limit Exceeded'],
+    ['rateLimitExceeded', 'usageLimits', 'Rate Limit Exceeded'],
+    ['insufficientFilePermissions', 'global', 'The user does not have sufficient permissions for this file.'],
+  ] as const)(
+    'answers a 403 with the chosen reason %s and its Drive domain and message (W9-01)',
+    async (reason, domain, message) => {
+      const drive = createDriveFake();
+      const file = await create(drive, 'cuotascasa.json');
+      drive.failNext({ kind: 'status', status: 403, reason }, { operation: 'files.update.multipart' });
+      const { body, headers } = multipart({}, 'nuevo contenido sintetico');
+      const failed = await drive.fetch(`${DRIVE_UPLOAD_URL}/${file.id}?uploadType=multipart&fields=${FILE_FIELDS}`, {
+        method: 'PATCH',
+        headers: { ...headers, ...AUTH },
+        body,
+      });
+      expect(failed.status).toBe(403);
+      expect(await errorOf(failed)).toEqual({ code: 403, message, errors: [{ domain, reason, message }] });
+      expect(drive.fileByName('cuotascasa.json')?.content).toBe(CONTENT);
+    },
+  );
+
   it('simulates a network failure by rejecting like fetch and logs status 0', async () => {
     const drive = createDriveFake();
     drive.failNext({ kind: 'network' });

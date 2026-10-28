@@ -71,6 +71,7 @@ function mount(setup: Setup = {}): Harness {
         encrypted: o?.passphrase !== undefined,
       }),
     ),
+    markExported: vi.fn((): Promise<void> => Promise.resolve()),
     previewImport: vi.fn(() => Promise.resolve(previews.shift() ?? pendingOk())),
     confirmImport: vi.fn(() => Promise.resolve({ undoToken: 'u1' })),
     cancelImport: vi.fn(),
@@ -190,6 +191,9 @@ describe('plain export and its warning', () => {
     await click(h.fixture, 'warning-continue');
     expect(h.backup.exportJson).toHaveBeenCalledWith();
     expect(h.click).toHaveBeenCalledTimes(1);
+    // W9-01: the service no longer marks on export; the screen marks the file it just downloaded.
+    expect(h.backup.markExported).toHaveBeenCalledTimes(1);
+    expect(h.backup.markExported).toHaveBeenCalledWith(await h.backup.exportJson.mock.results[0]?.value);
     expect(byId(h.fixture, 'plain-warning')).toBeNull();
     await click(h.fixture, 'export-plain');
     expect(h.backup.exportJson).toHaveBeenCalledTimes(2);
@@ -245,6 +249,7 @@ describe('encrypted export', () => {
     await click(h.fixture, 'export-encrypted');
     expect(h.backup.exportJson).toHaveBeenCalledWith({ passphrase: 'frase sintetica' });
     expect(h.click).toHaveBeenCalledTimes(1);
+    expect(h.backup.markExported).toHaveBeenCalledWith(await h.backup.exportJson.mock.results[0]?.value);
     expect((byId(h.fixture, 'passphrase') as HTMLInputElement).value).toBe('');
     expect(text(h.fixture, 'notice-status')).toContain('cifrado');
   });
@@ -256,6 +261,7 @@ describe('encrypted export', () => {
     await type(h.fixture, 'passphrase-confirm', 'x');
     await click(h.fixture, 'export-encrypted');
     expect(text(h.fixture, 'notice-alert')).toContain('No se pudo preparar el respaldo');
+    expect(h.backup.markExported).not.toHaveBeenCalled();
     expect(root(h.fixture).textContent).not.toContain('123.45');
   });
 });

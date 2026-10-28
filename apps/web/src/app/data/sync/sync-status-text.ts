@@ -44,6 +44,9 @@ export function syncStatusText(status: SyncStatus): string {
           return `La copia de Drive es de una versión más nueva de la app. Actualiza la app. ${LOCAL_UNCHANGED}`;
         case 'WeakParams':
           return `La copia de Drive usa un cifrado más débil de lo permitido y no se leyó. ${LOCAL_UNCHANGED}`;
+        case 'QuotaExceeded':
+          // W9-01: the token is valid, so the text says what to do instead of asking to connect again.
+          return 'Tu Google Drive está lleno: libera espacio y vuelve a sincronizar';
       }
       break;
   }
