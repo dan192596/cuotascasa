@@ -1157,6 +1157,18 @@
     ]
   },
   {
+    "id": "W9-14",
+    "wave": "W9",
+    "executor": "opus",
+    "branch": "card/W9-14-deflake-three-tests-landing-headline-sampling-se",
+    "owns": [
+      "e2e/specs/landing.spec.ts",
+      "e2e/specs/sweeps/stubs-and-worker.sweep.spec.ts",
+      "apps/web/src/app/app.config.ts",
+      "apps/web/src/app/app.config.spec.ts"
+    ]
+  },
+  {
     "id": "W9-13",
     "wave": "W9",
     "executor": "opus",

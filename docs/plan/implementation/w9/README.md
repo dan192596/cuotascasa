@@ -19,7 +19,7 @@ W9-09 (contexto del préstamo) ────────────────�
 Todas ─> W9-13 (Opus, cierre)
 ```
 
-Pueden empezar en paralelo: W9-01, W9-05, W9-07 y W9-09.
+Pueden empezar en paralelo: W9-01, W9-05, W9-07, W9-09 y W9-14 (Opus; corrige pruebas inestables y no depende de ninguna otra).
 
 ## Nivel 1: pérdida de datos o datos que no son lo que el usuario cree
 
@@ -96,6 +96,14 @@ Pueden empezar en paralelo: W9-01, W9-05, W9-07 y W9-09.
 - No hay `canDeactivate` ni `beforeunload` en `apps/web/src/app`.
 - El asistente guarda el borrador solo en memoria y no tiene «Cancelar».
 - Afecta también al formulario de eventos reales, a «Editar condiciones» y al editor de escenarios.
+
+### Pruebas inestables que bloquean PRs → W9-14
+
+Se registró el 2026-10-28, después de que fallaran los PR #111 y #112. Ninguna de las tres pruebas falla por un error de la app.
+
+- **Titular de la landing** (`e2e/specs/landing.spec.ts:136`): lee el h1 en un bucle de 800 ms medido con el reloj del runner y exige más de 5 lecturas. En WebKit, en CI, cada lectura tarda más de 130 ms, así que no llega a 6.
+- **Barrido del service worker** (`e2e/specs/sweeps/stubs-and-worker.sweep.spec.ts:79`): carga siete rutas de `/app` seguidas y solo al final espera `navigator.serviceWorker.ready`. WebKit cancela el registro si una navegación interrumpe la descarga (está documentado en `core/pwa/provide-app-pwa.ts`), y la espera se queda colgada hasta los 30 s.
+- **Transiciones de ruta** (`apps/web/src/app/app.config.spec.ts:68`): `withViewTransitions` guarda la bandera «saltar la primera» en el objeto de opciones que `appConfig` crea una sola vez. Por eso la prueba solo pasa si es el primer router creado en el worker, y falla dentro de `ng test` completo.
 
 ## Funcionalidades (las tres más votadas)
 

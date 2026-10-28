@@ -3561,6 +3561,41 @@
           "notes": "Sonnet card. Depends on W9-02 because before that fix the pending count can read 0 while a change is not in Drive. Evidence, repro and the panel's votes: docs/plan/implementation/w9/README.md."
         },
         {
+          "id": "W9-14",
+          "title": "Deflake three tests: landing headline sampling, service worker sweep in WebKit, route view transitions spec",
+          "executor": "opus",
+          "owns": [
+            "e2e/specs/landing.spec.ts",
+            "e2e/specs/sweeps/stubs-and-worker.sweep.spec.ts",
+            "apps/web/src/app/app.config.ts",
+            "apps/web/src/app/app.config.spec.ts"
+          ],
+          "depends_on": [
+            "W8-08"
+          ],
+          "contracts_used": [
+            "docs/plan/implementation/w9/README.md",
+            "apps/web/src/app/core/pwa/provide-app-pwa.ts",
+            "e2e/playwright.config.ts",
+            "docs/adr/0023-pwa-registration-scope.md",
+            "docs/adr/0026-identidad-mercado.md"
+          ],
+          "deliverables": "Three tests fail without a product defect and block PRs (CI retries once; seen on #111 and #112, 2026-10-28). Fix the cause, keep what each test proves, and do not raise global timeouts or retries. (1) landing.spec.ts «the headline never scrambles»: it samples the h1 with textContent in a wall-clock loop of 800 ms and needs more than 5 samples; on WebKit in CI each read takes over 130 ms. Record every h1 text from the first parse instead: an init script with a MutationObserver on the document stores the h1 text on every mutation inside it, and the test reads the record once the page clock passes 800 ms after load. The assertion becomes: the record is not empty and holds only the final headline. (2) stubs-and-worker.sweep.spec.ts «one worker scoped to /…»: it loads seven /app routes with full page loads and only then waits for navigator.serviceWorker.ready. WebKit cancels a registration whose download a navigation interrupts (documented in core/pwa/provide-app-pwa.ts), so ready can hang until the 30 s timeout. Wait for ready (bounded) on the first /app page, then visit the other routes, then check registrations and the cache. (3) app.config.spec.ts «wraps navigations in a view transition, skipping only the initial one»: withViewTransitions keeps its skip-initial flag on the options object built once by appConfig, so the test only passes when it is the first router created in the worker (it fails inside the full ng test run). Export from app.config.ts a factory for the router's view-transition feature that appConfig uses, and test the behaviour on a fresh router built from it; keep one order-independent check that appConfig starts a transition on a later navigation.",
+          "acceptance_criteria": [
+            "The three tests pass 20 times in a row on WebKit and Chromium (e2e with --repeat-each=20 for the two e2e tests) and app.config.spec.ts passes inside the full pnpm test:web run",
+            "Mutating the headline during the first 800 ms (temporary local check) makes the landing test fail; an app that never registers a worker makes the sweep fail",
+            "No change to playwright.config.ts timeouts or retries; the comment «Must stay first» is gone from app.config.spec.ts",
+            "pnpm lint && pnpm typecheck && pnpm test and pnpm e2e pass"
+          ],
+          "requirements": [
+            "R1",
+            "R20",
+            "R24"
+          ],
+          "size": "S",
+          "notes": "Opus correction card registered on 2026-10-28 after flaky failures on #111 and #112. app.config.ts is frozen; this card is in its editableBy. Evidence: docs/plan/implementation/w9/README.md."
+        },
+        {
           "id": "W9-13",
           "title": "Close wave W9: full sweep, changelog, findings",
           "executor": "opus",
@@ -3582,7 +3617,8 @@
             "W9-09",
             "W9-10",
             "W9-11",
-            "W9-12"
+            "W9-12",
+            "W9-14"
           ],
           "contracts_used": [
             "docs/plan/implementation/w9/README.md"
@@ -4033,7 +4069,8 @@
       "editableBy": [
         "W0-05",
         "W2-02",
-        "W8-02"
+        "W8-02",
+        "W9-14"
       ]
     },
     {

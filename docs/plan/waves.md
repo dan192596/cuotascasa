@@ -168,7 +168,8 @@ Fix the defects that the multi-role review panel of 2026-10-27 confirmed at leve
 | [W9-10](cards/W9-10.md) | sonnet | M | W9-08, W9-09 | «Registrar el pago de este mes» in one tap, and mark past installments as paid in bulk |
 | [W9-11](cards/W9-11.md) | sonnet | M | W9-06, W9-10 | Warn before leaving unsaved changes in the wizard and the forms |
 | [W9-12](cards/W9-12.md) | sonnet | S | W9-02, W9-03 | Before «Borrar datos de este dispositivo», show unsynced and unbacked changes |
-| [W9-13](cards/W9-13.md) | opus | S | W9-01, W9-02, W9-03, W9-04, W9-05, W9-06, W9-07, W9-08, W9-09, W9-10, W9-11, W9-12 | Close wave W9: full sweep, changelog, findings |
+| [W9-14](cards/W9-14.md) | opus | S | W8-08 | Deflake three tests: landing headline sampling, service worker sweep in WebKit, route view transitions spec |
+| [W9-13](cards/W9-13.md) | opus | S | W9-01, W9-02, W9-03, W9-04, W9-05, W9-06, W9-07, W9-08, W9-09, W9-10, W9-11, W9-12, W9-14 | Close wave W9: full sweep, changelog, findings |
 
 ## Contratos congelados en W0
 
