@@ -1063,7 +1063,11 @@
       "apps/web/src/app/features/loans/detail/loan-detail-model.ts",
       "apps/web/src/app/features/loans/detail/loan-detail-model.spec.ts",
       "apps/web/src/app/features/scenarios/compare/compare-model.ts",
-      "apps/web/src/app/features/scenarios/compare/compare-model.spec.ts"
+      "apps/web/src/app/features/scenarios/compare/compare-model.spec.ts",
+      "apps/web/src/app/features/scenarios/compare/scenario-compare.component.spec.ts",
+      "apps/web/src/app/features/scenarios/editor/scenario-editor.component.html",
+      "apps/web/src/app/features/scenarios/editor/scenario-editor.component.ts",
+      "apps/web/src/app/features/scenarios/editor/scenario-editor.component.spec.ts"
     ]
   },
   {
@@ -1177,7 +1181,8 @@
       "e2e/specs/sweeps/known-defects.ts",
       "CHANGELOG.md",
       "docs/plan/implementation/w0/README.md",
-      "docs/release/"
+      "docs/release/",
+      "docs/specs/2026-10-04-cuotascasa-v1-design.md"
     ]
   }
 ]

@@ -3308,7 +3308,11 @@
             "apps/web/src/app/features/loans/detail/loan-detail-model.ts",
             "apps/web/src/app/features/loans/detail/loan-detail-model.spec.ts",
             "apps/web/src/app/features/scenarios/compare/compare-model.ts",
-            "apps/web/src/app/features/scenarios/compare/compare-model.spec.ts"
+            "apps/web/src/app/features/scenarios/compare/compare-model.spec.ts",
+            "apps/web/src/app/features/scenarios/compare/scenario-compare.component.spec.ts",
+            "apps/web/src/app/features/scenarios/editor/scenario-editor.component.html",
+            "apps/web/src/app/features/scenarios/editor/scenario-editor.component.ts",
+            "apps/web/src/app/features/scenarios/editor/scenario-editor.component.spec.ts"
           ],
           "depends_on": [
             "W9-05"
@@ -3320,10 +3324,11 @@
             "apps/web/src/app/data/api.ts",
             "apps/web/src/app/data/tokens.ts"
           ],
-          "deliverables": "Implement the W9-05 rulings in the presentation (default scope, assuming no rule change): in the loan detail, «Plan original frente a lo real» shows the anchor adjustment (sum of realDelta.perAnchor) as its own row with a short Spanish note that it comes from reported balances, not from registered payments, and the months/saving figures are labelled accordingly; the net saving states what it includes per ADR-0027 (and shows the variant without fixed charges if the ruling asks for it); the comparison table renames the interest-plus-insurance figure. Money stays as decimal strings formatted by the ui/ pipes.",
+          "deliverables": "Implement rulings 1 and 2 of ADR-0027 exactly as written there (texts, order per screen, notes): in the loan detail, «Plan original frente a lo real» shows «Ajuste por saldos reportados» (sum of realDelta of realDeltaPerAnchor, only when the loan has a live ReportedBalance) with its literal note, and the two saving figures «Ahorro sin cargos fijos» and «Ahorro neto (incluye cargos fijos)» with the fixed-charges note when they differ; «Interés ahorrado» becomes «Intereses y seguros ahorrados» on every screen; the comparison table and the scenario editor («Efecto sobre el camino real» and the goal-seek result) show the figures in the order of the ADR-0027 table. Money stays as decimal strings formatted by the ui/ pipes.",
           "acceptance_criteria": [
             "Model spec with a synthetic loan and a lower reported balance and no payment: the anchor adjustment row equals the sum of realDelta.perAnchor and the note is present",
-            "Detail and compare specs: labels match ADR-0027 exactly; no money value goes through number",
+            "Model spec with [ALG.EXAMPLE] REDUCE_TERM: «Ahorro sin cargos fijos» is netSaving minus the fixedCharges difference (77,072.80 vs 69,172.80)",
+            "Detail, compare and scenario editor specs: labels, order and notes match ADR-0027 exactly; no money value goes through number",
             "pnpm lint && pnpm typecheck && pnpm test pass"
           ],
           "requirements": [
@@ -3331,7 +3336,7 @@
             "R17"
           ],
           "size": "M",
-          "notes": "Sonnet card. If W9-05 changes a rule in docs/algorithm.md, Opus amends this card (engine and oracle work go to their lineages) before launch. Evidence, repro and the panel's votes: docs/plan/implementation/w9/README.md."
+          "notes": "Sonnet card. W9-05 changed no [ALG.*] rule (ADR-0027); owns widened after W9-05 so the compare component spec and the scenario editor follow the same names. W9-11 also owns the scenario editor and runs after this card. Evidence, repro and the panel's votes: docs/plan/implementation/w9/README.md."
         },
         {
           "id": "W9-07",
@@ -3603,7 +3608,8 @@
             "e2e/specs/sweeps/known-defects.ts",
             "CHANGELOG.md",
             "docs/plan/implementation/w0/README.md",
-            "docs/release/"
+            "docs/release/",
+            "docs/specs/2026-10-04-cuotascasa-v1-design.md"
           ],
           "depends_on": [
             "W9-01",
@@ -3623,7 +3629,7 @@
           "contracts_used": [
             "docs/plan/implementation/w9/README.md"
           ],
-          "deliverables": "Run pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm bundle:check && pnpm e2e on main with every W9 card merged; axe without violations in light and dark; known-defects.ts updated; CHANGELOG entry (v1.1.0 or as the owner decides); «Hallazgos de W9» in docs/plan/implementation/w0/README.md, including which panel findings remain open (see «Fuera de esta ola» in the W9 guide); project memory updated; decide whether the release traceability (docs/release/traceability.mjs, POST_RELEASE_WAVES) gets a v1.1 matrix that includes W9 or keeps it out.",
+          "deliverables": "Run pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm bundle:check && pnpm e2e on main with every W9 card merged; axe without violations in light and dark; known-defects.ts updated; CHANGELOG entry (v1.1.0 or as the owner decides); «Hallazgos de W9» in docs/plan/implementation/w0/README.md, including which panel findings remain open (see «Fuera de esta ola» in the W9 guide); project memory updated; decide whether the release traceability (docs/release/traceability.mjs, POST_RELEASE_WAVES) gets a v1.1 matrix that includes W9 or keeps it out. Bring the v1 spec text in line with ADR-0027 (section 9, «Paso 4»: anchor by statement date, and the names of the saving figures), since the ADR amends it by precedence.",
           "acceptance_criteria": [
             "All commands pass on main and axe finds no violations in light and dark",
             "Budgets of ADR-0025 respected and measured in the PR",
