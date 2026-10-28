@@ -1,9 +1,9 @@
 import { formatNumber } from '@angular/common';
 import { LOCALE_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { appConfig } from './app.config.ts';
+import { appConfig, routeViewTransitions } from './app.config.ts';
 
 describe('app.config.ts', () => {
   it('registers es-GT as LOCALE_ID (ADR-0011 decision 6)', () => {
@@ -48,9 +48,15 @@ describe('route view transitions (W8-02)', () => {
     });
   }
 
-  /** Navigates twice and returns how many transitions the first navigation started. */
+  /**
+   * Navigates twice on a router with a fresh routeViewTransitions() (its "skip the initial navigation" flag lives on the
+   * options object, so sharing appConfig's would depend on which test builds the first router) and returns how many
+   * transitions the first navigation started.
+   */
   async function navigateTwice(): Promise<number> {
-    TestBed.configureTestingModule({ providers: appConfig.providers });
+    TestBed.configureTestingModule({
+      providers: [provideRouter([{ path: '**', children: [] }], routeViewTransitions())],
+    });
     const router = TestBed.inject(Router);
     await router.navigateByUrl('/ruta-sintetica-a');
     const afterFirst = startViewTransition.mock.calls.length;
@@ -63,8 +69,6 @@ describe('route view transitions (W8-02)', () => {
     Reflect.deleteProperty(window, 'matchMedia');
   });
 
-  // Must stay first: withViewTransitions keeps its "skip next" flag on the options object built once by appConfig, so
-  // only the first router created in this file sees the initial navigation as initial.
   it('wraps navigations in a view transition, skipping only the initial one', async () => {
     stubBrowser(false);
     const startedByInitial = await navigateTwice();
@@ -125,12 +129,15 @@ describe('route view transitions (W8-02)', () => {
       const finished = new Promise<void>((resolve) => settlers.push(resolve));
       return { skipTransition: vi.fn(), updateCallbackDone: done, ready: Promise.resolve(), finished };
     });
-    TestBed.configureTestingModule({ providers: appConfig.providers });
+    TestBed.configureTestingModule({
+      providers: [provideRouter([{ path: '**', children: [] }], routeViewTransitions())],
+    });
     const router = TestBed.inject(Router);
     await router.navigateByUrl('/ruta-sintetica-a');
     await router.navigateByUrl('/ruta-sintetica-b');
     await router.navigateByUrl('/ruta-sintetica-c');
-    // The initial-navigation skip was already used by an earlier test, so every navigation starts a transition.
+    await router.navigateByUrl('/ruta-sintetica-d');
+    // The fresh router skips the initial navigation, so the three later ones each start a transition.
     expect(settlers.length).toBe(3);
     const active = () => document.documentElement.classList.contains('cc-view-transition');
     expect(active()).toBe(true);
@@ -141,5 +148,15 @@ describe('route view transitions (W8-02)', () => {
     settlers[2]?.();
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(active()).toBe(false);
+  });
+
+  it('appConfig wires the route view transitions (whichever test built the first router)', async () => {
+    stubBrowser(false);
+    TestBed.configureTestingModule({ providers: appConfig.providers });
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/ruta-sintetica-a');
+    const afterFirst = startViewTransition.mock.calls.length;
+    await router.navigateByUrl('/ruta-sintetica-b');
+    expect(startViewTransition.mock.calls.length).toBe(afterFirst + 1);
   });
 });

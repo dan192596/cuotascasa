@@ -80,8 +80,12 @@ test.describe('after using /app', () => {
     page,
     baseURL,
   }) => {
+    // Wait for the worker on the first /app page, before any other full load: WebKit cancels a registration whose
+    // download a navigation interrupts (core/pwa/provide-app-pwa.ts), and waiting only after the loop could hang (W9-14).
+    await page.goto('/app');
+    await expect(page.getByTestId('page-app')).toBeVisible();
+    await page.evaluate(() => navigator.serviceWorker.ready);
     const routes = [
-      '/app',
       '/app/prestamos/nuevo',
       '/app/prestamos/no-existe',
       '/app/prestamos/no-existe/tabla',
@@ -93,7 +97,6 @@ test.describe('after using /app', () => {
       await page.goto(route);
       await expect(page.getByTestId('page-app')).toBeVisible();
     }
-    await page.evaluate(() => navigator.serviceWorker.ready);
     await expect.poll(async () => (await readClientStorage(page)).cacheStorage.length).toBeGreaterThan(0);
     expect(await registrations(page)).toEqual([`${baseURL ?? ''}/`]);
 

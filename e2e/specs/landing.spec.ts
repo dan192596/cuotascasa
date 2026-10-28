@@ -136,17 +136,32 @@ test.describe('landing /', () => {
   test('the headline never scrambles: it reads the final text through hydration and the first 800 ms', async ({
     page,
   }) => {
-    await page.goto('/', { waitUntil: 'commit' });
-    const h1 = page.getByRole('heading', { level: 1 });
-    await expect(h1).toBeAttached();
-    const samples: (string | null)[] = [];
-    const start = Date.now();
-    while (Date.now() - start < 800) {
-      samples.push(await h1.textContent());
-      await page.waitForTimeout(40);
-    }
-    expect(samples.length).toBeGreaterThan(5);
-    expect(new Set(samples)).toEqual(new Set(['Calcula tus cuotas, mes a mes.']));
+    // Recorded inside the page: every text the h1 shows from the parsed document (DOMContentLoaded, before hydration),
+    // whatever the runner's speed (polling from the test took too few samples on WebKit in CI, W9-14).
+    await page.addInitScript(() => {
+      const record = { texts: [] as string[], loadedAt: -1 };
+      Object.defineProperty(window, '__ccHeadline', { value: record });
+      const read = (): void => {
+        const text = document.querySelector('h1')?.textContent ?? null;
+        if (text !== null && text !== record.texts.at(-1)) record.texts.push(text);
+      };
+      addEventListener('DOMContentLoaded', () => {
+        read();
+        new MutationObserver(read).observe(document, { subtree: true, childList: true, characterData: true });
+      });
+      addEventListener('load', () => (record.loadedAt = performance.now()));
+    });
+    await page.goto('/');
+    const headline = (): { texts: string[]; loadedAt: number } =>
+      (window as unknown as { __ccHeadline: { texts: string[]; loadedAt: number } }).__ccHeadline;
+    // Hydration runs around load; keep recording for 800 ms of the page's own clock after it.
+    await page.waitForFunction(() => {
+      const { loadedAt } = (window as unknown as { __ccHeadline: { loadedAt: number } }).__ccHeadline;
+      return loadedAt >= 0 && performance.now() - loadedAt >= 800;
+    });
+    const { texts } = await page.evaluate(headline);
+    expect(texts.length).toBeGreaterThan(0);
+    expect(new Set(texts)).toEqual(new Set(['Calcula tus cuotas, mes a mes.']));
   });
 
   test('the custom cursor and its class go away when leaving the landing', async ({ page }) => {
