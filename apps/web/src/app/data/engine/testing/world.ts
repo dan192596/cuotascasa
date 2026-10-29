@@ -21,6 +21,8 @@ export interface World {
   readonly balances: FakeChildStore<ReportedBalance>;
   readonly payments: FakeChildStore<ActualPayment>;
   readonly scenarios: FakeScenariosStore;
+  /** Mutable: setToday() moves the calendar. */
+  readonly clock: FakeClock;
 }
 
 export function createWorld(today = '2025-03-15'): World {
@@ -29,6 +31,7 @@ export function createWorld(today = '2025-03-15'): World {
   const balances = new FakeChildStore<ReportedBalance>();
   const payments = new FakeChildStore<ActualPayment>();
   const scenarios = new FakeScenariosStore();
+  const clock = new FakeClock(today);
   TestBed.configureTestingModule({
     providers: [
       { provide: LOANS_STORE, useValue: loans },
@@ -36,11 +39,11 @@ export function createWorld(today = '2025-03-15'): World {
       { provide: REPORTED_BALANCES_STORE, useValue: balances },
       { provide: PAYMENTS_STORE, useValue: payments },
       { provide: SCENARIOS_STORE, useValue: scenarios },
-      { provide: CLOCK, useValue: new FakeClock(today) },
+      { provide: CLOCK, useValue: clock },
       provideEngineFacade(),
     ],
   });
-  return { service: TestBed.inject(LOAN_PROJECTION_SERVICE), loans, events, balances, payments, scenarios };
+  return { service: TestBed.inject(LOAN_PROJECTION_SERVICE), loans, events, balances, payments, scenarios, clock };
 }
 
 export type { Scenario };

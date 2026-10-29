@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
+import { Title } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
 import {
   installmentOnOrAfter,
@@ -45,6 +46,9 @@ interface PendingAbono {
       <header class="head">
         <h1>Tabla de amortización · {{ loan.name }}</h1>
         <p class="sub">Montos en {{ loan.currency === 'USD' ? 'dólares (US$)' : 'quetzales (Q)' }}</p>
+        <p class="back">
+          <a data-testid="back-to-loan" [routerLink]="'/app/prestamos/' + id()">← Volver al préstamo</a>
+        </p>
       </header>
 
       <div class="toolbar">
@@ -79,7 +83,10 @@ interface PendingAbono {
       </div>
 
       @if (error(); as error) {
-        <cc-banner tone="danger" [dismissible]="false" data-testid="schedule-error">{{ error }}</cc-banner>
+        <cc-banner tone="danger" [dismissible]="false" data-testid="schedule-error"
+          >{{ error }}
+          <a data-testid="error-detail-link" [routerLink]="'/app/prestamos/' + id()">Ver el detalle del préstamo</a>
+        </cc-banner>
       }
       <p class="status" role="status" aria-live="polite" data-testid="schedule-status">{{ message() }}</p>
 
@@ -142,8 +149,11 @@ interface PendingAbono {
       font-family: var(--cc-font-heading);
       font-size: 1.5rem;
     }
+    .back {
+      margin: 0 0 0.75rem;
+    }
     .sub {
-      margin: 0.125rem 0 0.75rem;
+      margin: 0.125rem 0 0.25rem;
       color: var(--cc-color-ink-muted);
     }
     .toolbar {
@@ -220,6 +230,7 @@ export class SchedulePageComponent {
   private readonly loans = inject(LOANS_STORE);
   private readonly service = inject(LOAN_PROJECTION_SERVICE);
   private readonly scenarioStore = inject(SCENARIOS_STORE);
+  private readonly title = inject(Title);
 
   protected readonly views = SCHEDULE_VIEWS;
   protected readonly view = signal<ScheduleView>('real');
@@ -227,6 +238,13 @@ export class SchedulePageComponent {
   protected readonly pending = signal<PendingAbono | null>(null);
 
   protected readonly loan = computed(() => this.loans.loan(this.id())());
+
+  constructor() {
+    effect(() => {
+      const loan = this.loan();
+      if (loan !== undefined) this.title.setTitle(`Tabla de amortización · ${loan.name} · CuotasCasa`);
+    });
+  }
   private readonly projection = computed(() => this.service.forLoan(this.id()));
   /** Flash the table only when the shown path changes (scenario or view switch), not on inline edits or syncs. */
   protected readonly flashKey = computed(() => `${this.view()}|${this.activeId() ?? ''}`);
