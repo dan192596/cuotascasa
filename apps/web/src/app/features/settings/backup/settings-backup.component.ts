@@ -481,6 +481,8 @@ export class SettingsBackupComponent {
     try {
       const file = await (passphrase === undefined ? this.backup.exportJson() : this.backup.exportJson({ passphrase }));
       this.download(file);
+      // W9-01: exportJson no longer marks the backup. W9-03 moves this mark after a confirmed download start.
+      await this.backup.markExported(file);
       if (passphrase !== undefined) {
         this.passphrase.set('');
         this.confirmation.set('');

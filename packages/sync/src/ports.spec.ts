@@ -85,12 +85,15 @@ describe('sync constants and errors', () => {
       'UnsupportedVersion',
       'WeakParams',
       'InvalidRemote',
+      'QuotaExceeded',
     ]);
   });
 
-  it('the error status carries one of the three failure codes of a session run', () => {
+  it('the error status carries one of the four failure codes of a session run', () => {
     type ErrorStatus = Extract<SyncStatus, { readonly state: 'error' }>;
-    expectTypeOf<ErrorStatus['code']>().toEqualTypeOf<'UnsupportedVersion' | 'WeakParams' | 'InvalidRemote'>();
+    expectTypeOf<ErrorStatus['code']>().toEqualTypeOf<
+      'UnsupportedVersion' | 'WeakParams' | 'InvalidRemote' | 'QuotaExceeded'
+    >();
     const status: SyncStatus = { state: 'error', code: 'InvalidRemote' };
     expect(status).toEqual({ state: 'error', code: 'InvalidRemote' });
   });

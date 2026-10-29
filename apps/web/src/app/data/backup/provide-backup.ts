@@ -59,6 +59,14 @@ interface Fingerprint {
   readonly digest: string;
 }
 
+/** The latest file exportJson returned, waiting for markExported (W9-01). */
+interface ExportEntry {
+  readonly file: BackupFile;
+  readonly exportedAt: IsoInstant;
+  /** Notification count right before exportAll; any later notification is a write the file does not hold. */
+  readonly seen: number;
+}
+
 interface UndoEntry {
   readonly token: string;
   readonly snapshotId: string;
@@ -107,8 +115,9 @@ class BackupServiceImpl extends BackupState implements BackupService {
   private importing = false;
   private writeDuringImport = false;
   private restoring = false;
-  /** Counts notifications, to notice a write that lands while an export runs. */
+  /** Counts notifications, to notice a write that lands between an export and its mark. */
   private notifications = 0;
+  private lastExport: ExportEntry | undefined;
   private removeVisibility: (() => void) | undefined;
 
   private readonly ids: IdGenerator;
@@ -195,17 +204,34 @@ class BackupServiceImpl extends BackupState implements BackupService {
         const key = await deriveStoredKey(passphrase, { iterations: this.options.kdfIterations ?? PBKDF2_ITERATIONS });
         body = serializeEnvelope(await encrypt(key, text));
       }
-      // A write that committed after exportAll is not in the file, so marking the backup would hide it. We only see it
-      // here once its notification arrived; a commit whose notification is still in flight can still slip through.
-      if (this.notifications === seen) {
-        await store.markBackedUp(exportedAt);
-      }
-      await this.refresh();
-      return {
+      // The backup is marked only once the UI started the download (markExported, W9-01, ADR-0007 decision 8).
+      const file: BackupFile = {
         fileName: `cuotascasa-respaldo-${this.clockToday()}.json`,
         blob: new Blob([body], { type: 'application/json' }),
         encrypted: passphrase !== undefined,
       };
+      this.lastExport = { file, exportedAt, seen };
+      return file;
+    } catch (error) {
+      throw toDataError(error);
+    }
+  }
+
+  async markExported(file: BackupFile): Promise<void> {
+    const entry = this.lastExport;
+    if (entry?.file !== file) {
+      return;
+    }
+    this.lastExport = undefined;
+    // A write that committed after exportAll is not in the file, so marking the backup would hide it. We only see it
+    // once its notification arrived; a commit whose notification is still in flight can still slip through.
+    if (this.notifications !== entry.seen) {
+      return;
+    }
+    try {
+      const store = await this.source;
+      await store.markBackedUp(entry.exportedAt);
+      await this.refresh();
     } catch (error) {
       throw toDataError(error);
     }

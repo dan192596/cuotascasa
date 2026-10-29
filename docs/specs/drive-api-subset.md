@@ -71,12 +71,26 @@ Campos que la app lee: `id`, `name`, `mimeType`, `modifiedTime` (RFC 3339 en UTC
 | Falla | Respuesta | `reason` por defecto | Cómo la trata el proveedor (W2-09) |
 |---|---|---|---|
 | `{ kind: 'status', status: 401 }` | `401 Invalid Credentials` | `authError` | `SyncError('AuthError')` |
-| `{ kind: 'status', status: 403 }` | `403 Rate Limit Exceeded` | `rateLimitExceeded` (se puede cambiar con `reason`, por ejemplo `insufficientFilePermissions`) | `SyncError('NetworkError')` si `reason` es `rateLimitExceeded` o `userRateLimitExceeded`; `SyncError('AuthError')` con cualquier otro `reason` |
+| `{ kind: 'status', status: 403 }` | `403` con el `domain` y el `message` de su `reason` (tabla «Respuestas 403») | `rateLimitExceeded` (se puede cambiar con `reason`, por ejemplo `storageQuotaExceeded`) | Según el `reason`, como dice la tabla «Respuestas 403» |
 | `{ kind: 'status', status: 429 }` | `429 Rate Limit Exceeded` | `rateLimitExceeded` | `SyncError('NetworkError')`, sea cual sea el `reason` |
 | `{ kind: 'status', status: 500 \| 502 \| 503 }` | `5xx` con su mensaje | `backendError` | `SyncError('NetworkError')` |
 | `{ kind: 'network' }` | `fetch` rechaza con `TypeError('Failed to fetch')` | — | `SyncError('NetworkError')` |
 
 Cualquier otro estado no 2xx (por ejemplo `400` o `404`): `SyncError('NetworkError')`, para que la siguiente sincronización iniciada por el usuario empiece de nuevo.
+
+## Respuestas 403
+
+Enmienda de W9-01 (hallazgo qa-B3 del panel del 2026-10-27). Drive usa el mismo `403` para causas muy distintas, y el proveedor decide por el `reason` del primer elemento de `errors`. Con `failNext({ kind: 'status', status: 403, reason })`, el fake responde con el `domain` y el `message` de esta tabla; un `reason` que no está en ella conserva `domain: usageLimits` y `message: Rate Limit Exceeded`.
+
+| `reason` | `domain` | `message` | Clasificación (`SyncError`) | Por qué |
+|---|---|---|---|---|
+| `storageQuotaExceeded` | `usageLimits` | `The user's Drive storage quota has been exceeded.` | `QuotaExceeded` | El Drive del usuario está lleno. El token sigue vivo, así que no es un problema de sesión: la persona sigue conectada y el estado dice «Tu Google Drive está lleno: libera espacio y vuelve a sincronizar». |
+| `rateLimitExceeded` | `usageLimits` | `Rate Limit Exceeded` | `NetworkError` | Límite de solicitudes por tiempo: reintentar más tarde funciona. |
+| `userRateLimitExceeded` | `usageLimits` | `User Rate Limit Exceeded` | `NetworkError` | Igual, por usuario. |
+| `dailyLimitExceeded` | `usageLimits` | `Daily Limit Exceeded` | `NetworkError` | **Decisión de W9-01:** es un límite de cuota del proyecto, no del usuario ni de su sesión. Se trata como límite de solicitudes: reconectar no lo arregla y reintentar más tarde sí. Muestra «Sin conexión con Drive» con los cambios pendientes, sin pedir que se vuelva a conectar. |
+| `insufficientFilePermissions`, `insufficientScopes`, `fieldNotWritable` y cualquier otro | `global` u otro | El de Drive | `AuthError` | Permisos o alcance: hace falta volver a autorizar (o es un error de diseño que el fake detecta). |
+
+Referencias: <https://developers.google.com/workspace/drive/api/guides/handle-errors> (errores 403 de cuota y de límite de solicitudes). El proveedor (W2-09) aplica esta tabla desde W9-02; hasta entonces trata `storageQuotaExceeded` y `dailyLimitExceeded` como `AuthError`.
 
 ## Google Identity Services: modelo de token
 

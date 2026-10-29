@@ -11,10 +11,14 @@ import type {
   ScheduleRow,
   ValidationStatus,
 } from '@cuotascasa/domain';
-import type { Uuid } from '@cuotascasa/schema';
+import type { DataStore } from '@cuotascasa/persistence';
+import type { BackupData, IsoInstant, Uuid } from '@cuotascasa/schema';
+import type { LocalDataset, SyncDataset, SyncErrorCode, SyncStatus } from '@cuotascasa/sync';
 import { describe, expectTypeOf, it } from 'vitest';
 import type {
   AnchorDelta,
+  BackupFile,
+  BackupService,
   CurrencyTotals,
   DeviceDataService,
   LoanProjection,
@@ -83,5 +87,31 @@ describe('data/api.ts DeviceDataService (W7-04)', () => {
   it('declares only clearAll(): Promise<void>', () => {
     expectTypeOf<DeviceDataService>().toEqualTypeOf<{ clearAll(): Promise<void> }>();
     expectTypeOf<keyof DeviceDataService>().toEqualTypeOf<'clearAll'>();
+  });
+});
+
+describe('data/api.ts BackupService (W9-01, ADR-0007 decision 8)', () => {
+  it('exportJson only builds the file; markExported(file) is the one that marks the backup', () => {
+    expectTypeOf<BackupService['exportJson']>().parameters.toEqualTypeOf<
+      [options?: { readonly passphrase?: string }]
+    >();
+    expectTypeOf<BackupService['exportJson']>().returns.toEqualTypeOf<Promise<BackupFile>>();
+    expectTypeOf<BackupService['markExported']>().parameters.toEqualTypeOf<[file: BackupFile]>();
+    expectTypeOf<BackupService['markExported']>().returns.toEqualTypeOf<Promise<void>>();
+  });
+});
+
+describe('W9-01 port amendments seen from data/', () => {
+  it('markSynced takes what was uploaded (optional until W9-02)', () => {
+    expectTypeOf<DataStore['markSynced']>().parameters.toEqualTypeOf<[at: IsoInstant, uploaded?: BackupData]>();
+    expectTypeOf<LocalDataset['markSynced']>().parameters.toEqualTypeOf<[at: IsoInstant, uploaded?: SyncDataset]>();
+    expectTypeOf<SyncDataset>().toEqualTypeOf<BackupData>();
+  });
+
+  it('a full Drive has its own error code and error status', () => {
+    expectTypeOf<'QuotaExceeded'>().toExtend<SyncErrorCode>();
+    expectTypeOf<Extract<SyncStatus, { readonly state: 'error' }>['code']>().toEqualTypeOf<
+      'UnsupportedVersion' | 'WeakParams' | 'InvalidRemote' | 'QuotaExceeded'
+    >();
   });
 });

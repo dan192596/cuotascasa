@@ -310,8 +310,18 @@ export interface BackupService {
   readonly changesSinceBackup: Signal<number>;
   /** Single source of the reminder rule (ADR-0007): > 30 days since lastBackupAt or > 20 changes since backup. */
   readonly reminderDue: Signal<boolean>;
-  /** Plain JSON, or the encrypted envelope when a passphrase is given; marks the backup. */
+  /**
+   * Plain JSON, or the encrypted envelope when a passphrase is given. It never marks the backup: lastBackupAt and
+   * changesSinceBackup stay as they were until markExported (W9-01, ADR-0007 decision 8 and its W9 amendment).
+   */
   exportJson(options?: { readonly passphrase?: string }): Promise<BackupFile>;
+  /**
+   * Marks `file` as the latest backup (lastBackupAt = its exportedAt, changesSinceBackup = 0). The UI calls it only
+   * after the download of that file started. It marks nothing when a write was notified after the export read the
+   * data (that write is not in the file), when `file` is not the latest file returned by exportJson, or when it was
+   * already marked. Rejects with DataError('STORAGE') when the store fails.
+   */
+  markExported(file: BackupFile): Promise<void>;
   /** parse → migrate → validate → preview. Never writes. */
   previewImport(
     file: Blob,

@@ -121,7 +121,7 @@ export interface DataStoreMeta {
    * the life of the store; stamps updatedByDevice.
    */
   readonly deviceId: Uuid;
-  /** Instant of the last successful sync (markSynced), or null. */
+  /** Instant of the last successful sync (markSynced, with or without `uploaded`), or null. */
   readonly lastSyncAt: IsoInstant | null;
   /** Instant of the last backup (markBackedUp or replaceAll backedUpAt), or null. */
   readonly lastBackupAt: IsoInstant | null;
@@ -173,10 +173,22 @@ export interface DataStore extends DataStoreRepositories {
   /** Deletes a snapshot; unknown id is a no-op. */
   discardSnapshot(id: SnapshotId): Promise<void>;
   subscribe(listener: ChangeListener): Unsubscribe;
-  /** Number of distinct records (device settings excluded) written since the last markSynced. */
+  /**
+   * Number of distinct records (device settings excluded) written and not yet covered by a markSynced: a write counts
+   * until a markSynced whose `uploaded` holds that version or a later one (ADR-0008 decision 4).
+   */
   pendingChanges(): Promise<number>;
-  /** lastSyncAt = at and pendingChanges = 0. */
-  markSynced(at: IsoInstant): Promise<void>;
+  /**
+   * lastSyncAt = at, always. `uploaded` is the dataset that travelled in the uploaded file (W9-01, ADR-0008
+   * decision 4): a pending record stays pending when the store holds a version that is not in it, that is, when the
+   * record (same collection and id) is missing from `uploaded`, or when its local updatedAt is later than the
+   * uploaded one. Every other pending entry is cleared, including one whose record no longer exists locally (a purged
+   * tombstone). So a write that commits after LocalDataset.save, while the upload runs, keeps counting. Device
+   * settings never count, so a device record in `uploaded.settings` is ignored.
+   * Without `uploaded` the whole pending set is cleared (pendingChanges = 0): the pre-W9 rule, kept only until the
+   * session passes what it uploaded (W9-02).
+   */
+  markSynced(at: IsoInstant, uploaded?: BackupData): Promise<void>;
   /** Number of distinct records (device settings excluded) written since the last markBackedUp. */
   changesSinceBackup(): Promise<number>;
   /** lastBackupAt = at and changesSinceBackup = 0. */
