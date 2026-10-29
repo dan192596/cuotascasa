@@ -24,8 +24,8 @@ describe('cc-odometer', () => {
   it('renders the final text in the DOM at first render (digits as columns, other chars fixed)', async () => {
     const { root } = await render('Q 984,048.18');
     expect(root.querySelectorAll('.col').length).toBe(8);
-    expect(root.querySelectorAll('.fixed').length).toBe(4);
-    const shown = Array.from(root.querySelectorAll('.col, .fixed'))
+    expect(root.querySelectorAll('.sep').length).toBe(4);
+    const shown = Array.from(root.querySelectorAll('.col, .sep'))
       .map((el) => el.getAttribute('data-char'))
       .join('');
     expect(shown).toBe('Q 984,048.18');
@@ -49,7 +49,7 @@ describe('cc-odometer', () => {
 
   it('copies as the final text: columns and fixed glyphs are unselectable, the hidden text stays selectable', () => {
     const source = readFileSync(SOURCE, 'utf8');
-    expect(source).toMatch(/\.col,\s*\.fixed \{\s*user-select: none;/);
+    expect(source).toMatch(/\.col,\s*\.sep \{\s*user-select: none;/);
     expect(source).toMatch(/\.text \{[^}]*user-select: text;/);
   });
 

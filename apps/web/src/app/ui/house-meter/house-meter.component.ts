@@ -45,7 +45,7 @@ function clampPercent(raw: string): number {
             [style.transform]="scale()"
           />
         </g>
-        <polygon class="outline" [attr.points]="outline" />
+        <polygon class="shape" [attr.points]="outline" />
         <line class="floor" x1="12" y1="96" x2="88" y2="96" />
       </svg>
       <p class="text" data-testid="house-text">
@@ -69,7 +69,7 @@ function clampPercent(raw: string): number {
       width: 7.5rem;
       height: 7.5rem;
     }
-    .outline {
+    .shape {
       fill: none;
       stroke: var(--cc-color-control-border);
       stroke-width: 2;

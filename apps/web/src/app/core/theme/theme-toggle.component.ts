@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, effect, ErrorHandler, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ErrorHandler, inject } from '@angular/core';
 import { SETTINGS_STORE } from '../../data/tokens.ts';
 import { type ThemePreference, ThemeService } from './theme.service.ts';
 
@@ -7,7 +7,10 @@ interface ThemeOption {
   readonly label: string;
 }
 
-/** Theme choice under /app: persists through SettingsStore and applies through ThemeService. */
+/**
+ * Theme choice, hosted in Ajustes: persists through SettingsStore and applies through ThemeService right away. The
+ * shell applies the stored preference on every /app page, so this control only reads and changes it.
+ */
 @Component({
   selector: 'cc-theme-toggle',
   template: `
@@ -31,12 +34,6 @@ export class ThemeToggleComponent {
     { value: 'light', label: 'Claro' },
     { value: 'dark', label: 'Oscuro' },
   ];
-
-  constructor() {
-    effect(() => {
-      this.theme.setPreference(this.settings.theme());
-    });
-  }
 
   protected async choose(value: ThemePreference): Promise<void> {
     const previous = this.theme.preference();

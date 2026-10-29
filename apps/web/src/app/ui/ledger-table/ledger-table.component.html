@@ -1,6 +1,6 @@
 <div
   #grid
-  class="grid"
+  class="ledger"
   role="grid"
   [attr.aria-label]="label()"
   [attr.aria-rowcount]="rows().length + 1"
@@ -12,7 +12,7 @@
         class="cell"
         role="columnheader"
         [class.end]="column.align === 'end'"
-        [class.sticky]="offsets()[ci] !== null"
+        [class.pinned]="offsets()[ci] !== null"
         [style.left]="offsets()[ci]"
         [attr.aria-colindex]="ci + 1"
       >
@@ -35,7 +35,7 @@
         <div
           class="cell"
           [class.end]="cell.column.align === 'end'"
-          [class.sticky]="cell.left !== null"
+          [class.pinned]="cell.left !== null"
           [class.changed]="changed().has(vm.row.key + '|' + cell.column.key)"
           [attr.data-flash]="changed().get(vm.row.key + '|' + cell.column.key) ?? null"
           [style.left]="cell.left"

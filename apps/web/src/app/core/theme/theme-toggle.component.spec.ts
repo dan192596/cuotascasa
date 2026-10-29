@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { SettingsStore } from '../../data/api.ts';
 import { SETTINGS_STORE } from '../../data/tokens.ts';
 import { ThemeToggleComponent } from './theme-toggle.component.ts';
+import { ThemeService } from './theme.service.ts';
 
 type Preference = ReturnType<SettingsStore['theme']>;
 
@@ -25,6 +26,8 @@ function setup(
       { provide: ErrorHandler, useValue: { handleError } },
     ],
   });
+  // The shell applies the stored preference on every /app page; here the test plays that part.
+  TestBed.inject(ThemeService).setPreference(initial);
   const fixture = TestBed.createComponent(ThemeToggleComponent);
   fixture.detectChanges();
   return { fixture, setTheme, theme };
@@ -50,12 +53,6 @@ describe('cc-theme-toggle', () => {
     expect((fixture.nativeElement as HTMLElement).querySelector('[role="group"]')?.getAttribute('aria-label')).toBe(
       'Tema',
     );
-  });
-
-  it('applies the stored preference to the page', () => {
-    setup('light');
-    TestBed.tick();
-    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
   });
 
   it('persists a choice through SettingsStore and applies it', async () => {

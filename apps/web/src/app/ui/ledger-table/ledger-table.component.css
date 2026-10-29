@@ -8,7 +8,7 @@
   font-variant-numeric: tabular-nums;
   font-size: 0.875rem;
 }
-.grid {
+.ledger {
   min-width: max-content;
 }
 .row {
@@ -84,11 +84,11 @@
 .cell.end {
   justify-content: flex-end;
 }
-.cell.sticky {
+.cell.pinned {
   position: sticky;
   z-index: 1;
 }
-.head .cell.sticky {
+.head .cell.pinned {
   z-index: 3;
 }
 .cell:focus-visible {

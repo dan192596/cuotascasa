@@ -188,6 +188,10 @@ export const MATRIX_ROWS: readonly LintFixtureRow[] = [
         filePath: `${APP}/features/schedule/lint-fixture.ts`,
         code: "import { ExportMenuComponent } from '../export/export-menu.component.ts';\nexport const fixture = ExportMenuComponent;\n",
       },
+      {
+        filePath: `${APP}/features/settings/lint-fixture.ts`,
+        code: "import { ThemeToggleComponent } from '../../core/theme/theme-toggle.component.ts';\nexport const fixture = ThemeToggleComponent;\n",
+      },
     ],
     fail: [
       {
