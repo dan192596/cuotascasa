@@ -540,8 +540,17 @@ describe('memoization', () => {
   it('derived values depend on asOf only, not on a recomputation of the paths', () => {
     const world = withLoan('2025-03-15');
     const projection = world.service.forLoan(LOAN);
-    expect(projection.paths()).toBe(projection.paths());
-    expect(projection.currentInstallment()).toBe(projection.currentInstallment());
+    const paths = projection.paths();
+    expect(projection.currentInstallment()?.k).toBe(2);
+    expect(projection.balance()).toBe('499178.20');
+    // the calendar moves two months: the derived values change, the memoized paths do not
+    world.clock.setToday('2025-05-15');
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(world.service.asOf()).toBe('2025-05-15');
+    expect(projection.asOf()).toBe('2025-05-15');
+    expect(projection.currentInstallment()?.k).toBe(4);
+    expect(projection.balance()).not.toBe('499178.20');
+    expect(projection.paths()).toBe(paths);
   });
 });
 

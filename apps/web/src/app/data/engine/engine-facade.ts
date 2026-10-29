@@ -1,7 +1,7 @@
 /**
  * The LoanProjectionService implementation (W3-12): entities → domain → memoized projections (spec §9).
  */
-import { computed, type Signal, untracked } from '@angular/core';
+import { computed, signal, type Signal, untracked } from '@angular/core';
 import {
   buildPaths,
   compareSchedules,
@@ -40,9 +40,12 @@ export interface EngineFacadeDeps {
   readonly balances: ReportedBalancesStore;
   readonly payments: PaymentsStore;
   readonly scenarios: ScenariosStore;
-  /** Read on every evaluation of asOf; provideEngineFacade() injects the CLOCK eagerly (W3 close). */
+  /** Re-read by refreshToday(); provideEngineFacade() injects the CLOCK eagerly (W3 close). */
   readonly clock: () => Clock;
 }
+
+/** Slack after local midnight, so the timer never fires a hair before the calendar turns. */
+const MIDNIGHT_SLACK_MS = 1000;
 
 /** Spec §9 «Proyecciones»: original, real and at most this many scenarios. */
 const MAX_COMPARED_SCENARIOS = 3;
@@ -56,11 +59,78 @@ export class EngineFacade implements LoanProjectionService {
   private readonly deps: EngineFacadeDeps;
   private readonly projections = new Map<Uuid, LoanProjectionImpl>();
   private readonly comparisons = new Map<string, Signal<ScenarioComparison | null>>();
+  /** The calendar day as the Clock last reported it; signals dedupe equal strings, so nothing recomputes mid-day. */
+  private readonly today: ReturnType<typeof signal<string>>;
+  private midnightTimer: ReturnType<typeof setTimeout> | null = null;
+  private stopWatching: (() => void) | null = null;
 
   constructor(deps: EngineFacadeDeps) {
     this.deps = deps;
-    this.asOf = computed(() => parseLocalDate(deps.clock().today()));
+    this.today = signal(deps.clock().today());
+    this.asOf = computed(() => parseLocalDate(this.today()));
     this.totalsByCurrency = computed(() => this.sumActiveLoans());
+  }
+
+  /** Re-reads Clock.today(). The value only changes when the date does. */
+  refreshToday(): void {
+    this.today.set(this.deps.clock().today());
+  }
+
+  /**
+   * Keeps asOf in step with the calendar while the app stays open: re-reads the day when the page becomes visible
+   * again (visibilitychange, pageshow) and at the next local midnight while visible. Returns the stop function.
+   */
+  watchCalendar(): () => void {
+    this.stopWatching?.();
+    const hasDocument = typeof document !== 'undefined';
+    const isVisible = (): boolean => !hasDocument || document.visibilityState === 'visible';
+    const schedule = (): void => {
+      this.clearTimer();
+      if (!isVisible()) {
+        return;
+      }
+      const now = new Date();
+      const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime();
+      this.midnightTimer = setTimeout(
+        () => {
+          this.refreshToday();
+          schedule();
+        },
+        Math.max(nextMidnight - now.getTime(), 0) + MIDNIGHT_SLACK_MS,
+      );
+    };
+    const onChange = (): void => {
+      if (isVisible()) {
+        this.refreshToday();
+      }
+      schedule();
+    };
+    if (hasDocument) {
+      document.addEventListener('visibilitychange', onChange);
+    }
+    if (typeof window !== 'undefined') {
+      window.addEventListener('pageshow', onChange);
+    }
+    schedule();
+    const stop = (): void => {
+      this.clearTimer();
+      if (hasDocument) {
+        document.removeEventListener('visibilitychange', onChange);
+      }
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('pageshow', onChange);
+      }
+      this.stopWatching = null;
+    };
+    this.stopWatching = stop;
+    return stop;
+  }
+
+  private clearTimer(): void {
+    if (this.midnightTimer !== null) {
+      clearTimeout(this.midnightTimer);
+      this.midnightTimer = null;
+    }
   }
 
   forLoan(loanId: Uuid): LoanProjection {

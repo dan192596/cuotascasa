@@ -1,4 +1,4 @@
-import { type EnvironmentProviders, inject, makeEnvironmentProviders } from '@angular/core';
+import { DestroyRef, type EnvironmentProviders, inject, makeEnvironmentProviders } from '@angular/core';
 import { CLOCK } from '../data-layer.tokens.ts';
 import {
   LOAN_EVENTS_STORE,
@@ -20,7 +20,7 @@ export function provideEngineFacade(): EnvironmentProviders {
       provide: LOAN_PROJECTION_SERVICE,
       useFactory: () => {
         const clock = inject(CLOCK);
-        return new EngineFacade({
+        const facade = new EngineFacade({
           loans: inject(LOANS_STORE),
           events: inject(LOAN_EVENTS_STORE),
           balances: inject(REPORTED_BALANCES_STORE),
@@ -28,6 +28,9 @@ export function provideEngineFacade(): EnvironmentProviders {
           scenarios: inject(SCENARIOS_STORE),
           clock: () => clock,
         });
+        // asOf follows the calendar while the app stays open; the timer and listeners die with the injector.
+        inject(DestroyRef).onDestroy(facade.watchCalendar());
+        return facade;
       },
     },
   ]);
