@@ -986,7 +986,11 @@
       "apps/web/src/app/data/sync/sync-status-text.ts",
       "apps/web/src/app/data/sync/sync-status-text.spec.ts",
       "docs/adr/0007-formato-de-respaldo-json.md",
-      "docs/adr/0008-sincronizacion-google-drive.md"
+      "docs/adr/0008-sincronizacion-google-drive.md",
+      "packages/sync/src/ports.spec.ts",
+      "packages/sync/src/session/index.ts",
+      "apps/web/src/app/features/settings/backup/settings-backup.component.ts",
+      "apps/web/src/app/features/settings/backup/settings-backup.component.spec.ts"
     ]
   },
   {
@@ -1063,7 +1067,11 @@
       "apps/web/src/app/features/loans/detail/loan-detail-model.ts",
       "apps/web/src/app/features/loans/detail/loan-detail-model.spec.ts",
       "apps/web/src/app/features/scenarios/compare/compare-model.ts",
-      "apps/web/src/app/features/scenarios/compare/compare-model.spec.ts"
+      "apps/web/src/app/features/scenarios/compare/compare-model.spec.ts",
+      "apps/web/src/app/features/scenarios/compare/scenario-compare.component.spec.ts",
+      "apps/web/src/app/features/scenarios/editor/scenario-editor.component.html",
+      "apps/web/src/app/features/scenarios/editor/scenario-editor.component.ts",
+      "apps/web/src/app/features/scenarios/editor/scenario-editor.component.spec.ts"
     ]
   },
   {
@@ -1177,7 +1185,8 @@
       "e2e/specs/sweeps/known-defects.ts",
       "CHANGELOG.md",
       "docs/plan/implementation/w0/README.md",
-      "docs/release/"
+      "docs/release/",
+      "docs/specs/2026-10-04-cuotascasa-v1-design.md"
     ]
   }
 ]
