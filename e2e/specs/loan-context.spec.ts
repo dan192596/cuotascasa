@@ -31,6 +31,8 @@ for (const [route, testId, heading, title] of [
   ['tabla', 'page-schedule', 'Tabla de amortización · Casa B', 'Tabla de amortización · Casa B'],
 ] as const) {
   test(`${route} of the second loan opened by URL names its loan and links back`, async ({ page }) => {
+    // axe walks the whole 240-row grid of the table; under parallel load one pass can take well over 20 s.
+    if (route === 'tabla') test.setTimeout(120_000);
     await seed(page);
     await page.goto(`/app/prestamos/${SECOND_LOAN_ID}/${route}`);
     await expect(page.getByTestId(testId)).toBeVisible();
