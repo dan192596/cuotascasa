@@ -83,8 +83,17 @@ Trazabilidad: R8, R9, R14, R27
 **Como** dueño **quiero** dar de alta un préstamo que ya llevo años pagando usando su saldo real actual como punto de
 partida **para** no reconstruir todo su historial.
 
-- El paso 4 pide un saldo informado por el banco y la cuota a la que corresponde (saldo antes de pagarla). Es
-  opcional: si lo dejo vacío, el préstamo se guarda sin ancla, con el chip «Sin validar».
+- El paso 4 pide la fecha del estado de cuenta y el saldo que informa el banco. Es opcional: si dejo el saldo vacío, el
+  préstamo se guarda sin ancla, con el chip «Sin validar».
+- Con la fecha, la app deduce la cuota (la primera con vencimiento igual o posterior a la fecha,
+  `[ALG.EVENTS.ANCHOR]`) y la muestra: «Corresponde a la cuota N, que vence el dd/mm/aaaa». No tengo que saber el
+  número de cuota (ADR-0027).
+- Elijo si el saldo es de antes o de después de pagar esa cuota: «Este saldo es antes de pagar esa cuota» o «Este saldo
+  es después de pagarla». Viene marcado «después» si la fecha es el día del vencimiento, y «antes» si es anterior. Con
+  «después», la app avisa «Se guarda como el saldo antes de pagar la cuota N+1» y guarda el ancla en la cuota N+1.
+- Si elijo «después» en la última cuota, no se guarda y veo: «Después de pagar la última cuota ya no queda saldo. Elige
+  «antes» o revisa la fecha.»
+- Puedo escribir el número de cuota como opción avanzada; si lo escribo, manda y el saldo es el de antes de pagarla.
 - Muestra la diferencia entre lo modelado y el saldo real con un semáforo verde, ámbar o rojo, con texto e ícono
   («Coincide», «Diferencia pequeña», «Diferencia grande»).
 - En ámbar o rojo muestra la causa sugerida con estos textos:
@@ -155,13 +164,18 @@ Trazabilidad: R14, R28
 **Como** dueño **quiero** registrar el saldo que me informa el banco **para** ver si lo proyectado coincide con lo real y
 corregir la proyección.
 
-- Formulario corto: fecha, saldo y cuota a la que aplica (saldo antes de pagarla). La cuota es opcional: si la dejo
-  vacía, aplica a la primera cuota con vencimiento igual o posterior a la fecha (`[ALG.EVENTS.ANCHOR]`).
+- Formulario corto: fecha del estado de cuenta y saldo. Igual que en el paso 4 del asistente (HU-04), la app deduce la
+  cuota de la fecha (`[ALG.EVENTS.ANCHOR]`), la muestra y me deja elegir si el saldo es de antes o de después de pagarla;
+  «después» lo guarda en la cuota siguiente. El número de cuota es una opción avanzada (ADR-0027).
+- Al editar un saldo, el formulario vuelve a mostrar la elección con la que lo guardé.
 - Puedo anotar la cuota total y la tasa que informó el banco; son informativas y no cambian el cálculo (un cambio de
   tasa se registra en HU-10).
 - Se muestra Real Δ = saldo reportado − saldo modelado, con el semáforo de `[ALG.VALIDATE]`: verde si coincide, ámbar si
   es pequeña y rojo si es grande.
 - El camino real se re-ancla: las cuotas siguientes parten del saldo reportado, sin cambiar cuota nivelada ni plazo.
+- El re-anclaje no es un pago. En el detalle, «Plan original frente a lo real» muestra aparte el «Ajuste por saldos
+  reportados» (la suma de las Real Δ de cada saldo) y una nota que dice que no viene de pagos registrados, pero sí
+  cambia las cuotas y el ahorro de esa sección (ADR-0027).
 - El registro aparece en la línea de tiempo de datos reales y se puede editar o eliminar.
 
 Trazabilidad: R4, R16
@@ -221,7 +235,10 @@ pido al banco.
 - Un abono de Q 20,000.00 después de la cuota 12 da:
   - reducir plazo: 220 cuotas y Q 69,172.80 de interés y seguro ahorrados;
   - reducir cuota: nueva cuota nivelada de Q 4,089.36 y Q 19,694.91 ahorrados.
-- Métricas: interés ahorrado, meses ahorrados, fecha de fin, total pagado y ahorro neto.
+- Métricas: intereses y seguros ahorrados, meses ahorrados, fecha de fin, total pagado, ahorro sin cargos fijos y
+  ahorro neto (incluye cargos fijos). El ahorro neto cuenta los cargos fijos que ya no le pago al banco, aunque algunos,
+  como el IUSI, sigan después del préstamo; por eso también se muestra la cifra sin ellos (ADR-0027). Con el abono de
+  reducir plazo de arriba: Q 69,172.80 sin cargos fijos y Q 77,072.80 de ahorro neto.
 - Un evento hipotético en una cuota `k ≤ cutoffK` da error de validación. Según `[ALG.PATHS.CUTOFF]`, `cutoffK` es la
   mayor cuota con un saldo reportado, un pago real, un abono real o un adelanto de cuotas real; los cambios de tasa y
   de cargos reales no lo mueven.
@@ -256,7 +273,8 @@ Trazabilidad: R6, R17
 estrategia.
 
 - Hasta 3 escenarios contra la base (el camino real sin eventos hipotéticos).
-- Tabla de métricas con sus diferencias.
+- Tabla de métricas con sus diferencias, con los nombres de ADR-0027: «Intereses y seguros ahorrados» (nunca solo
+  «Interés ahorrado», porque incluye seguros), «Ahorro sin cargos fijos» y «Ahorro neto (incluye cargos fijos)».
 - Gráfica del saldo en el tiempo, cargada solo al abrir la comparación.
 
 Trazabilidad: R5, R17
